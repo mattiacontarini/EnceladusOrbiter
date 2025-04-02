@@ -7,7 +7,7 @@ from auxiliary import VehicleParameters as VehicleParam
 from auxiliary import StableOrbitOptimizationConfig as OptConfig
 from auxiliary import utilities as Util
 # from StableOrbitProblem import StableOrbitProblem
-from StableOrbitProblem2 import StableOrbitProblem
+from StableOrbitProblem import StableOrbitProblem
 
 # Tudat import
 from tudatpy import constants
@@ -97,12 +97,16 @@ def propagate_orbit(simulation_start_epoch,
 
 def main():
 
+    # Load spice kernels
+    spice.load_standard_kernels()
+
     seed = OptConfig.seed
 
     pg.set_global_rng_seed(seed)
 
     # Select optimization algorithm
-    algo = pg.algorithm(pg.pso(gen=1, seed=seed))
+    algo = pg.algorithm(pg.pso(gen=1))
+    algo.set_verbosity(1)
 
     # Define problem
     UDP = StableOrbitProblem.from_config()
@@ -110,10 +114,23 @@ def main():
 
     # Define initial population
     population_size = OptConfig.no_individuals_per_decision_variable * 6
-    pop = pg.population(prob, size=population_size, seed=seed)
+    pop = pg.population(prob, size=population_size)
 
-    pop = algo.evolve(pop)
+    individuals_list = []
+    fitness_list = []
 
+    not_converged = True
+    i = 1
+    while not_converged:
+        pop = algo.evolve(pop)
+        individuals_list.append(pop.get_x())
+        fitness_list.append(pop.get_f())
+        Util.save_population(pop, index=i, output_path="output/propagator_selection/orbit_stability/")
+
+        problem: StableOrbitProblem = prob.extract(object)
+
+        not_converged = problem.fitness_not_converged(i, fitness_list, True)
+        i += 1
 
 if __name__ == '__main__':
     main()
