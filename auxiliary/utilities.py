@@ -330,20 +330,39 @@ def generate_benchmarks(initial_state,
 def compute_benchmarks_state_history_difference(first_benchmark_state_history,
                                                 second_benchmark_state_history,
                                                 first_benchmark_step_size,
-                                                coefficient_set_name):
+                                                coefficient_set_name,
+                                                output_path):
 
     state_history_difference = dict()
 
     first_benchmark_epochs = list(first_benchmark_state_history.keys())
-    print(first_benchmark_epochs)
-    print(list(second_benchmark_state_history.keys()))
 
-    for epoch in first_benchmark_epochs:
+    for epoch in first_benchmark_epochs[:-1]:
         state_history_difference[epoch] = first_benchmark_state_history[epoch] - second_benchmark_state_history[epoch]
 
     save2txt(state_history_difference,
              "benchmark_fixed_step_" + str(first_benchmark_step_size) + "_coefficient_set_" +
-             coefficient_set_name + '_state_history_difference.dat')
+             coefficient_set_name + '_state_history_difference.dat',
+             output_path)
 
     return state_history_difference
+
+
+def compute_integration_error(state_history_difference,
+                              first_benchmark_step_size,
+                              coefficient_set_name,
+                              output_path):
+
+    epochs = list(state_history_difference.keys())
+    integration_error = dict()
+
+    for epoch in epochs:
+        integration_error[epoch] = np.linalg.norm(state_history_difference[epoch][:3])
+
+    save2txt(state_history_difference,
+             "benchmark_fixed_step_" + str(first_benchmark_step_size) + "_coefficient_set_" +
+             coefficient_set_name + '_integration_error.dat',
+             output_path)
+
+    return integration_error
 
