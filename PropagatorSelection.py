@@ -7,14 +7,15 @@ the integrator and dynamical model are selected.
 from OrbitPropagator import OrbitPropagator
 from auxiliary import BenedikterInitialStates as Benedikter
 from auxiliary import utilities as Util
-from auxiliary.OrbitPropagatorConfig import bodies_to_create
 
 # Tudat import
 from tudatpy.astro import element_conversion
 from tudatpy.interface import spice
 from tudatpy import numerical_simulation
+from tudatpy import constants
 
 # Packages import
+import numpy as np
 import datetime
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
@@ -67,7 +68,8 @@ def perform_integrators_selection(initial_cartesian_state,
                                   linestyles_coefficient_sets,
                                   coefficient_sets_legend_handles,
                                   colors_step_sizes,
-                                  step_sizes_legend_handles, ):
+                                  step_sizes_legend_handles,
+                                  propagate_orbits_flag):
     # Retrieve current time stamp
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -76,54 +78,80 @@ def perform_integrators_selection(initial_cartesian_state,
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
+    kernels_to_load = ["./kernels/de438.bsp", "./kernels/sat427.bsp"]
+    spice.load_standard_kernels(kernels_to_load)
 
-    # Initialize plot
-    if generate_plot_flag:
-        fig, ax = plt.subplots(figsize=(8, 8))
+    if propagate_orbits_flag:
+        for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+            coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+            coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
 
-    for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
-        coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
-        coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
-        linestyle = linestyles_coefficient_sets[coefficient_set_index]
+            for fixed_step_size in fixed_step_sizes:
+                # Define propagator object
+                UDP = OrbitPropagator.from_config()
 
-        for fixed_step_size in fixed_step_sizes:
+                # Compute state history and dependent variable history for the two benchmarks
+                benchmarks_state_dependent_variable_history = Util.generate_benchmarks(initial_cartesian_state,
+                                                                                       fixed_step_size,
+                                                                                       fixed_step_integrator_coefficient,
+                                                                                       coefficient_set_name,
+                                                                                       UDP,
+                                                                                       output_folder
+                                                                                       )
+                first_benchmark_state_history = benchmarks_state_dependent_variable_history[0]
+                second_benchmark_state_history = benchmarks_state_dependent_variable_history[1]
 
-            # Define propagator object
-            UDP = OrbitPropagator.from_config()
+                # Compute integration error of first benchmark, assuming truncation error is dominant
+                first_benchmark_state_history_difference = Util.compute_benchmarks_state_history_difference(
+                    first_benchmark_state_history,
+                    second_benchmark_state_history,
+                    fixed_step_size,
+                    coefficient_set_name,
+                    output_folder
+                )
 
-            # Compute state history and dependent variable history for the two benchmarks
-            benchmarks_state_dependent_variable_history = Util.generate_benchmarks(initial_cartesian_state,
-                                                                                   fixed_step_size,
-                                                                                   fixed_step_integrator_coefficient,
-                                                                                   coefficient_set_name,
-                                                                                   UDP,
-                                                                                   output_folder
-                                                                                   )
-            first_benchmark_state_history = benchmarks_state_dependent_variable_history[0]
-            second_benchmark_state_history = benchmarks_state_dependent_variable_history[1]
+                first_benchmark_integration_error = Util.compute_integration_error(
+                    first_benchmark_state_history_difference,
+                    fixed_step_size,
+                    coefficient_set_name,
+                    output_folder)
 
-            # Compute integration error of first benchmark, assuming truncation error is dominant
-            first_benchmark_integration_error = Util.compute_benchmarks_state_history_difference(
-                first_benchmark_state_history,
-                second_benchmark_state_history,
-                fixed_step_size,
-                coefficient_set_name
-            )
+        # Plot integration error
+        if generate_plot_flag:
+            fig, ax = plt.subplots(figsize=(8, 8))
 
-            color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
-            # Plot integration error
-            if generate_plot_flag:
-                ax.plot(first_benchmark_integration_error, linestyle=linestyle, color=color)
+            for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
 
-    if generate_plot_flag:
-        fig.legend(handles=[coefficient_sets_legend_handles, step_sizes_legend_handles], )
-        plt.tight_layout()
-        plt.show()
+                coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+                coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+                linestyle = linestyles_coefficient_sets[coefficient_set_index]
 
+                for fixed_step_size in fixed_step_sizes:
+
+                    file_path = (output_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                                 "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
+
+                    first_benchmark_integration_error_array = np.loadtxt(file_path)
+
+                    color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
+                    ax.plot(first_benchmark_integration_error_array[:, 0] / constants.JULIAN_DAY,
+                            first_benchmark_integration_error_array[:, 1], linestyle=linestyle, color=color)
+
+            fig.legend(handles=[coefficient_sets_legend_handles, step_sizes_legend_handles], )
+            plt.title("Integration error")
+            plt.xlabel("Relative epoch [days]")
+            plt.ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
+            plt.tight_layout()
+            plt.savefig(output_folder + "/integration_error.pdf")
+            plt.close()
+
+
+#######################################################################################################################
+###
+#######################################################################################################################
 
 def main():
-
-    flag_perform_single_propagation_example = True
+    flag_perform_single_propagation_example = False
     if flag_perform_single_propagation_example:
 
         # Retrieve initial state
@@ -138,8 +166,11 @@ def main():
 
         perform_single_propagation_example(initial_cartesian_state, orbit_ID)
 
-    flag_perform_integrators_selection = False
+    flag_perform_integrators_selection = True
     if flag_perform_integrators_selection:
+
+        # Select whether the orbit solution ought to be propagated or not
+        propagate_orbits_flag = True
 
         # Retrieve initial state
         initial_cartesian_state = Benedikter.K1_initial_cartesian_state
@@ -211,6 +242,7 @@ def main():
                                       coefficient_sets_legend_handles=coefficient_sets_legend_handles,
                                       colors_step_sizes=colors_step_sizes,
                                       step_sizes_legend_handles=step_sizes_legend_handles,
+                                      propagate_orbits_flag=propagate_orbits_flag,
                                       )
 
 
