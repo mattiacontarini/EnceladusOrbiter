@@ -6,5 +6,5 @@ The code contained in this repository is used to perform the covariance analysis
 Three repeating orbits are available.
 
 The following branches are available:
-1. *propagator-selection*: the branch stores the scripts used to assess the integration error for a representative dynamical model.
-2. *accelerations-selection*: the branch stores the scripts used to assess the physical model error
+1. **propagator-selection**: the branch stores the scripts used to assess the integration error for a representative dynamical model.
+2. **accelerations-selection**: the branch stores the scripts used to assess the physical model error
