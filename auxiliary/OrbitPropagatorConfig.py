@@ -46,7 +46,6 @@ acceleration_settings_on_vehicle = dict(
     ],
     Enceladus=[
         numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(max_degree_order["Enceladus"][0], max_degree_order["Enceladus"][1])
-        #numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ]
 )
 
