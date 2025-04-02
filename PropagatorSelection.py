@@ -20,6 +20,7 @@ import datetime
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
+import os
 
 
 def perform_single_propagation_example(initial_cartesian_state, orbit_ID):
@@ -66,10 +67,9 @@ def perform_integrators_selection(initial_cartesian_state,
                                   fixed_step_integrator_coefficients_name,
                                   generate_plot_flag,
                                   linestyles_coefficient_sets,
-                                  coefficient_sets_legend_handles,
                                   colors_step_sizes,
-                                  step_sizes_legend_handles,
-                                  propagate_orbits_flag):
+                                  propagate_orbits_flag,
+                                  data_input_folder=None):
     # Retrieve current time stamp
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
@@ -116,33 +116,59 @@ def perform_integrators_selection(initial_cartesian_state,
                     coefficient_set_name,
                     output_folder)
 
-        # Plot integration error
-        if generate_plot_flag:
+    # Plot integration error
+    if generate_plot_flag:
+
+        # Create output directory
+        os.makedirs(output_folder, exist_ok=True)
+
+        # Maked handles for step sizes
+        step_sizes_legend_handles = []
+        for i in range(len(colors_step_sizes)):
+            handle = mlines.Line2D([],
+                                   [],
+                                   linestyle="-",
+                                   color=colors_step_sizes[i],
+                                   label=str(fixed_step_sizes[i]))
+
+            step_sizes_legend_handles.append(handle)
+
+        # Make handles for coefficients sets
+        coefficient_sets_legend_handles = []
+        for i in range(len(linestyles_coefficient_sets)):
+            handle = mlines.Line2D([],
+                                   [],
+                                   linestyle=linestyles_coefficient_sets[i],
+                                   color="black",
+                                   label=fixed_step_integrator_coefficients_name[i])
+            coefficient_sets_legend_handles.append(handle)
+
+        if propagate_orbits_flag:
+            data_input_folder = output_folder
+
+        for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
             fig, ax = plt.subplots(figsize=(8, 8))
 
-            for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+            coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+            coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+            linestyle = linestyles_coefficient_sets[coefficient_set_index]
 
-                coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
-                coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
-                linestyle = linestyles_coefficient_sets[coefficient_set_index]
+            for fixed_step_size in fixed_step_sizes:
+                file_path = (data_input_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                             "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
 
-                for fixed_step_size in fixed_step_sizes:
+                first_benchmark_integration_error_array = np.loadtxt(file_path)
 
-                    file_path = (output_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
-                                 "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
+                color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
+                ax.plot(first_benchmark_integration_error_array[:, 0] / constants.JULIAN_DAY,
+                        first_benchmark_integration_error_array[:, 1], linestyle="-", color=color)
 
-                    first_benchmark_integration_error_array = np.loadtxt(file_path)
-
-                    color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
-                    ax.plot(first_benchmark_integration_error_array[:, 0] / constants.JULIAN_DAY,
-                            first_benchmark_integration_error_array[:, 1], linestyle=linestyle, color=color)
-
-            fig.legend(handles=[coefficient_sets_legend_handles, step_sizes_legend_handles], )
-            plt.title("Integration error")
+            fig.legend(handles=step_sizes_legend_handles)
+            plt.title("Integration error - " + coefficient_set_name)
             plt.xlabel("Relative epoch [days]")
             plt.ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
             plt.tight_layout()
-            plt.savefig(output_folder + "/integration_error.pdf")
+            plt.savefig(output_folder + "/integration_error_coefficient_set" + coefficient_set_name + ".pdf")
             plt.close()
 
 
@@ -204,16 +230,6 @@ def main():
                                        (0, (3, 1, 1, 1, 1, 1)),
                                        (0, (5, 1))]
 
-        # Make handles for coefficients sets
-        coefficient_sets_legend_handles = []
-        for i in range(len(linestyles_coefficient_sets)):
-            handle = mlines.Line2D([],
-                                   [],
-                                   linestyle=linestyles_coefficient_sets[i],
-                                   color="black",
-                                   label=fixed_step_integrator_coefficients_name[i])
-            coefficient_sets_legend_handles.append(handle)
-
         # Colors for fixed time steps
         colors_step_sizes = ["red",
                              "blue",
@@ -222,16 +238,7 @@ def main():
                              "purple",
                              "cyan"]
 
-        # Maked handles for step sizes
-        step_sizes_legend_handles = []
-        for i in range(len(colors_step_sizes)):
-            handle = mlines.Line2D([],
-                                   [],
-                                   linestyle="-",
-                                   color=colors_step_sizes[i],
-                                   label=str(fixed_step_sizes[i]))
-
-            step_sizes_legend_handles.append(handle)
+        data_input_folder = f"./output/propagator_selection/2025.04.02.11.13.40"
 
         perform_integrators_selection(initial_cartesian_state=initial_cartesian_state,
                                       fixed_step_sizes=fixed_step_sizes,
@@ -239,11 +246,9 @@ def main():
                                       fixed_step_integrator_coefficients_name=fixed_step_integrator_coefficients_name,
                                       generate_plot_flag=generate_plot_flag,
                                       linestyles_coefficient_sets=linestyles_coefficient_sets,
-                                      coefficient_sets_legend_handles=coefficient_sets_legend_handles,
                                       colors_step_sizes=colors_step_sizes,
-                                      step_sizes_legend_handles=step_sizes_legend_handles,
                                       propagate_orbits_flag=propagate_orbits_flag,
-                                      )
+                                      data_input_folder=data_input_folder)
 
 
 if __name__ == "__main__":

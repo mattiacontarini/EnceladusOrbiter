@@ -359,7 +359,7 @@ def compute_integration_error(state_history_difference,
     for epoch in epochs:
         integration_error[epoch] = np.linalg.norm(state_history_difference[epoch][:3])
 
-    save2txt(state_history_difference,
+    save2txt(integration_error,
              "benchmark_fixed_step_" + str(first_benchmark_step_size) + "_coefficient_set_" +
              coefficient_set_name + '_integration_error.dat',
              output_path)
