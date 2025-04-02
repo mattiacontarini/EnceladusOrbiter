@@ -33,7 +33,6 @@ def retrieve_decision_variable_range(decision_variable_bounds_dict):
 
 
 def get_bodies(simulation_start_epoch):
-    spice.load_standard_kernels()
 
     # Create settings for celestial bodies
     bodies_to_create = ["Sun",
