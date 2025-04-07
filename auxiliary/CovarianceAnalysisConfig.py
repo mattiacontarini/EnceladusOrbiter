@@ -2,6 +2,7 @@
 from tudatpy import constants
 from tudatpy import numerical_simulation
 from tudatpy.astro.time_conversion import DateTime
+from tudatpy.astro import element_conversion
 
 #######################################################################################################################
 ### Configuration #####################################################################################################
@@ -19,6 +20,7 @@ simulation_end_epoch = simulation_start_epoch + simulation_duration
 
 # Bodies included in the environment model
 bodies_to_create = ["Sun",
+                    "Earth",
                     "Saturn",
                     "Enceladus",
                     "Mimas",
@@ -80,3 +82,28 @@ integrator_settings = numerical_simulation.propagation_setup.integrator.runge_ku
 # Define propagation arcs during science phase
 arc_duration = 1.0 * constants.JULIAN_DAY
 
+# Lagrange interpolator settings
+number_of_points = 8
+
+# Define dependent variables to be saved during the propagation
+dependent_variables_to_save = [
+    numerical_simulation.propagation_setup.dependent_variable.altitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.latitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.longitude("Vehicle", "Enceladus"),
+]
+
+#######################################################################################################################
+### Observations
+#######################################################################################################################
+
+# Ground stations properties
+ground_station_names = ["CoM"]
+ground_station_coordinates = {
+    ground_station_names[0]: [0, 0, 0]
+}
+ground_station_coordinates_type = {ground_station_names[0]: element_conversion.cartesian_position_type}
+
+# Tracking arcs properties
+tracking_arc_duration = 8.0 * 3600.0
+tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
+range_bias = 1.5
