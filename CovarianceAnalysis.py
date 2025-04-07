@@ -1,0 +1,146 @@
+#######################################################################################################################
+### Import statements #################################################################################################
+#######################################################################################################################
+
+# Files and variables import
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
+from auxiliary import BenedikterInitialStates as Benedikter
+from auxiliary import VehicleParameters as VehicleParam
+from auxiliary import utilities as Util
+
+# Tudat import
+from tudatpy import numerical_simulation
+from tudatpy.data import save2txt
+from tudatpy.util import result2array
+from tudatpy import constants
+from tudatpy.astro import element_conversion
+from tudatpy.kernel.interface import spice_interface, spice
+
+# Packages import
+import numpy as np
+import datetime
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import matplotlib.patches as mpatches
+import os
+
+
+def covariance_analysis(initial_state,
+                        save_results_flag,
+                        simulation_start_epoch,
+                        simulation_end_epoch,
+                        observation_start_epoch,
+                        observation_end_epoch,
+                        ):
+    ###################################################################################################################
+    ### Configuration
+    ###################################################################################################################
+
+    if save_results_flag:
+        # Retrieve current time stamp
+        time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+        # Define output folder
+        output_folder = "./output/covariance_analysis/"
+
+        # Build output_path
+        output_path = os.path.join(output_folder, time_stamp)
+        os.makedirs(output_path, exist_ok=True)
+
+    # Load SPICE kernels for simulation
+    spice.load_standard_kernels()
+    kernels_to_load = ["./kernels/de438.bsp", "./kernels/sat427.bsp"]
+    spice.load_standard_kernels(kernels_to_load)
+
+    ###################################################################################################################
+    ### Environment setup #############################################################################################
+    ###################################################################################################################
+
+    # Retrieve default body settings
+    body_settings = numerical_simulation.environment_setup.get_default_body_settings(CovAnalysisConfig.bodies_to_create,
+                                                                                     CovAnalysisConfig.global_frame_origin,
+                                                                                     CovAnalysisConfig.global_frame_orientation)
+
+    # Set rotation model settings for Enceladus
+    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(CovAnalysisConfig.simulation_start_epoch)
+    initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
+                                                                                 "IAU_Enceladus",
+                                                                                 CovAnalysisConfig.simulation_start_epoch)
+    body_settings.get("Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
+        "J2000", "IAU_Enceladus", initial_orientation_enceladus,
+        CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
+
+    # Set gravity field settings for Enceladus
+    body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
+    body_settings.get(
+        "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
+
+    # Set gravity field settings for Saturn
+    body_settings.get("Saturn").gravity_field_settings = Util.get_gravity_field_settings_saturn_iess()
+    body_settings.get(
+        "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
+
+    # Set atmosphere settings for Enceladus
+    body_settings.get("Enceladus").atmosphere_settings = Util.get_atmosphere_model_settings_enceladus()
+
+    # Create vehicle objects
+    body_settings.add_empty_settings("Vehicle")
+    body_settings.get("Vehicle").constant_mass = VehicleParam.mass
+
+    # Create aerodynamic coefficient interface settings
+    aero_coefficient_settings = numerical_simulation.environment_setup.aerodynamic_coefficients.constant(
+        VehicleParam.drag_reference_area, [VehicleParam.drag_coefficient, 0.0, 0.0]
+    )
+
+    # Add the aerodynamic interface to the environment
+    body_settings.get("Vehicle").aerodynamic_coefficient_settings = aero_coefficient_settings
+
+    # Create radiation pressure settings
+    radiation_pressure_settings = numerical_simulation.environment_setup.radiation_pressure.cannonball_radiation_target(
+        VehicleParam.radiation_pressure_reference_area, VehicleParam.radiation_pressure_coefficient, CovAnalysisConfig.occulting_bodies
+    )
+
+    # Add the radiation pressure interface to the environment
+    body_settings.get("Vehicle").radiation_pressure_target_settings = radiation_pressure_settings
+
+    # Create system of bodies
+    bodies = numerical_simulation.environment_setup.create_system_of_bodies(body_settings)
+
+    ###################################################################################################################
+    ### Propagation setup #############################################################################################
+    ###################################################################################################################
+
+    # Define bodies that are propagated
+    bodies_to_propagate = ["Vehicle"]
+
+    # Define central bodies of propagation
+    central_bodies = ["Enceladus"]
+
+    # Create global accelerations dictionary
+    acceleration_settings = {"Vehicle": CovAnalysisConfig.acceleration_settings_on_vehicle}
+
+    # Create acceleration models
+    acceleration_models = numerical_simulation.propagation_setup.create_acceleration_models(
+        bodies,
+        acceleration_settings,
+        bodies_to_propagate,
+        central_bodies
+    )
+
+    # Create numerical integrator settings
+    integrator_settings = CovAnalysisConfig.integrator_settings
+
+    arc_start_times = []
+    arc_end_times = []
+    arc_start = simulation_start_epoch
+    while arc_start + CovAnalysisConfig.arc_duration <= simulation_end_epoch:
+        arc_start_times.append(arc_start)
+        arc_end_times.append(arc_start + CovAnalysisConfig.arc_duration)
+        arc_start += CovAnalysisConfig.arc_duration
+
+    # Extract total number of propagationa arcs during science phase
+    nb_arcs = len(arc_start_times)
+    print(f'Total number of arcs for the science phase: {nb_arcs}')
+
+    
+
