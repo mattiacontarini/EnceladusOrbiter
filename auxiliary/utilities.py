@@ -374,3 +374,13 @@ def compute_integration_error(state_history_difference,
 
     return integration_error
 
+
+def array2dict(array):
+    dim = array.shape()
+
+    dictionary = dict()
+    for i in range(dim[0]):
+        key = array[i, 0]
+        dictionary[key] = array[i, 1:]
+
+    return dictionary
