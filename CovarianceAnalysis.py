@@ -15,6 +15,8 @@ from tudatpy.util import result2array
 from tudatpy import constants
 from tudatpy.astro import element_conversion
 from tudatpy.kernel.interface import spice_interface, spice
+from tudatpy.math import interpolators
+from tudatpy.numerical_simulation.estimation_setup import observation
 
 # Packages import
 import numpy as np
@@ -25,7 +27,7 @@ import matplotlib.patches as mpatches
 import os
 
 
-def covariance_analysis(initial_state,
+def covariance_analysis(initial_state_index,
                         save_results_flag,
                         simulation_start_epoch,
                         simulation_end_epoch,
@@ -41,7 +43,7 @@ def covariance_analysis(initial_state,
         time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
         # Define output folder
-        output_folder = "./output/covariance_analysis/"
+        output_folder = "./output/covariance_analysis"
 
         # Build output_path
         output_path = os.path.join(output_folder, time_stamp)
@@ -49,7 +51,8 @@ def covariance_analysis(initial_state,
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
-    kernels_to_load = ["./kernels/de438.bsp", "./kernels/sat427.bsp"]
+    kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+                       "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
     spice.load_standard_kernels(kernels_to_load)
 
     ###################################################################################################################
@@ -127,6 +130,19 @@ def covariance_analysis(initial_state,
         central_bodies
     )
 
+    # Retrieve the nominal base orbit
+    if initial_state_index == 1:
+        nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_1.dat")
+        nominal_state_history = Util.array2dict(nominal_state_history_array)
+    elif initial_state_index == 2:
+        nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_2.dat")
+        nominal_state_history = Util.array2dict(nominal_state_history_array)
+    elif initial_state_index == 3:
+        nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_3.dat")
+        nominal_state_history = Util.array2dict(nominal_state_history_array)
+    else:
+        raise ValueError("Initial state index not valid")
+
     # Create numerical integrator settings
     integrator_settings = CovAnalysisConfig.integrator_settings
 
@@ -142,5 +158,95 @@ def covariance_analysis(initial_state,
     nb_arcs = len(arc_start_times)
     print(f'Total number of arcs for the science phase: {nb_arcs}')
 
-    
+    # Define arc-wise initial states for the vehicle wrt Enceladus
+    initial_states = []
+    for i in range(nb_arcs):
+        if i == 0:
+            initial_state = nominal_state_history[simulation_start_epoch]
+            initial_states.append(initial_state)
+        else:
+            lagrange_interpolation_settings =interpolators.lagrange_interpolation(
+                number_of_points=CovAnalysisConfig.number_of_points
+            )
+            interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
+                                                                                    lagrange_interpolation_settings)
+            initial_state = interpolator(arc_start_times[i])
+            initial_states.append(initial_state)
+
+    # Define arc-wise propagator settings
+    propagator_settings_list = []
+    for i in range(nb_arcs):
+        propagator_settings_list.append(
+            numerical_simulation.propagation_setup.propagator.translational(
+                central_bodies,
+                acceleration_models,
+                bodies_to_propagate,
+                initial_states[i],
+                arc_start_times[i],
+                integrator_settings,
+                numerical_simulation.propagation_setup.propagator.time_termination(arc_end_times[i]),
+                numerical_simulation.propagation_setup.propagator.cowell,
+                CovAnalysisConfig.dependent_variables_to_save
+            )
+        )
+
+    # Concatenate all arc-wise propagator settings into multi-arc propagator settings
+    propagator_settings = numerical_simulation.propagation_setup.propagator.multi_arc(propagator_settings_list)
+
+    # Propagate dynamics and retrieve simulation results
+    dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
+    simulation_results = dynamics_simulator.propagation_results.single_arc_results
+
+    ###################################################################################################################
+    ### Observations setup ############################################################################################
+    ###################################################################################################################
+
+    # Create ground station settings
+    ground_station_names = CovAnalysisConfig.ground_station_names
+    ground_station_coordinates = CovAnalysisConfig.ground_station_coordinates
+    ground_station_coordinates_type = CovAnalysisConfig.ground_station_coordinates_type
+    for ground_station_name in ground_station_names:
+
+        ground_station_settings = numerical_simulation.environment_setup.ground_station.basic_station(
+            ground_station_name,
+            ground_station_coordinates[ground_station_name],
+            ground_station_coordinates_type[ground_station_name]
+        )
+        numerical_simulation.environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_settings)
+
+    # Define link ends for two-way Doppler and range observables, for each ground station
+    link_ends = []
+    for station in ground_station_names:
+        link_ends_per_station = dict()
+        link_ends_per_station[observation.transmitter]  = observation.body_reference_point_link_end_id(
+            "Earth", station
+        )
+        link_ends_per_station[observation.receiver] = observation.body_reference_point_link_end_id(
+            "Earth", station
+        )
+        link_ends_per_station[observation.reflector1] = observation.body_origin_link_end_id("Vehicle")
+        link_ends.append(link_ends_per_station)
+
+    # Define tracking arcs
+    tracking_arcs_start = []
+    tracking_arcs_end = []
+    for arc_start in arc_start_times:
+        tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_stat_of_propagation
+        tracking_arcs_start.append(tracking_arc_start)
+        tracking_arcs_end.append(tracking_arc_start + CovAnalysisConfig.tracking_arc_duration)
+
+    # Create observation settings for each link ends and observable
+    # Define light-time calculations settings
+    light_time_correction_settings = observation.first_order_relativistic_light_time_correction(["Sun"])
+    # Define range biases settings
+    biases = []
+    for i in range(nb_arcs):
+        biases.append(np.array([CovAnalysisConfig.range_bias]))
+    range_bias_settings = observation.arcwise_absolute_bias(tracking_arcs_start, biases, observation.receiver)
+
+    # Define observation settings list
+    observation_settings_list = []
+    for link_end in link_ends:
+        link_definition = observation.LinkDefinition(link_end)
+        observation_settings_list.append(o)
 
