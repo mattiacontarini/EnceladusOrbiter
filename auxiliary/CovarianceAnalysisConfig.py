@@ -4,6 +4,9 @@ from tudatpy import numerical_simulation
 from tudatpy.astro.time_conversion import DateTime
 from tudatpy.astro import element_conversion
 
+# Packages import
+import numpy as np
+
 #######################################################################################################################
 ### Configuration #####################################################################################################
 #######################################################################################################################
@@ -107,3 +110,11 @@ ground_station_coordinates_type = {ground_station_names[0]: element_conversion.c
 tracking_arc_duration = 8.0 * 3600.0
 tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
 range_bias = 1.5
+
+# Minimum elevation angle for visibility
+minimum_elevation_angle_visibility = np.deg2rad(15.0)
+minimum_sep_angle = np.deg2rad(5.0)
+
+# Measurements noise
+doppler_noise = ...
+range_noise = ...
