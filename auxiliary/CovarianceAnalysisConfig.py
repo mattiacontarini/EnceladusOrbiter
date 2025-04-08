@@ -58,7 +58,7 @@ acceleration_settings_on_vehicle = dict(
     ],
     Enceladus=[
         numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(3, 3),
-        numerical_simulation.propagation_setup.acceleration.aerodynamic()
+        # numerical_simulation.propagation_setup.acceleration.aerodynamic()
     ],
     Mimas=[
         numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
@@ -116,5 +116,5 @@ minimum_elevation_angle_visibility = np.deg2rad(15.0)
 minimum_sep_angle = np.deg2rad(5.0)
 
 # Measurements noise
-doppler_noise = ...
-range_noise = ...
+doppler_noise = 12.0e-6
+range_noise = 0.2

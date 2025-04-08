@@ -17,6 +17,7 @@ from tudatpy.astro import element_conversion
 from tudatpy.kernel.interface import spice_interface, spice
 from tudatpy.math import interpolators
 from tudatpy.numerical_simulation.estimation_setup import observation
+from tudatpy.plotting import trajectory_3d
 
 # Packages import
 import numpy as np
@@ -29,10 +30,6 @@ import os
 
 def covariance_analysis(initial_state_index,
                         save_results_flag,
-                        simulation_start_epoch,
-                        simulation_end_epoch,
-                        observation_start_epoch,
-                        observation_end_epoch,
                         ):
     ###################################################################################################################
     ### Configuration
@@ -84,9 +81,9 @@ def covariance_analysis(initial_state_index,
         "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
     # Set atmosphere settings for Enceladus
-    body_settings.get("Enceladus").atmosphere_settings = Util.get_atmosphere_model_settings_enceladus()
+    # body_settings.get("Enceladus").atmosphere_settings = Util.get_atmosphere_model_settings_enceladus()
 
-    # Create vehicle objects
+    # Create vehicle object
     body_settings.add_empty_settings("Vehicle")
     body_settings.get("Vehicle").constant_mass = VehicleParam.mass
 
@@ -105,6 +102,16 @@ def covariance_analysis(initial_state_index,
 
     # Add the radiation pressure interface to the environment
     body_settings.get("Vehicle").radiation_pressure_target_settings = radiation_pressure_settings
+
+    # Create empty multi-arc ephemeris for the vehicle
+    empty_ephemeris_dict = dict()
+    vehicle_ephemeris = numerical_simulation.environment_setup.ephemeris.tabulated(
+        empty_ephemeris_dict,
+        CovAnalysisConfig.global_frame_origin,
+        CovAnalysisConfig.global_frame_orientation
+    )
+    vehicle_ephemeris.make_multi_arc_ephemeris = True
+    body_settings.get("Vehicle").ephemeris_settings = vehicle_ephemeris
 
     # Create system of bodies
     bodies = numerical_simulation.environment_setup.create_system_of_bodies(body_settings)
@@ -148,8 +155,8 @@ def covariance_analysis(initial_state_index,
 
     arc_start_times = []
     arc_end_times = []
-    arc_start = simulation_start_epoch
-    while arc_start + CovAnalysisConfig.arc_duration <= simulation_end_epoch:
+    arc_start = CovAnalysisConfig.simulation_start_epoch
+    while arc_start + CovAnalysisConfig.arc_duration <= CovAnalysisConfig.simulation_end_epoch:
         arc_start_times.append(arc_start)
         arc_end_times.append(arc_start + CovAnalysisConfig.arc_duration)
         arc_start += CovAnalysisConfig.arc_duration
@@ -162,7 +169,7 @@ def covariance_analysis(initial_state_index,
     initial_states = []
     for i in range(nb_arcs):
         if i == 0:
-            initial_state = nominal_state_history[simulation_start_epoch]
+            initial_state = nominal_state_history[CovAnalysisConfig.simulation_start_epoch]
             initial_states.append(initial_state)
         else:
             lagrange_interpolation_settings =interpolators.lagrange_interpolation(
@@ -170,7 +177,7 @@ def covariance_analysis(initial_state_index,
             )
             interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
                                                                                     lagrange_interpolation_settings)
-            initial_state = interpolator(arc_start_times[i])
+            initial_state = interpolator.interpolate(arc_start_times[i])
             initial_states.append(initial_state)
 
     # Define arc-wise propagator settings
@@ -363,8 +370,8 @@ def covariance_analysis(initial_state_index,
     inv_apriori = np.zeros((nb_parameters, nb_parameters))
 
     # Set a priori constraints for vehicle states
-    a_priori_position = ...
-    a_priori_velocity = ...
+    a_priori_position = 5.0e3
+    a_priori_velocity = 0.5
     indices_states = parameters_to_estimate.indices_for_parameter_type((
         numerical_simulation.estimation_setup.parameter.arc_wise_initial_body_state_type, ("Vehicle", "")))[0]
     for i in range(indices_states[1]//6):
@@ -399,4 +406,28 @@ def covariance_analysis(initial_state_index,
     print("Formal errors")
     print(formal_errors)
 
+    # Get simulation results over first propagation arc
+    simulation_results_first_arc = simulation_results[0]
+    state_history_first_arc = simulation_results_first_arc.state_history
+    dependent_variables_first_arc = result2array(simulation_results_first_arc.dependent_variable_history)
 
+    fig = trajectory_3d(state_history_first_arc,
+                        ["Vehicle"],
+                        "Enceladus",
+                        [],
+                        "J2000",
+                        True)
+
+
+
+def main():
+
+    initial_state_index = 1
+    save_results_flag = False
+
+    covariance_analysis(initial_state_index,
+                        save_results_flag)
+
+
+if __name__ == "__main__":
+    main()
