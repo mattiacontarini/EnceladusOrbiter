@@ -248,5 +248,155 @@ def covariance_analysis(initial_state_index,
     observation_settings_list = []
     for link_end in link_ends:
         link_definition = observation.LinkDefinition(link_end)
-        observation_settings_list.append(o)
+        range_observation = observation.two_way_range(link_definition,
+                                                      [light_time_correction_settings],
+                                                      range_bias_settings)
+        doppler_observation = observation.two_way_doppler_averaged(link_definition,
+                                                                   [light_time_correction_settings])
+        observation_settings_list.append(doppler_observation)
+        observation_settings_list.append(range_observation)
+
+    # Define observation simulation times for both Doppler and range observarbles
+    doppler_cadence = 60
+    range_cadence = 300.0
+
+    observation_times_doppler = []
+    observation_times_range = []
+
+    for i in range(nb_arcs):
+
+        # Doppler observables
+        time = tracking_arcs_start[i]
+        while time <= tracking_arcs_end[i]:
+            observation_times_doppler.append(time)
+            time += doppler_cadence
+
+        # Range observables
+        time = tracking_arcs_start[i]
+        while time <= tracking_arcs_end[i]:
+            observation_times_range.append(time)
+            time += range_cadence
+
+
+    observation_times_per_type = dict()
+    observation_times_per_type[observation.n_way_averaged_doppler_type] = observation_times_doppler
+    observation_times_per_type[observation.n_way_range_type] = observation_times_range
+
+    # Define observation settings for both observables, and all link ends (i.e., all ground stations)
+    observation_simulation_settings = []
+    for link_end in link_ends:
+        # Doppler observables
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(
+            observation.n_way_averaged_doppler_type,
+            observation.LinkDefinition(link_end),
+            observation_times_per_type[observation.n_way_averaged_doppler_type]
+        ))
+
+        # Range observables
+        observation_simulation_settings.append(observation.tabulated_simulation_settings(
+            observation.n_way_range_type,
+            observation.LinkDefinition(link_end),
+            observation_times_per_type[observation.n_way_range_type]
+        ))
+
+    # Create viability settings which define when an observation is feasible
+    viability_settings = []
+
+    # For all tracking stations, check if elevation is sufficient
+    for station in ground_station_names:
+        viability_settings.append(observation.elevation_angle_viability(
+            ["Earth", station],
+            CovAnalysisConfig.minimum_elevation_angle_visibility)
+        )
+
+    # Check whether Enceladus or Saturn are occulting the signal
+    viability_settings.append(observation.body_occultation_viability(["Vehicle", ""], "Enceladus"))
+    viability_settings.append(observation.body_occultation_viability(["Vehicle", ""], "Saturn"))
+
+    # Check whether SEP angle is sufficiently large
+    viability_settings.append(observation.body_avoidance_viability(["Vehicle", ""],
+                                                                   "Sun",
+                                                                   CovAnalysisConfig.minimum_sep_angle))
+
+    # Apply viability checks to all simulated observations
+    observation.add_viability_check_to_all(
+        observation_simulation_settings,
+        viability_settings
+    )
+
+    ###################################################################################################################
+    ### Estimation setup
+    ###################################################################################################################
+
+    # Define parameters to estimate
+    # Add arc-wise initial states of the vehicle wrt Enceladus
+    parameter_settings = numerical_simulation.estimation_setup.parameter.initial_states(propagator_settings,
+                                                                                        bodies,
+                                                                                        arc_start_times)
+
+    # Create parameters to estimate object
+    parameters_to_estimate = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings,
+                                                                                        bodies,
+                                                                                        propagator_settings) # consider_parameter_settings
+    numerical_simulation.estimation_setup.print_parameter_names(parameters_to_estimate)
+    nb_parameters = len(parameters_to_estimate.parameter_vector)
+    print(f"Total number of parameters to estimate: {nb_parameters}")
+
+    # Create the estimator
+    estimator = numerical_simulation.Estimator(bodies,
+                                               parameters_to_estimate,
+                                               observation_settings_list,
+                                               propagator_settings)
+
+    # Simulate required observations
+    simulated_observations = numerical_simulation.estimation.simulate_observations(
+        observation_simulation_settings,
+        estimator.observation_simulators,
+        bodies
+    )
+
+    ###################################################################################################################
+    ### Covariance analysis
+    ###################################################################################################################
+
+    # Define a priori covariance matrix
+    inv_apriori = np.zeros((nb_parameters, nb_parameters))
+
+    # Set a priori constraints for vehicle states
+    a_priori_position = ...
+    a_priori_velocity = ...
+    indices_states = parameters_to_estimate.indices_for_parameter_type((
+        numerical_simulation.estimation_setup.parameter.arc_wise_initial_body_state_type, ("Vehicle", "")))[0]
+    for i in range(indices_states[1]//6):
+        for j in range(3):
+            inv_apriori[indices_states[0]+i*6+j, indices_states[0]+i*6+j] = a_priori_position**-2
+            inv_apriori[indices_states[0] + i * 6 + j + 3, indices_states[0] + i * 6 + j + 3] = a_priori_velocity ** -2
+
+    # Retrieve full vector of a priori constraints
+    apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
+
+    # Create input object for covariance analysis
+    covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations, inv_apriori) # consider_covariance
+    covariance_input.define_covariance_settings(reintegrate_variational_equations=False, save_design_matrix=True)
+
+    # Apply weights to simulated observations
+    doppler_noise = CovAnalysisConfig.doppler_noise
+    range_noise = CovAnalysisConfig.range_noise
+    weights_per_observable = {observation.n_way_averaged_doppler_type: doppler_noise ** -2,
+                              observation.n_way_range_type: range_noise ** -2,}
+    covariance_input.set_constant_weight_per_observable(weights_per_observable)
+
+    # Perform the covariance analysis
+    covariance_output = estimator.compute_covariance(covariance_input)
+
+    # Retrieve covariance results
+    correlations = covariance_output.correlations
+    covariance = covariance_output.covariance
+    formal_errors = covariance_output.formal_errors
+    partials = covariance_output.weighted_design_matrix
+
+    # Print the formal errors
+    print("Formal errors")
+    print(formal_errors)
+
 
