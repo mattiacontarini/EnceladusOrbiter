@@ -167,13 +167,15 @@ class OrbitPropagator:
         # Create radiation pressure settings
         reference_area = VehicleParam.radiation_pressure_reference_area
         radiation_pressure_coefficient = VehicleParam.radiation_pressure_coefficient
-        occulting_bodies = ["Enceladus"]
-        radiation_pressure_settings = environment_setup.radiation_pressure.cannonball(
-            "Sun", reference_area, radiation_pressure_coefficient, occulting_bodies
+        occulting_bodies = dict(
+            Sun=["Enceladus"]
+        )
+        radiation_pressure_target_settings = environment_setup.radiation_pressure.cannonball_radiation_target(
+            reference_area, radiation_pressure_coefficient, occulting_bodies
         )
 
         # Add the radiation pressure interface to the environment
-        environment_setup.add_radiation_pressure_interface(bodies, "Vehicle", radiation_pressure_settings)
+        environment_setup.add_radiation_pressure_target_model(bodies, "Vehicle", radiation_pressure_target_settings)
 
         # Create acceleration models
         acceleration_models = propagation_setup.create_acceleration_models(
