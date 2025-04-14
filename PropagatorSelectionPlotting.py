@@ -1,0 +1,163 @@
+
+# Tudat import
+from tudatpy import constants
+from tudatpy import numerical_simulation
+
+# General imports
+import matplotlib.pyplot as plt
+import matplotlib.lines as mlines
+import numpy as np
+
+def main():
+    # Select input folder
+    input_folder = "./output/propagator_selection/2025.04.14.10.32.58"
+
+    # Select time steps for fixed step size integrator
+    fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
+
+    # Select coefficient sets for fixed step size integrator
+    fixed_step_integrator_coefficients = [numerical_simulation.propagation_setup.integrator.CoefficientSets.rk_4,
+                                          numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_45,
+                                          numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56,
+                                          numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_78,
+                                          numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_89,
+                                          numerical_simulation.propagation_setup.integrator.CoefficientSets.rkdp_87]
+
+    # Names of coefficient sets
+    fixed_step_integrator_coefficients_name = ["RK4",
+                                               "RKF4(5)",
+                                               "RKF5(6)",
+                                               "RKF7(8)",
+                                               "RKF8(9)",
+                                               "RKDP8(7)"]
+
+    # Line-styles for coefficient sets
+    linestyles_coefficient_sets = ["-",
+                                   ":",
+                                   "-.",
+                                   "--",
+                                   (0, (3, 1, 1, 1, 1, 1)),
+                                   (0, (5, 1))]
+
+    # Colors for fixed time steps
+    colors_step_sizes = ["red",
+                         "blue",
+                         "green",
+                         "orange",
+                         "purple",
+                         "cyan",
+                         "lime",
+                         "fuchsia"]
+
+    # Maked handles for step sizes
+    step_sizes_legend_handles = []
+    for i in range(len(colors_step_sizes)):
+        handle = mlines.Line2D([],
+                               [],
+                               linestyle="-",
+                               color=colors_step_sizes[i],
+                               label=r"$\Delta t = $" + str(fixed_step_sizes[i]) + " s")
+
+        step_sizes_legend_handles.append(handle)
+
+    # Make handles for coefficients sets
+    coefficient_sets_legend_handles = []
+    for i in range(len(linestyles_coefficient_sets)):
+        handle = mlines.Line2D([],
+                               [],
+                               linestyle=linestyles_coefficient_sets[i],
+                               color="black",
+                               label=fixed_step_integrator_coefficients_name[i])
+        coefficient_sets_legend_handles.append(handle)
+
+    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(figsize=(8, 8), constrained_layout=True, nrows=3, ncols=2)
+    for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+
+        coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+        coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+        linestyle = linestyles_coefficient_sets[coefficient_set_index]
+
+        if coefficient_set_index == 0:
+            ax = ax1
+        elif coefficient_set_index == 1:
+            ax = ax2
+        elif coefficient_set_index == 2:
+            ax = ax3
+        elif coefficient_set_index == 3:
+            ax = ax4
+        elif coefficient_set_index == 4:
+            ax = ax5
+        elif coefficient_set_index == 5:
+            ax = ax6
+
+        for fixed_step_size in fixed_step_sizes:
+            file_path = (input_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                         "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
+
+            first_benchmark_integration_error_array = np.loadtxt(file_path)
+
+            color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
+            ax.plot(first_benchmark_integration_error_array[1:, 0] / constants.JULIAN_DAY,
+                    first_benchmark_integration_error_array[1:, 1], linestyle="-", color=color)
+            ax.grid(True)
+            ax.set_yscale("log")
+            ax.set_title(coefficient_set_name)
+
+        if coefficient_set_index == 4 or coefficient_set_index == 5:
+            ax.set_xlabel("Relative epoch [days]")
+        if coefficient_set_index == 0 or coefficient_set_index == 2 or coefficient_set_index == 4:
+            ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
+
+    ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2,)
+    #plt.tight_layout()
+    plt.savefig(input_folder + "/integration_error.pdf")
+    plt.close()
+
+    fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(figsize=(8, 8), constrained_layout=True, nrows=3, ncols=2)
+    for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+
+        coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+        coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+        linestyle = linestyles_coefficient_sets[coefficient_set_index]
+
+        if coefficient_set_index == 0:
+            ax = ax1
+        elif coefficient_set_index == 1:
+            ax = ax2
+        elif coefficient_set_index == 2:
+            ax = ax3
+        elif coefficient_set_index == 3:
+            ax = ax4
+        elif coefficient_set_index == 4:
+            ax = ax5
+        elif coefficient_set_index == 5:
+            ax = ax6
+
+        for fixed_step_size in fixed_step_sizes:
+            file_path = (input_folder + "/" + "benchmark_1_fixed_step_" + str(fixed_step_size) +
+                         "_coefficient_set_" + coefficient_set_name + '_computational_time.dat')
+
+            first_benchmark_computational_time = np.loadtxt(file_path)
+
+            color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
+            ax.plot(fixed_step_size,
+                    first_benchmark_computational_time, linestyle=" ", marker="o", color=color)
+            ax.grid(True)
+            ax.set_title(coefficient_set_name)
+            ax.set_ylim(bottom=0)
+
+        if coefficient_set_index == 4 or coefficient_set_index == 5:
+            ax.set_xlabel("Step size [s]")
+        if coefficient_set_index == 0 or coefficient_set_index == 2 or coefficient_set_index == 4:
+            ax.set_ylabel("Total computational time [s]")
+
+    # ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, )
+    # plt.tight_layout()
+    plt.savefig(input_folder + "/total_computational_time.pdf")
+    plt.close()
+
+
+
+
+if __name__ == "__main__":
+    main()
