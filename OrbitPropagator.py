@@ -82,17 +82,6 @@ class OrbitPropagator:
                 body_name_to_use="5"
             )
 
-        # Set rotation model settings for Enceladus
-        """
-        synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(self.simulation_start_epoch)
-        initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("ECLIPJ2000",
-                                                                                     "IAU_Enceladus",
-                                                                                     self.simulation_start_epoch)
-        body_settings.get("Enceladus").rotation_model_settings = environment_setup.rotation_model.simple(
-            "ECLIPJ2000", "IAU_Enceladus", initial_orientation_enceladus,
-            self.simulation_start_epoch, synodic_rotation_rate_enceladus)
-        """
-
         # Set gravity field settings for Enceladus
         body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
         body_settings.get(
@@ -141,27 +130,11 @@ class OrbitPropagator:
         # Create vehicle object and add properties
         bodies.create_empty_body("Vehicle")
         bodies.get("Vehicle").mass = VehicleParam.mass
-
-        # Create aerodynamic coefficient settings
-        reference_area = VehicleParam.drag_reference_area
-        drag_coefficient = VehicleParam.drag_coefficient
-        aero_coefficient_settings = environment_setup.aerodynamic_coefficients.constant(
-            reference_area, [drag_coefficient, 0.0, 0.0]
+        occulting_bodies = {"Sun": ["Enceladus"]}
+        vehicle_srp_settings = numerical_simulation.environment_setup.radiation_pressure.cannonball_radiation_target(
+            VehicleParam.radiation_pressure_reference_area, VehicleParam.radiation_pressure_coefficient, occulting_bodies
         )
-
-        # Add the aerodynamic interface to the environment
-        environment_setup.add_aerodynamic_coefficient_interface(bodies, "Vehicle", aero_coefficient_settings)
-
-        # Create radiation pressure settings
-        reference_area = VehicleParam.radiation_pressure_reference_area
-        radiation_pressure_coefficient = VehicleParam.radiation_pressure_coefficient
-        occulting_bodies = ["Enceladus"]
-        radiation_pressure_settings = environment_setup.radiation_pressure.cannonball(
-            "Sun", reference_area, radiation_pressure_coefficient, occulting_bodies
-        )
-
-        # Add the radiation pressure interface to the environment
-        environment_setup.add_radiation_pressure_interface(bodies, "Vehicle", radiation_pressure_settings)
+        environment_setup.add_radiation_pressure_target_model(bodies, "Vehicle", vehicle_srp_settings)
 
         # Create acceleration models
         acceleration_models = propagation_setup.create_acceleration_models(

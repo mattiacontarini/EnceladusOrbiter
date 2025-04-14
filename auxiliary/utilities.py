@@ -267,10 +267,9 @@ def generate_benchmarks(initial_state,
                         output_path,
                         are_dependent_variables_present=True
                         ):
-
     # Define benchmarks' step sizes
     first_benchmark_step_size = benchmark_step_size
-    second_benchmark_step_size = first_benchmark_step_size / 2
+    second_benchmark_step_size = first_benchmark_step_size / 4
 
     # Create integrator settings for the first benchmark, using a fixed step size integrator
     first_benchmark_integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
@@ -280,7 +279,8 @@ def generate_benchmarks(initial_state,
     UDP.integrator_settings = first_benchmark_integrator_settings
 
     # Retrieve state and dependent variable history for the first benchmark
-    [first_benchmark_state_history, first_benchmark_dependent_variable_history, first_benchmark_computational_time] = UDP.retrieve_history(initial_state)
+    [first_benchmark_state_history, first_benchmark_dependent_variable_history,
+     first_benchmark_computational_time] = UDP.retrieve_history(initial_state)
 
     # Create integrator settings for the second benchmark in the same way
     second_benchmark_integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
@@ -290,7 +290,8 @@ def generate_benchmarks(initial_state,
     UDP.integrator_settings = second_benchmark_integrator_settings
 
     # Retrieve state and dependent variable history for the first benchmark
-    [second_benchmark_state_history, second_benchmark_dependent_variable_history, second_benchmark_computational_time] = UDP.retrieve_history(initial_state)
+    [second_benchmark_state_history, second_benchmark_dependent_variable_history,
+     second_benchmark_computational_time] = UDP.retrieve_history(initial_state)
 
     # Write results to files
     if output_path is not None:
@@ -319,6 +320,9 @@ def generate_benchmarks(initial_state,
                      'benchmark_2_fixed_step_' + str(second_benchmark_step_size) + "_coefficient_set_" +
                      coefficient_set_name + '_dependent_variables.dat',
                      output_path)
+            np.savetxt(output_path + "/benchmark_1_fixed_step_" + str(first_benchmark_step_size) + "_coefficient_set_" +
+                       coefficient_set_name + "_computational_time.dat",
+                       [first_benchmark_computational_time])
 
         # Add items to be returned
         return_list.append(first_benchmark_dependent_variable_history)
@@ -332,7 +336,6 @@ def compute_benchmarks_state_history_difference(first_benchmark_state_history,
                                                 first_benchmark_step_size,
                                                 coefficient_set_name,
                                                 output_path):
-
     state_history_difference = dict()
 
     first_benchmark_epochs = list(first_benchmark_state_history.keys())
@@ -352,7 +355,6 @@ def compute_integration_error(state_history_difference,
                               first_benchmark_step_size,
                               coefficient_set_name,
                               output_path):
-
     epochs = list(state_history_difference.keys())
     integration_error = dict()
 
@@ -365,4 +367,3 @@ def compute_integration_error(state_history_difference,
              output_path)
 
     return integration_error
-

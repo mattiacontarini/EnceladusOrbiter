@@ -11,27 +11,14 @@ simulation_end_epoch = simulation_start_epoch + simulation_duration
 termination_altitude = 0.0
 
 # Bodies included in the environment model
-bodies_to_create = ["Sun",
-                    "Saturn",
+bodies_to_create = ["Saturn",
                     "Enceladus",
-                    #"Mimas",
-                    #"Tethys",
-                    #"Dione",
-                    #"Rhea",
-                    #"Titan",
-                    #"Hyperion"
-                    ]
-
-bodies_list = ["Sun",
-               "Saturn",
-               "Enceladus",
-               "Mimas",
-               "Tethys",
-               "Dione",
-               "Rhea",
-               "Titan",
-               "Hyperion",
-               "Jupiter_barycenter"]
+                    "Sun",
+                    "Mimas",
+                    "Tethys",
+                    "Dione",
+                    "Rhea",
+                    "Titan"]
 
 Jupiter_barycenter_flag = False
 
@@ -46,6 +33,25 @@ acceleration_settings_on_vehicle = dict(
     ],
     Enceladus=[
         numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(max_degree_order["Enceladus"][0], max_degree_order["Enceladus"][1])
+    ],
+    Sun=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity(),
+        numerical_simulation.propagation_setup.acceleration.radiation_pressure()
+    ],
+    Mimas=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Tethys=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Dione=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Rhea=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Titan=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ]
 )
 
