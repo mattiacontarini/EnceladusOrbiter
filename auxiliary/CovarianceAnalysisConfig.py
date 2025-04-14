@@ -13,7 +13,7 @@ import numpy as np
 
 # Simulation epochs
 simulation_start_epoch = DateTime(2000, 1, 1).epoch()  # From Benedikter et al. (2022)
-simulation_duration = 20.52 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
+simulation_duration = 28 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
 simulation_end_epoch = simulation_start_epoch + simulation_duration
 
 
@@ -93,6 +93,7 @@ dependent_variables_to_save = [
     numerical_simulation.propagation_setup.dependent_variable.altitude("Vehicle", "Enceladus"),
     numerical_simulation.propagation_setup.dependent_variable.latitude("Vehicle", "Enceladus"),
     numerical_simulation.propagation_setup.dependent_variable.longitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.total_acceleration("Vehicle")
 ]
 
 #######################################################################################################################
@@ -100,16 +101,52 @@ dependent_variables_to_save = [
 #######################################################################################################################
 
 # Ground stations properties
+"""
 ground_station_names = ["CoM"]
 ground_station_coordinates = {
     ground_station_names[0]: [0, 0, 0]
 }
 ground_station_coordinates_type = {ground_station_names[0]: element_conversion.cartesian_position_type}
+"""
+ground_station_names = ["Malargue", "NewNorcia", "Cebreros"]
+ground_station_coordinates = {
+    ground_station_names[0]: [1550.0, np.deg2rad(-35.0), np.deg2rad(-69.0)],
+    ground_station_names[1]: [252.0, np.deg2rad(-31.0), np.deg2rad(116.0)],
+    ground_station_names[2]: [794.0, np.deg2rad(40.0), np.deg2rad(-4.0)]
+}
+ground_station_coordinates_type = {ground_station_names[0]: element_conversion.geodetic_position_type,
+                                   ground_station_names[1]: element_conversion.geodetic_position_type,
+                                   ground_station_names[2]: element_conversion.geodetic_position_type}
+
 
 # Tracking arcs properties
 tracking_arc_duration = 8.0 * 3600.0
 tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
 range_bias = 1.5
+
+# Minimum D/O for spherical harmonic cosine coefficients of Enceladus
+minimum_degree_c_enceladus = 2
+minimum_order_c_enceladus  = 0
+maximum_degree_gravity_enceladus = 30
+
+# Minimum D/O for spherical harmonic sine coefficients of Enceladus
+minimum_degree_s_enceladus = 2
+minimum_order_s_enceladus  = 1
+
+# A priori constraints on the arc-wise initial state of the vehicle
+a_priori_position = 5.0e3
+a_priori_velocity = 0.5
+
+# A priori constraints on gravitational parameter of Enceladus
+a_priori_gravitational_parameter_enceladus = 0.03e9
+
+# A priori constraints on gravity field coefficients of Enceladus - Park et al., 2024
+a_priori_c20 = 36.99e-6
+a_priori_c21 = 13.66e-6
+a_priori_c22 = 14.70e-6
+a_priori_c30 = 33.42e-6
+a_priori_s21 = 9.19e-6
+a_priori_s22 = 10.87e-6
 
 # Minimum elevation angle for visibility
 minimum_elevation_angle_visibility = np.deg2rad(15.0)

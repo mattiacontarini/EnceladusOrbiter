@@ -36,4 +36,8 @@ for i in range(len(initial_states)):
              f"nominal_state_history_{i + 1}.dat",
              output_path)
 
+    save2txt(dependent_variable_history,
+             f"nominal_dependent_variable_history_{i + 1}.dat",
+             output_path)
+
 

@@ -12,7 +12,7 @@ from tudatpy.kernel.astro import gravitation
 from tudatpy import numerical_simulation
 from tudatpy.astro import element_conversion
 from tudatpy import constants
-from tudatpy import plotting
+from tudatpy.math import interpolators
 
 # Packages import
 import os
@@ -71,42 +71,6 @@ def save_propagation_setup(propagation_setup,
     save2txt(propagation_setup, "propagation_setup.dat", results_folder)
 
 
-def plot_trajectory(state_history,
-                    output_folder,
-                    time_stamp,
-                    orbit_ID,
-                    color):
-    fig, ax = plotting.trajectory_3d(state_history,
-                                     ["Vehicle"],
-                                     "Enceladus",
-                                     [],
-                                     "J2000",
-                                     True,
-                                     color
-                                     )
-    # epochs = list(state_history.keys())
-    # ax.plot(state_history[epochs[0]][:3], marker='o', color='blue', label="Start")
-    # plt.legend(loc='best')
-
-    Enceladus_radius = spice.get_average_radius("Enceladus")
-
-    u = np.linspace(0, 2 * np.pi, 200)
-    v = np.linspace(0, np.pi, 200)
-    x = np.outer(np.cos(u), Enceladus_radius * np.sin(v))
-    y = np.outer(np.sin(u), Enceladus_radius * np.sin(v))
-    z = np.outer(np.ones(np.size(u)), Enceladus_radius * np.cos(v))
-    ax.plot_surface(x, y, z, color='blue', alpha=0.5)
-
-    plt.tight_layout()
-    #plt.title(orbit_ID, loc="left")
-
-    os.makedirs(output_folder, exist_ok=True)
-    results_folder = output_folder + "/" + time_stamp
-    os.makedirs(results_folder, exist_ok=True)
-    plt.savefig(results_folder + "/trajectory_3d.png")
-    plt.close()
-
-
 def get_gravity_field_settings_enceladus_park():
     enceladus_gravitational_parameter = 7.210366688598896E+9
 
@@ -158,6 +122,17 @@ def get_synodic_rotation_model_enceladus(simulation_initial_epoch):
     rotation_rate_enceladus = np.sqrt(saturn_gravitational_parameter / keplerian_state_enceladus[0] ** 3)
 
     return rotation_rate_enceladus
+
+
+def atmospheric_density_function_enceladus(h, lon, lat, time):
+    data_coordinates = np.array([
+        [48.0e3, np.deg2rad(-20), np.deg2rad(360-135)],
+        [29.0e3, np.deg2rad(-28), np.deg2rad(360-97)],
+        [103.0e3, np.deg2rad(-82), np.deg2rad(360-159)],
+        [103.0e3, np.deg2rad(-89), np.deg2rad(360-147)],
+        [9.0e3, np.deg2rad(-90), np.deg2rad(360-128)],
+        [49.0e3, np.deg2rad(-87.5), np.deg2rad(360-71)]
+    ])
 
 
 
@@ -220,6 +195,27 @@ def get_gravity_field_settings_saturn_iess():
     return saturn_gravity_field_settings
 
 
+def get_kaula_constraint(kaula_constraint_multiplier, degree):
+    return kaula_constraint_multiplier / degree ** 2
+
+
+def apply_kaula_constraint_a_priori(kaula_constraint_multiplier, max_deg_gravity, indices_cosine_coef, indices_sine_coef, inv_apriori):
+
+    index_cosine_coef = indices_cosine_coef[0]
+    index_sine_coef = indices_sine_coef[0]
+
+    for deg in range(2, max_deg_gravity + 1):
+        kaula_constraint = get_kaula_constraint(kaula_constraint_multiplier, deg)
+        for order in range(deg + 1):
+            inv_apriori[index_cosine_coef, index_cosine_coef] = kaula_constraint ** -2
+            index_cosine_coef += 1
+        for order in range(1, deg + 1):
+            inv_apriori[index_sine_coef, index_sine_coef] = kaula_constraint ** -2
+            index_sine_coef += 1
+
+    return inv_apriori
+
+
 def save_population(population, index, output_path):
     IDs = np.atleast_2d(population.get_ID()).T
     individuals = population.get_x()
@@ -231,42 +227,6 @@ def save_population(population, index, output_path):
     os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
     np.savetxt(file_path, population)
-
-
-def compute_change_of_average_fitness(fitness_list):
-    average_fitness_old = compute_average_fitness_multiple_populations(
-        fitness_list[: len(fitness_list) - 1]
-    )
-    average_fitness_new = compute_average_fitness_of_population(
-        fitness_list[len(fitness_list) - 1]
-    )
-
-    fitness_change = np.abs(
-        (average_fitness_new - average_fitness_old) / average_fitness_old
-    )
-
-    return fitness_change
-
-
-def compute_average_fitness_multiple_populations(fitness_list):
-    number_of_populations = len(fitness_list)
-    average_fitness_populations = []
-    for i in range(number_of_populations):
-        current_average_fitness = (
-            compute_average_fitness_of_population(fitness_list[i])
-        )
-        average_fitness_populations.append(current_average_fitness)
-
-    average_fitness = np.mean(average_fitness_populations)
-    return average_fitness
-
-
-def compute_average_fitness_of_population(fitness_points):
-    # Create auxiliary variable with all points
-
-    fitness_average = np.mean(fitness_points)
-
-    return fitness_average
 
 
 def generate_benchmarks(initial_state,

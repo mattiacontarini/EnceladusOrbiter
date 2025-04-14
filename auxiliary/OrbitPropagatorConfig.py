@@ -5,7 +5,7 @@ from tudatpy.astro.time_conversion import DateTime
 
 # Simulation timeline
 simulation_start_epoch = DateTime(2000, 1, 1).epoch()  # From Benedikter et al. (2022)
-simulation_duration = 20.52 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
+simulation_duration = 28 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
 simulation_end_epoch = simulation_start_epoch + simulation_duration
 
 termination_altitude = 0.0
@@ -32,7 +32,7 @@ acceleration_settings_on_vehicle = dict(
 )
 
 # Create numerical integrator settings
-fixed_step_size = 1
+fixed_step_size = 15
 integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
     fixed_step_size,
     numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56,
@@ -41,6 +41,9 @@ integrator_settings = numerical_simulation.propagation_setup.integrator.runge_ku
 
 dependent_variables_to_save = [
     numerical_simulation.propagation_setup.dependent_variable.altitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.latitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.longitude("Vehicle", "Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.total_acceleration("Vehicle")
 ]
 
 

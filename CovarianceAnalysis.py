@@ -4,9 +4,9 @@
 
 # Files and variables import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
-from auxiliary import BenedikterInitialStates as Benedikter
 from auxiliary import VehicleParameters as VehicleParam
 from auxiliary import utilities as Util
+from auxiliary import plotting_utilities as PlottingUtil
 
 # Tudat import
 from tudatpy import numerical_simulation
@@ -44,7 +44,13 @@ def covariance_analysis(initial_state_index,
 
         # Build output_path
         output_path = os.path.join(output_folder, time_stamp)
+        covariance_results_output_path = os.path.join(output_path, "covariance_results")
+        simulation_results_output_path = os.path.join(output_path, "simulation_results")
+        plots_output_path = os.path.join(output_path, "plots")
         os.makedirs(output_path, exist_ok=True)
+        os.makedirs(covariance_results_output_path, exist_ok=True)
+        os.makedirs(simulation_results_output_path, exist_ok=True)
+        os.makedirs(plots_output_path, exist_ok=True)
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -62,11 +68,13 @@ def covariance_analysis(initial_state_index,
                                                                                      CovAnalysisConfig.global_frame_orientation)
 
     # Set rotation model settings for Enceladus
-    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(CovAnalysisConfig.simulation_start_epoch)
+    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(
+        CovAnalysisConfig.simulation_start_epoch)
     initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                  "IAU_Enceladus",
                                                                                  CovAnalysisConfig.simulation_start_epoch)
-    body_settings.get("Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
+    body_settings.get(
+        "Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
         "J2000", "IAU_Enceladus", initial_orientation_enceladus,
         CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
@@ -97,7 +105,8 @@ def covariance_analysis(initial_state_index,
 
     # Create radiation pressure settings
     radiation_pressure_settings = numerical_simulation.environment_setup.radiation_pressure.cannonball_radiation_target(
-        VehicleParam.radiation_pressure_reference_area, VehicleParam.radiation_pressure_coefficient, CovAnalysisConfig.occulting_bodies
+        VehicleParam.radiation_pressure_reference_area, VehicleParam.radiation_pressure_coefficient,
+        CovAnalysisConfig.occulting_bodies
     )
 
     # Add the radiation pressure interface to the environment
@@ -172,7 +181,7 @@ def covariance_analysis(initial_state_index,
             initial_state = nominal_state_history[CovAnalysisConfig.simulation_start_epoch]
             initial_states.append(initial_state)
         else:
-            lagrange_interpolation_settings =interpolators.lagrange_interpolation(
+            lagrange_interpolation_settings = interpolators.lagrange_interpolation(
                 number_of_points=CovAnalysisConfig.number_of_points
             )
             interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
@@ -213,7 +222,6 @@ def covariance_analysis(initial_state_index,
     ground_station_coordinates = CovAnalysisConfig.ground_station_coordinates
     ground_station_coordinates_type = CovAnalysisConfig.ground_station_coordinates_type
     for ground_station_name in ground_station_names:
-
         ground_station_settings = numerical_simulation.environment_setup.ground_station.basic_station(
             ground_station_name,
             ground_station_coordinates[ground_station_name],
@@ -225,7 +233,7 @@ def covariance_analysis(initial_state_index,
     link_ends = []
     for station in ground_station_names:
         link_ends_per_station = dict()
-        link_ends_per_station[observation.transmitter]  = observation.body_reference_point_link_end_id(
+        link_ends_per_station[observation.transmitter] = observation.body_reference_point_link_end_id(
             "Earth", station
         )
         link_ends_per_station[observation.receiver] = observation.body_reference_point_link_end_id(
@@ -284,7 +292,6 @@ def covariance_analysis(initial_state_index,
             observation_times_range.append(time)
             time += range_cadence
 
-
     observation_times_per_type = dict()
     observation_times_per_type[observation.n_way_averaged_doppler_type] = observation_times_doppler
     observation_times_per_type[observation.n_way_range_type] = observation_times_range
@@ -340,11 +347,26 @@ def covariance_analysis(initial_state_index,
     parameter_settings = numerical_simulation.estimation_setup.parameter.initial_states(propagator_settings,
                                                                                         bodies,
                                                                                         arc_start_times)
+    # Add gravitational parameter of Enceladus
+    parameter_settings.append(numerical_simulation.estimation_setup.parameter.gravitational_parameter("Enceladus"))
+    # Add spherical harmonic coefficients of Enceladus
+    parameter_settings.append(
+        numerical_simulation.estimation_setup.parameter.spherical_harmonics_c_coefficients("Enceladus",
+                                                                                           minimum_degree=CovAnalysisConfig.minimum_degree_c_enceladus,
+                                                                                           minimum_order=CovAnalysisConfig.minimum_order_c_enceladus,
+                                                                                           maximum_degree=CovAnalysisConfig.maximum_degree_gravity_enceladus,
+                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus))
+    parameter_settings.append(
+        numerical_simulation.estimation_setup.parameter.spherical_harmonics_s_coefficients("Enceladus",
+                                                                                           minimum_degree=CovAnalysisConfig.minimum_degree_s_enceladus,
+                                                                                           minimum_order=CovAnalysisConfig.minimum_order_s_enceladus,
+                                                                                           maximum_degree=CovAnalysisConfig.maximum_degree_gravity_enceladus,
+                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus))
 
     # Create parameters to estimate object
     parameters_to_estimate = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings,
                                                                                         bodies,
-                                                                                        propagator_settings) # consider_parameter_settings
+                                                                                        propagator_settings)  # consider_parameter_settings
     numerical_simulation.estimation_setup.print_parameter_names(parameters_to_estimate)
     nb_parameters = len(parameters_to_estimate.parameter_vector)
     print(f"Total number of parameters to estimate: {nb_parameters}")
@@ -370,27 +392,65 @@ def covariance_analysis(initial_state_index,
     inv_apriori = np.zeros((nb_parameters, nb_parameters))
 
     # Set a priori constraints for vehicle states
-    a_priori_position = 5.0e3
-    a_priori_velocity = 0.5
     indices_states = parameters_to_estimate.indices_for_parameter_type((
         numerical_simulation.estimation_setup.parameter.arc_wise_initial_body_state_type, ("Vehicle", "")))[0]
-    for i in range(indices_states[1]//6):
+    for i in range(indices_states[1] // 6):
         for j in range(3):
-            inv_apriori[indices_states[0]+i*6+j, indices_states[0]+i*6+j] = a_priori_position**-2
-            inv_apriori[indices_states[0] + i * 6 + j + 3, indices_states[0] + i * 6 + j + 3] = a_priori_velocity ** -2
+            inv_apriori[indices_states[0] + i * 6 + j, indices_states[
+                0] + i * 6 + j] = CovAnalysisConfig.a_priori_position ** -2
+            inv_apriori[indices_states[0] + i * 6 + j + 3, indices_states[
+                0] + i * 6 + j + 3] = CovAnalysisConfig.a_priori_velocity ** -2
 
-    # Retrieve full vector of a priori constraints
+    # Set a priori constraint for Enceladus' gravitational parameter
+    indices_mu = parameters_to_estimate.indices_for_parameter_type(
+        (numerical_simulation.estimation_setup.parameter.gravitational_parameter_type, ("Enceladus", "")))[0]
+    for i in range(indices_mu[1]):
+        inv_apriori[
+            indices_mu[0] + i, indices_mu[0] + i] = CovAnalysisConfig.a_priori_gravitational_parameter_enceladus ** -2
+
+    # Set a priori constraint for Enceladus' gravity field coefficients
+    indices_cosine_coef = parameters_to_estimate.indices_for_parameter_type(
+        (numerical_simulation.estimation_setup.parameter.spherical_harmonics_cosine_coefficient_block_type,
+         ("Enceladus", "")))[0]
+    indices_sine_coef = parameters_to_estimate.indices_for_parameter_type(
+        (numerical_simulation.estimation_setup.parameter.spherical_harmonics_sine_coefficient_block_type,
+         ("Enceladus", "")))[0]
+    # Apply Kaula's constraint to Enceladus' gravity field
+    kaula_constraint_multiplier = 1.0e-5
+    inv_apriori = Util.apply_kaula_constraint_a_priori(kaula_constraint_multiplier,
+                                                       CovAnalysisConfig.maximum_degree_gravity_enceladus,
+                                                       indices_cosine_coef,
+                                                       indices_sine_coef,
+                                                       inv_apriori)
+    # Overwrite Kaula's rule with existing uncertainties
+    inv_apriori[indices_cosine_coef[0], indices_cosine_coef[0]] = CovAnalysisConfig.a_priori_c20 ** -2
+    inv_apriori[indices_cosine_coef[0] + 1, indices_cosine_coef[0] + 1] = CovAnalysisConfig.a_priori_c21 ** -2
+    inv_apriori[indices_cosine_coef[0] + 2, indices_cosine_coef[0] + 2] = CovAnalysisConfig.a_priori_c22 ** -2
+    inv_apriori[indices_cosine_coef[0] + 3, indices_cosine_coef[0] + 3] = CovAnalysisConfig.a_priori_c30 ** -2
+    inv_apriori[indices_sine_coef[0], indices_sine_coef[0]] = CovAnalysisConfig.a_priori_s21 ** -2
+    inv_apriori[indices_sine_coef[0] + 1, indices_sine_coef[0] + 1] = CovAnalysisConfig.a_priori_s22 ** -2
+
+    # Save inverse of a priori constraints to file
+    if save_results_flag:
+        inv_apriori_constraints_filename = os.path.join(covariance_results_output_path, "inv_a_priori_constraints.dat")
+        np.savetxt(inv_apriori_constraints_filename, inv_apriori)
+
+    # Retrieve full vector of a priori constraints and save it to file
     apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
+    if save_results_flag:
+        apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
+        np.savetxt(apriori_constraints_filename, apriori_constraints)
 
     # Create input object for covariance analysis
-    covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations, inv_apriori) # consider_covariance
+    covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
+                                                                               inv_apriori)  # consider_covariance
     covariance_input.define_covariance_settings(reintegrate_variational_equations=False, save_design_matrix=True)
 
     # Apply weights to simulated observations
     doppler_noise = CovAnalysisConfig.doppler_noise
     range_noise = CovAnalysisConfig.range_noise
     weights_per_observable = {observation.n_way_averaged_doppler_type: doppler_noise ** -2,
-                              observation.n_way_range_type: range_noise ** -2,}
+                              observation.n_way_range_type: range_noise ** -2, }
     covariance_input.set_constant_weight_per_observable(weights_per_observable)
 
     # Perform the covariance analysis
@@ -402,28 +462,116 @@ def covariance_analysis(initial_state_index,
     formal_errors = covariance_output.formal_errors
     partials = covariance_output.weighted_design_matrix
 
-    # Print the formal errors
-    print("Formal errors")
-    print(formal_errors)
+    if save_results_flag:
+        covariance_filename = os.path.join(covariance_results_output_path, "covariance_matrix.dat")
+        np.savetxt(covariance_filename, covariance)
 
-    # Get simulation results over first propagation arc
-    simulation_results_first_arc = simulation_results[0]
-    state_history_first_arc = simulation_results_first_arc.state_history
-    dependent_variables_first_arc = result2array(simulation_results_first_arc.dependent_variable_history)
+        correlations_filename = os.path.join(covariance_results_output_path, "correlations_matrix.dat")
+        np.savetxt(correlations_filename, correlations)
 
-    fig = trajectory_3d(state_history_first_arc,
-                        ["Vehicle"],
-                        "Enceladus",
-                        [],
-                        "J2000",
-                        True)
+        formal_errors_filename = os.path.join(covariance_results_output_path, "formal_errors.dat")
+        np.savetxt(formal_errors_filename, formal_errors)
 
+        partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
+        np.savetxt(partials_filename, partials)
+
+        # Plot correlations
+        PlottingUtil.plot_correlations(correlations,
+                                       plots_output_path,
+                                       "correlations.pdf")
+
+        # Plot formal errors
+        PlottingUtil.plot_formal_errors(formal_errors,
+                                        plots_output_path,
+                                        "formal_errors.pdf")
+
+        # Plot observation times
+        sorted_observations = simulated_observations.sorted_observation_sets
+        doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                  sorted_observations[observation.n_way_averaged_doppler_type][0][
+                                                      0].observation_times]
+        doppler_obs_time_newnorcia_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                  sorted_observations[observation.n_way_averaged_doppler_type][1][
+                                                      0].observation_times]
+        doppler_obs_time_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                 sorted_observations[observation.n_way_averaged_doppler_type][2][
+                                                     0].observation_times]
+
+        # Plot observation times
+        PlottingUtil.plot_observation_times(f"entire mission",
+                                            plots_output_path,
+                                            f"observation_times_arc_{i}.pdf",
+                                            doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
+                                            doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
+                                            doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
+
+        # Save simulation results for every arc
+        for i in range(nb_arcs):
+            simulation_results_current_arc = simulation_results[i]
+            state_history_current_arc = simulation_results_current_arc.state_history
+            dependent_variable_history_current_arc = simulation_results_current_arc.dependent_variable_history
+
+            dependent_variable_history_current_arc_array = result2array(dependent_variable_history_current_arc)
+            dim = dependent_variable_history_current_arc_array.shape
+            longitude_history = np.zeros((dim[0], 2))
+            latitude_history = np.zeros((dim[0], 2))
+            longitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
+            latitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
+            longitude_history[:, 1] = dependent_variable_history_current_arc_array[:, 3]
+            latitude_history[:, 1] = dependent_variable_history_current_arc_array[:, 2]
+
+            save2txt(state_history_current_arc,
+                     f"state_history_arc_{i}.dat",
+                     simulation_results_output_path)
+            save2txt(dependent_variable_history_current_arc,
+                     f"dependent_variable_history_arc_{i}.dat",
+                     simulation_results_output_path)
+
+            # Plot 3D trajectory of current arc
+            PlottingUtil.plot_trajectory(state_history_current_arc,
+                                         plots_output_path,
+                                         f"trajectory_3d_arc_{i}.pdf",
+                                         f"Arc {i}",
+                                         "red")
+
+            # Plot ground track of current arc
+            PlottingUtil.plot_ground_track(latitude_history,
+                                           longitude_history,
+                                           plots_output_path,
+                                           f"ground_track_arc_{i}.pdf",
+                                           f"Arc {i}",
+                                           "red")
+
+            # Retrieve Doppler observation times for the current arc
+            sorted_observations = simulated_observations.sorted_observation_sets
+            doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                      sorted_observations[observation.n_way_averaged_doppler_type][0][
+                                                          0].observation_times if
+                                                      arc_start_times[i] <= t <= arc_start_times[i] +
+                                                      CovAnalysisConfig.arc_duration]
+            doppler_obs_time_newnorcia_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                      sorted_observations[observation.n_way_averaged_doppler_type][1][
+                                                          0].observation_times if
+                                                      arc_start_times[i] <= t <= arc_start_times[i] +
+                                                      CovAnalysisConfig.arc_duration]
+            doppler_obs_time_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                                                     sorted_observations[observation.n_way_averaged_doppler_type][2][
+                                                         0].observation_times if
+                                                     arc_start_times[i] <= t <= arc_start_times[i] +
+                                                     CovAnalysisConfig.arc_duration]
+
+            # Plot observation times
+            PlottingUtil.plot_observation_times(f"Arc {i}",
+                                                plots_output_path,
+                                                f"observation_times_arc_{i}.pdf",
+                                                doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
+                                                doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
+                                                doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
 
 
 def main():
-
     initial_state_index = 1
-    save_results_flag = False
+    save_results_flag = True
 
     covariance_analysis(initial_state_index,
                         save_results_flag)
