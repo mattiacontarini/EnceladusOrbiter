@@ -22,19 +22,14 @@ import matplotlib.pyplot as plt
 
 def save_results(state_history,
                  dependent_variables_history,
-                 output_folder,
-                 time_stamp):
-    os.makedirs(output_folder, exist_ok=True)
-
-    results_folder = output_folder + "/" + time_stamp
-    os.makedirs(results_folder, exist_ok=True)
+                 output_folder):
 
     save2txt(state_history,
              "state_history.dat",
-             results_folder)
+             output_folder)
     save2txt(dependent_variables_history,
              "dependent_variables_history.dat",
-             results_folder)
+             output_folder)
 
 
 def save_plot(plot_object,
@@ -62,18 +57,14 @@ def compile_propagation_setup():
 
 
 def save_propagation_setup(propagation_setup,
-                           output_folder,
-                           time_stamp):
+                           output_folder):
     os.makedirs(output_folder, exist_ok=True)
 
-    results_folder = output_folder + "/" + time_stamp
-    os.makedirs(results_folder, exist_ok=True)
-    save2txt(propagation_setup, "propagation_setup.dat", results_folder)
+    save2txt(propagation_setup, "propagation_setup.dat", output_folder)
 
 
 def plot_trajectory(state_history,
                     output_folder,
-                    time_stamp,
                     orbit_ID,
                     color):
     fig, ax = plotting.trajectory_3d(state_history,
@@ -84,9 +75,6 @@ def plot_trajectory(state_history,
                                      True,
                                      color
                                      )
-    # epochs = list(state_history.keys())
-    # ax.plot(state_history[epochs[0]][:3], marker='o', color='blue', label="Start")
-    # plt.legend(loc='best')
 
     Enceladus_radius = spice.get_average_radius("Enceladus")
 
@@ -98,12 +86,8 @@ def plot_trajectory(state_history,
     ax.plot_surface(x, y, z, color='blue', alpha=0.5)
 
     plt.tight_layout()
-    #plt.title(orbit_ID, loc="left")
 
-    os.makedirs(output_folder, exist_ok=True)
-    results_folder = output_folder + "/" + time_stamp
-    os.makedirs(results_folder, exist_ok=True)
-    plt.savefig(results_folder + "/trajectory_3d.png")
+    plt.savefig(output_folder + "/trajectory_3d.png")
     plt.close()
 
 
