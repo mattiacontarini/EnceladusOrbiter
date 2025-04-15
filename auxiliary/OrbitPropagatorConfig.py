@@ -5,7 +5,7 @@ from tudatpy.astro.time_conversion import DateTime
 
 # Simulation timeline
 simulation_start_epoch = DateTime(2000, 1, 1).epoch()  # From Benedikter et al. (2022)
-simulation_duration = 20.52 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
+simulation_duration = 28 * constants.JULIAN_DAY
 simulation_end_epoch = simulation_start_epoch + simulation_duration
 
 termination_altitude = 0.0
@@ -33,25 +33,6 @@ acceleration_settings_on_vehicle = dict(
     ],
     Enceladus=[
         numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(max_degree_order["Enceladus"][0], max_degree_order["Enceladus"][1])
-    ],
-    Sun=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity(),
-        numerical_simulation.propagation_setup.acceleration.radiation_pressure()
-    ],
-    Mimas=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Tethys=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Dione=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Rhea=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Titan=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ]
 )
 
