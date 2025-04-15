@@ -10,7 +10,7 @@ import os
 
 
 def main():
-    flag_perform_integrator_selection = False
+    flag_perform_integrator_selection = True
     if flag_perform_integrator_selection:
 
         # Select input folder
