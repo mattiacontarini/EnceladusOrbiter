@@ -263,60 +263,56 @@ def main():
     if flag_check_integrator_performance:
 
         # Select input folder
-        input_folder = "./output/propagator_selection/2025.04.16.09.02.46/check_integrator_performance"
+        input_folder = "./output/propagator_selection/2025.04.16.11.02.45/check_integrator_performance"
 
         # Select time steps for fixed step size integrator
-        fixed_step_sizes = [15]
-
-        # Select coefficient sets for fixed step size integrator
-        fixed_step_integrator_coefficients = [numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56]
+        fixed_step_size = 15
 
         # Names of coefficient sets
-        fixed_step_integrator_coefficients_name = ["RKF5(6)"]
+        fixed_step_integrator_coefficient_name = "RKF5(6)"
 
-        # Colors for fixed time steps
-        colors_step_sizes = ["orange"]
+        # Initial states names and indices
+        initial_cartesian_state_indices = [1, 2, 3]
+        initial_cartesian_state_names = ["K1", "K2", "K3"]
 
-        # Maked handles for step sizes
-        step_sizes_legend_handles = []
-        for i in range(len(colors_step_sizes)):
+        # Colors for initial state
+        colors_initial_states = ["red", "blue", "orange"]
+
+        # Linestyle for initial state
+        linestyles_initial_state = ["-", "--", "-."]
+
+        # Make handles for initial states
+        initial_state_legend_handles = []
+        for i in range(len(linestyles_initial_state)):
             handle = mlines.Line2D([],
                                    [],
-                                   linestyle="-",
-                                   color=colors_step_sizes[i],
-                                   label=r"$\Delta t = $" + str(fixed_step_sizes[i]) + " s")
+                                   linestyle=linestyles_initial_state[i],
+                                   color=colors_initial_states[i],
+                                   label=initial_cartesian_state_names[i])
+            initial_state_legend_handles.append(handle)
 
-            step_sizes_legend_handles.append(handle)
 
+        fig, ax = plt.subplots(1, 1,)
+        for i in initial_cartesian_state_indices:
+            linestyle = linestyles_initial_state[i-1]
+            color = colors_initial_states[i-1]
 
-        fig, ax1 = plt.subplots(1, 1,)
-        axes_list = [ax1]
-        for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+            input_directory = os.path.join(input_folder, f"initial_state_{i}")
 
-            coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
-            coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+            file_path = (input_directory + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                             "_coefficient_set_" + fixed_step_integrator_coefficient_name + '_integration_error.dat')
 
-            ax = axes_list[coefficient_set_index]
+            first_benchmark_integration_error_array = np.loadtxt(file_path)
 
-            for fixed_step_size in fixed_step_sizes:
-                file_path = (input_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
-                             "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
+            ax.plot(first_benchmark_integration_error_array[1:, 0] / constants.JULIAN_DAY,
+                        first_benchmark_integration_error_array[1:, 1], linestyle=linestyle, color=color)
+        ax.grid(True)
+        ax.set_yscale("log")
+        ax.set_title(fixed_step_integrator_coefficient_name + fr"; $\Delta t = {fixed_step_size}$ s")
+        ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
+        ax.set_xlabel(r"$t - t_{0}$  [days]")
 
-                first_benchmark_integration_error_array = np.loadtxt(file_path)
-
-                color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
-                ax.plot(first_benchmark_integration_error_array[1:, 0] / constants.JULIAN_DAY,
-                        first_benchmark_integration_error_array[1:, 1], linestyle="-", color=color)
-                ax.grid(True)
-                ax.set_yscale("log")
-                ax.set_title(coefficient_set_name)
-
-            if coefficient_set_index % 2 == 0:
-                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
-            if coefficient_set_index == len(axes_list) - 1 or coefficient_set_index == len(axes_list) - 2:
-                ax.set_xlabel(r"$t - t_{0}$  [days]")
-
-        ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, )
+        ax.legend(handles=initial_state_legend_handles, loc="lower right", ncol=2)
         plt.savefig(input_folder + "/integration_error.pdf")
         plt.close()
 

@@ -139,48 +139,53 @@ def perform_integrator_refinement(initial_cartesian_state,
                         output_directory)
 
 
-def check_integrator_performance(initial_cartesian_state,
+def check_integrator_performance(initial_cartesian_states,
                                  additional_accelerations,
                                  fixed_step_sizes,
                                  fixed_step_integrator_coefficients,
                                  fixed_step_integrator_coefficients_name,
                                  output_folder):
-    for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
-        coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
-        coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+    for j in range(len(initial_cartesian_states)):
 
-        for fixed_step_size in fixed_step_sizes:
-            # Define propagator object
-            UDP = OrbitPropagator.from_config()
+        initial_cartesian_state = initial_cartesian_states[j]
+        output_directory = os.path.join(output_folder, f"initial_state_{j + 1}")
 
-            # Update acceleration settings
-            for body in list(additional_accelerations.keys()):
-                UDP.acceleration_settings_on_vehicle[body] = additional_accelerations[body]
+        for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+            coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+            coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
 
-            # Compute state history and dependent variable history for the two benchmarks
-            benchmarks_state_dependent_variable_history = Util.generate_benchmarks(initial_cartesian_state,
-                                                                                   fixed_step_size,
-                                                                                   fixed_step_integrator_coefficient,
-                                                                                   coefficient_set_name,
-                                                                                   UDP,
-                                                                                   output_folder
-                                                                                   )
-            first_benchmark_state_history = benchmarks_state_dependent_variable_history[0]
-            second_benchmark_state_history = benchmarks_state_dependent_variable_history[1]
+            for fixed_step_size in fixed_step_sizes:
+                # Define propagator object
+                UDP = OrbitPropagator.from_config()
 
-            # Compute integration error of first benchmark, assuming truncation error is dominant
-            first_benchmark_state_history_difference = Util.compute_benchmarks_state_history_difference(
-                first_benchmark_state_history,
-                second_benchmark_state_history,
-                fixed_step_size,
-                coefficient_set_name,
-                output_folder
-            )
-            first_benchmark_integration_error = Util.compute_integration_error(
-                first_benchmark_state_history_difference,
-                fixed_step_size,
-                coefficient_set_name,
-                output_folder)
+                # Update acceleration settings
+                for body in list(additional_accelerations.keys()):
+                    UDP.acceleration_settings_on_vehicle[body] = additional_accelerations[body]
+
+                # Compute state history and dependent variable history for the two benchmarks
+                benchmarks_state_dependent_variable_history = Util.generate_benchmarks(initial_cartesian_state,
+                                                                                       fixed_step_size,
+                                                                                       fixed_step_integrator_coefficient,
+                                                                                       coefficient_set_name,
+                                                                                       UDP,
+                                                                                       output_directory
+                                                                                       )
+                first_benchmark_state_history = benchmarks_state_dependent_variable_history[0]
+                second_benchmark_state_history = benchmarks_state_dependent_variable_history[1]
+
+                # Compute integration error of first benchmark, assuming truncation error is dominant
+                first_benchmark_state_history_difference = Util.compute_benchmarks_state_history_difference(
+                    first_benchmark_state_history,
+                    second_benchmark_state_history,
+                    fixed_step_size,
+                    coefficient_set_name,
+                    output_directory
+                )
+                first_benchmark_integration_error = Util.compute_integration_error(
+                    first_benchmark_state_history_difference,
+                    fixed_step_size,
+                    coefficient_set_name,
+                    output_directory)
 
 
 #######################################################################################################################
@@ -314,7 +319,9 @@ def main():
         os.makedirs(output_directory, exist_ok=True)
 
         # Retrieve initial state
-        initial_cartesian_state = Benedikter.K1_initial_cartesian_state
+        initial_cartesian_states = [Benedikter.K1_initial_cartesian_state,
+                                    Benedikter.K2_initial_cartesian_state,
+                                    Benedikter.K3_initial_cartesian_state]
 
         # Select time steps for fixed step size integrator
         fixed_step_sizes = [15]
@@ -349,7 +356,7 @@ def main():
             ]
         )
 
-        check_integrator_performance(initial_cartesian_state=initial_cartesian_state,
+        check_integrator_performance(initial_cartesian_states=initial_cartesian_states,
                                      additional_accelerations=additional_acceleration_settings_on_vehicle,
                                      fixed_step_sizes=fixed_step_sizes,
                                      fixed_step_integrator_coefficients=fixed_step_integrator_coefficients,
