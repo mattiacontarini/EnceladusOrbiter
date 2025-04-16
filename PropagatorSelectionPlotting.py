@@ -10,11 +10,11 @@ import os
 
 
 def main():
-    flag_perform_integrator_selection = True
+    flag_perform_integrator_selection = False
     if flag_perform_integrator_selection:
 
         # Select input folder
-        input_folder = "./output/propagator_selection/2025.04.15.09.34.22/integrator_selection"
+        input_folder = "./output/propagator_selection/2025.04.15.14.00.33/integrator_selection"
 
         # Select time steps for fixed step size integrator
         fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
@@ -109,9 +109,9 @@ def main():
                 ax.set_title(coefficient_set_name)
 
             if coefficient_set_index == 4 or coefficient_set_index == 5:
-                ax.set_xlabel("Relative epoch [days]")
+                ax.set_xlabel(r"$t - t_{0}$  [days]")
             if coefficient_set_index == 0 or coefficient_set_index == 2 or coefficient_set_index == 4:
-                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
+                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$  [m]")
 
         ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, )
         plt.savefig(input_folder + "/integration_error.pdf")
@@ -159,11 +159,11 @@ def main():
         plt.savefig(input_folder + "/total_computational_time.pdf")
         plt.close()
 
-    flag_perform_integrator_refinement = True
+    flag_perform_integrator_refinement = False
     if flag_perform_integrator_refinement:
 
         # Select input folder
-        input_folder = "./output/propagator_selection/2025.04.15.09.34.22/integrator_refinement"
+        input_folder = "./output/propagator_selection/2025.04.15.14.00.33/integrator_refinement"
 
         # Select time steps for fixed step size integrator
         fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
@@ -250,7 +250,7 @@ def main():
                         if counter % 2 == 0:
                             ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$  [m]")
                         if counter == 5 or counter == 6:
-                            ax.set_xlabel(r"$t - t_{0}$  [s]")
+                            ax.set_xlabel(r"$t - t_{0}$  [days]")
 
                 counter += 1
 
@@ -258,6 +258,68 @@ def main():
         fig.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, bbox_to_anchor=(0.95, 0.075), fontsize=12)
         plt.savefig(input_folder + "/integrator_refinement.pdf")
         plt.close()
+
+    flag_check_integrator_performance = True
+    if flag_check_integrator_performance:
+
+        # Select input folder
+        input_folder = "./output/propagator_selection/2025.04.16.09.02.46/check_integrator_performance"
+
+        # Select time steps for fixed step size integrator
+        fixed_step_sizes = [15]
+
+        # Select coefficient sets for fixed step size integrator
+        fixed_step_integrator_coefficients = [numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56]
+
+        # Names of coefficient sets
+        fixed_step_integrator_coefficients_name = ["RKF5(6)"]
+
+        # Colors for fixed time steps
+        colors_step_sizes = ["orange"]
+
+        # Maked handles for step sizes
+        step_sizes_legend_handles = []
+        for i in range(len(colors_step_sizes)):
+            handle = mlines.Line2D([],
+                                   [],
+                                   linestyle="-",
+                                   color=colors_step_sizes[i],
+                                   label=r"$\Delta t = $" + str(fixed_step_sizes[i]) + " s")
+
+            step_sizes_legend_handles.append(handle)
+
+
+        fig, ax1 = plt.subplots(1, 1,)
+        axes_list = [ax1]
+        for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+
+            coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+            coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+
+            ax = axes_list[coefficient_set_index]
+
+            for fixed_step_size in fixed_step_sizes:
+                file_path = (input_folder + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                             "_coefficient_set_" + coefficient_set_name + '_integration_error.dat')
+
+                first_benchmark_integration_error_array = np.loadtxt(file_path)
+
+                color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
+                ax.plot(first_benchmark_integration_error_array[1:, 0] / constants.JULIAN_DAY,
+                        first_benchmark_integration_error_array[1:, 1], linestyle="-", color=color)
+                ax.grid(True)
+                ax.set_yscale("log")
+                ax.set_title(coefficient_set_name)
+
+            if coefficient_set_index % 2 == 0:
+                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
+            if coefficient_set_index == len(axes_list) - 1 or coefficient_set_index == len(axes_list) - 2:
+                ax.set_xlabel(r"$t - t_{0}$  [days]")
+
+        ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, )
+        plt.savefig(input_folder + "/integration_error.pdf")
+        plt.close()
+
 
 
 if __name__ == "__main__":

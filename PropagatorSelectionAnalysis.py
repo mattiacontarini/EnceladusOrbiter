@@ -81,7 +81,6 @@ def perform_integrators_selection(initial_cartesian_state,
                 coefficient_set_name,
                 output_folder
             )
-
             first_benchmark_integration_error = Util.compute_integration_error(
                 first_benchmark_state_history_difference,
                 fixed_step_size,
@@ -96,7 +95,6 @@ def perform_integrator_refinement(initial_cartesian_state,
                                   additional_acceleration_settings_on_vehicle,
                                   additional_acceleration_labels,
                                   output_folder):
-
     additional_bodies_to_analyse = list(additional_acceleration_settings_on_vehicle.keys())
     for body in additional_bodies_to_analyse:
         for i in range(len(additional_acceleration_settings_on_vehicle[body])):
@@ -134,12 +132,55 @@ def perform_integrator_refinement(initial_cartesian_state,
                         coefficient_set_name,
                         output_directory
                     )
-
                     first_benchmark_integration_error = Util.compute_integration_error(
                         first_benchmark_state_history_difference,
                         fixed_step_size,
                         coefficient_set_name,
                         output_directory)
+
+
+def check_integrator_performance(initial_cartesian_state,
+                                 additional_accelerations,
+                                 fixed_step_sizes,
+                                 fixed_step_integrator_coefficients,
+                                 fixed_step_integrator_coefficients_name,
+                                 output_folder):
+    for fixed_step_integrator_coefficient in fixed_step_integrator_coefficients:
+        coefficient_set_index = fixed_step_integrator_coefficients.index(fixed_step_integrator_coefficient)
+        coefficient_set_name = fixed_step_integrator_coefficients_name[coefficient_set_index]
+
+        for fixed_step_size in fixed_step_sizes:
+            # Define propagator object
+            UDP = OrbitPropagator.from_config()
+
+            # Update acceleration settings
+            for body in list(additional_accelerations.keys()):
+                UDP.acceleration_settings_on_vehicle[body] = additional_accelerations[body]
+
+            # Compute state history and dependent variable history for the two benchmarks
+            benchmarks_state_dependent_variable_history = Util.generate_benchmarks(initial_cartesian_state,
+                                                                                   fixed_step_size,
+                                                                                   fixed_step_integrator_coefficient,
+                                                                                   coefficient_set_name,
+                                                                                   UDP,
+                                                                                   output_folder
+                                                                                   )
+            first_benchmark_state_history = benchmarks_state_dependent_variable_history[0]
+            second_benchmark_state_history = benchmarks_state_dependent_variable_history[1]
+
+            # Compute integration error of first benchmark, assuming truncation error is dominant
+            first_benchmark_state_history_difference = Util.compute_benchmarks_state_history_difference(
+                first_benchmark_state_history,
+                second_benchmark_state_history,
+                fixed_step_size,
+                coefficient_set_name,
+                output_folder
+            )
+            first_benchmark_integration_error = Util.compute_integration_error(
+                first_benchmark_state_history_difference,
+                fixed_step_size,
+                coefficient_set_name,
+                output_folder)
 
 
 #######################################################################################################################
@@ -175,7 +216,7 @@ def main():
 
         perform_single_propagation_example(initial_cartesian_state, orbit_ID, output_folder)
 
-    flag_perform_integrators_selection = True
+    flag_perform_integrators_selection = False
     if flag_perform_integrators_selection:
         output_directory = os.path.join(output_folder, "integrator_selection")
         os.makedirs(output_directory, exist_ok=True)
@@ -209,9 +250,8 @@ def main():
                                       output_folder=output_directory
                                       )
 
-    flag_perform_integrator_refinement = True
+    flag_perform_integrator_refinement = False
     if flag_perform_integrator_refinement:
-
         # Output directory
         output_directory = os.path.join(output_folder, "integrator_refinement")
         os.makedirs(output_directory, exist_ok=True)
@@ -268,6 +308,54 @@ def main():
                                       additional_acceleration_labels=additional_acceleration_labels,
                                       output_folder=output_directory)
 
+    flag_check_integrator_performance = True
+    if flag_check_integrator_performance:
+        output_directory = os.path.join(output_folder, "check_integrator_performance")
+        os.makedirs(output_directory, exist_ok=True)
+
+        # Retrieve initial state
+        initial_cartesian_state = Benedikter.K1_initial_cartesian_state
+
+        # Select time steps for fixed step size integrator
+        fixed_step_sizes = [15]
+
+        # Select coefficient sets for fixed step size integrator
+        fixed_step_integrator_coefficients = [numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56]
+
+        # Names of coefficient sets
+        fixed_step_integrator_coefficients_name = ["RKF5(6)"]
+
+        # Additional perturbing accelerations
+        # Select acceleration settings to assess
+        additional_acceleration_settings_on_vehicle = dict(
+            Sun=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity(),
+                numerical_simulation.propagation_setup.acceleration.radiation_pressure()
+            ],
+            Mimas=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+            ],
+            Tethys=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+            ],
+            Dione=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+            ],
+            Rhea=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+            ],
+            Titan=[
+                numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+            ]
+        )
+
+        check_integrator_performance(initial_cartesian_state=initial_cartesian_state,
+                                     additional_accelerations=additional_acceleration_settings_on_vehicle,
+                                     fixed_step_sizes=fixed_step_sizes,
+                                     fixed_step_integrator_coefficients=fixed_step_integrator_coefficients,
+                                     fixed_step_integrator_coefficients_name=fixed_step_integrator_coefficients_name,
+                                     output_folder=output_directory
+                                     )
 
 
 if __name__ == "__main__":
