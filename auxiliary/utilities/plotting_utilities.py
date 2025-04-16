@@ -84,7 +84,7 @@ def plot_correlations(correlations,
 
     os.makedirs(output_path, exist_ok=True)
     file_output_path = os.path.join(output_path, filename)
-    plt.savefig(file_output_path)
+    plt.savefig(file_output_path, format="eps")
     plt.close()
 
 
@@ -119,8 +119,6 @@ def plot_observation_times(arc_ID,
 
 
 def plot_formal_errors(formal_errors_vector, output_path, filename):
-    #fig = plt.figure(figsize=(6, 6))
-    #ax = fig.add_subplot()
 
     plt.semilogy(np.arange(1, len(formal_errors_vector) + 1, 1), formal_errors_vector)
     plt.title("Formal Errors")
