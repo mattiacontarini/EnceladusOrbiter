@@ -5,26 +5,22 @@
 # Files and variables import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary import VehicleParameters as VehicleParam
-from auxiliary import utilities as Util
-from auxiliary import plotting_utilities as PlottingUtil
+from auxiliary.utilities import utilities as Util
+from auxiliary.utilities import plotting_utilities as PlottingUtil
+from auxiliary.utilities import environment_setup_utilities as EnvUtil
+from auxiliary.utilities import covariance_analysis_utilities as CovUtil
 
 # Tudat import
 from tudatpy import numerical_simulation
 from tudatpy.data import save2txt
 from tudatpy.util import result2array
-from tudatpy import constants
-from tudatpy.astro import element_conversion
-from tudatpy.kernel.interface import spice_interface, spice
+from tudatpy.kernel.interface import spice
 from tudatpy.math import interpolators
 from tudatpy.numerical_simulation.estimation_setup import observation
-from tudatpy.plotting import trajectory_3d
 
 # Packages import
 import numpy as np
 import datetime
-import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import matplotlib.patches as mpatches
 import os
 
 
@@ -68,7 +64,7 @@ def covariance_analysis(initial_state_index,
                                                                                      CovAnalysisConfig.global_frame_orientation)
 
     # Set rotation model settings for Enceladus
-    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(
+    synodic_rotation_rate_enceladus = EnvUtil.get_synodic_rotation_model_enceladus(
         CovAnalysisConfig.simulation_start_epoch)
     initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                  "IAU_Enceladus",
@@ -79,12 +75,12 @@ def covariance_analysis(initial_state_index,
         CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
     # Set gravity field settings for Enceladus
-    body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(CovAnalysisConfig.maximum_degree_gravity_enceladus)
     body_settings.get(
         "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
 
     # Set gravity field settings for Saturn
-    body_settings.get("Saturn").gravity_field_settings = Util.get_gravity_field_settings_saturn_iess()
+    body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
     body_settings.get(
         "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
@@ -271,10 +267,6 @@ def covariance_analysis(initial_state_index,
         observation_settings_list.append(doppler_observation)
         observation_settings_list.append(range_observation)
 
-    # Define observation simulation times for both Doppler and range observarbles
-    doppler_cadence = 60
-    range_cadence = 300.0
-
     observation_times_doppler = []
     observation_times_range = []
 
@@ -284,13 +276,13 @@ def covariance_analysis(initial_state_index,
         time = tracking_arcs_start[i]
         while time <= tracking_arcs_end[i]:
             observation_times_doppler.append(time)
-            time += doppler_cadence
+            time += CovAnalysisConfig.doppler_cadence
 
         # Range observables
         time = tracking_arcs_start[i]
         while time <= tracking_arcs_end[i]:
             observation_times_range.append(time)
-            time += range_cadence
+            time += CovAnalysisConfig.range_cadence
 
     observation_times_per_type = dict()
     observation_times_per_type[observation.n_way_averaged_doppler_type] = observation_times_doppler
@@ -339,7 +331,7 @@ def covariance_analysis(initial_state_index,
     )
 
     ###################################################################################################################
-    ### Estimation setup
+    ### Estimation setup ##############################################################################################
     ###################################################################################################################
 
     # Define parameters to estimate
@@ -355,13 +347,22 @@ def covariance_analysis(initial_state_index,
                                                                                            minimum_degree=CovAnalysisConfig.minimum_degree_c_enceladus,
                                                                                            minimum_order=CovAnalysisConfig.minimum_order_c_enceladus,
                                                                                            maximum_degree=CovAnalysisConfig.maximum_degree_gravity_enceladus,
-                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus))
+                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus)
+    )
     parameter_settings.append(
         numerical_simulation.estimation_setup.parameter.spherical_harmonics_s_coefficients("Enceladus",
                                                                                            minimum_degree=CovAnalysisConfig.minimum_degree_s_enceladus,
                                                                                            minimum_order=CovAnalysisConfig.minimum_order_s_enceladus,
                                                                                            maximum_degree=CovAnalysisConfig.maximum_degree_gravity_enceladus,
-                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus))
+                                                                                           maximum_order=CovAnalysisConfig.maximum_degree_gravity_enceladus)
+    )
+    # Add empirical accelerations
+    parameter_settings.append(
+        numerical_simulation.estimation_setup.parameter.arcwise_empirical_accelerations("Vehicle",
+                                                                                        "Enceladus",
+                                                                                        CovAnalysisConfig.empirical_acceleration_components_to_estimate,
+                                                                                        arc_start_times)
+    )
 
     # Create parameters to estimate object
     parameters_to_estimate = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings,
@@ -416,12 +417,11 @@ def covariance_analysis(initial_state_index,
         (numerical_simulation.estimation_setup.parameter.spherical_harmonics_sine_coefficient_block_type,
          ("Enceladus", "")))[0]
     # Apply Kaula's constraint to Enceladus' gravity field
-    kaula_constraint_multiplier = 1.0e-5
-    inv_apriori = Util.apply_kaula_constraint_a_priori(kaula_constraint_multiplier,
-                                                       CovAnalysisConfig.maximum_degree_gravity_enceladus,
-                                                       indices_cosine_coef,
-                                                       indices_sine_coef,
-                                                       inv_apriori)
+    inv_apriori = CovUtil.apply_kaula_constraint_a_priori(CovAnalysisConfig.kaula_constraint_multiplier,
+                                                          CovAnalysisConfig.maximum_degree_gravity_enceladus,
+                                                          indices_cosine_coef,
+                                                          indices_sine_coef,
+                                                          inv_apriori)
     # Overwrite Kaula's rule with existing uncertainties
     inv_apriori[indices_cosine_coef[0], indices_cosine_coef[0]] = CovAnalysisConfig.a_priori_c20 ** -2
     inv_apriori[indices_cosine_coef[0] + 1, indices_cosine_coef[0] + 1] = CovAnalysisConfig.a_priori_c21 ** -2
@@ -429,6 +429,12 @@ def covariance_analysis(initial_state_index,
     inv_apriori[indices_cosine_coef[0] + 3, indices_cosine_coef[0] + 3] = CovAnalysisConfig.a_priori_c30 ** -2
     inv_apriori[indices_sine_coef[0], indices_sine_coef[0]] = CovAnalysisConfig.a_priori_s21 ** -2
     inv_apriori[indices_sine_coef[0] + 1, indices_sine_coef[0] + 1] = CovAnalysisConfig.a_priori_s22 ** -2
+
+    # Set a priori constraint for empirical accelerations
+    indices_empirical_acceleration_components = parameters_to_estimate.indices_for_parameter_type(
+        (numerical_simulation.estimation_setup.parameter.arc_wise_empirical_acceleration_coefficients_type, ("Vehicle", "Enceladus")))[0]
+    for i in range(indices_empirical_acceleration_components[1]):
+        inv_apriori[indices_empirical_acceleration_components[0] + i, indices_empirical_acceleration_components[0] + i] = CovAnalysisConfig.a_priori_empirical_accelerations ** -2
 
     # Save inverse of a priori constraints to file
     if save_results_flag:
@@ -500,7 +506,7 @@ def covariance_analysis(initial_state_index,
         # Plot observation times
         PlottingUtil.plot_observation_times(f"entire mission",
                                             plots_output_path,
-                                            f"observation_times_arc_{i}.pdf",
+                                            f"observation_times_arc_{i}.eps",
                                             doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
                                             doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                             doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)

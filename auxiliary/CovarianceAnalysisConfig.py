@@ -47,33 +47,6 @@ occulting_bodies["Sun"] = ["Enceladus"]
 ### Propagation #######################################################################################################
 #######################################################################################################################
 
-# Define the accelerations acting on the vehicle
-acceleration_settings_on_vehicle = dict(
-    Sun=[
-        numerical_simulation.propagation_setup.acceleration.radiation_pressure(),
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Saturn=[
-        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(8, 8),
-    ],
-    Enceladus=[
-        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(3, 3),
-        # numerical_simulation.propagation_setup.acceleration.aerodynamic()
-    ],
-    Mimas=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Tethys=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Dione=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ],
-    Rhea=[
-        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
-    ]
-)
-
 # Define numerical integrator settings
 fixed_step_size = 15
 integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
@@ -101,13 +74,6 @@ dependent_variables_to_save = [
 #######################################################################################################################
 
 # Ground stations properties
-"""
-ground_station_names = ["CoM"]
-ground_station_coordinates = {
-    ground_station_names[0]: [0, 0, 0]
-}
-ground_station_coordinates_type = {ground_station_names[0]: element_conversion.cartesian_position_type}
-"""
 ground_station_names = ["Malargue", "NewNorcia", "Cebreros"]
 ground_station_coordinates = {
     ground_station_names[0]: [1550.0, np.deg2rad(-35.0), np.deg2rad(-69.0)],
@@ -122,6 +88,11 @@ ground_station_coordinates_type = {ground_station_names[0]: element_conversion.g
 # Tracking arcs properties
 tracking_arc_duration = 8.0 * 3600.0
 tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
+
+# Define observation simulation times for both Doppler and range observarbles
+doppler_cadence = 60
+range_cadence = 300.0
+
 range_bias = 1.5
 
 # Minimum D/O for spherical harmonic cosine coefficients of Enceladus
@@ -148,6 +119,9 @@ a_priori_c30 = 33.42e-6
 a_priori_s21 = 9.19e-6
 a_priori_s22 = 10.87e-6
 
+# A priori constraints on empirical accelerations
+a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
+
 # Minimum elevation angle for visibility
 minimum_elevation_angle_visibility = np.deg2rad(15.0)
 minimum_sep_angle = np.deg2rad(5.0)
@@ -155,3 +129,55 @@ minimum_sep_angle = np.deg2rad(5.0)
 # Measurements noise
 doppler_noise = 12.0e-6
 range_noise = 0.2
+
+# Kaula constraint factor
+kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
+
+#######################################################################################################################
+### Accelerations #####################################################################################################
+#######################################################################################################################
+
+# Define the accelerations acting on the vehicle
+acceleration_settings_on_vehicle = dict(
+    Sun=[
+        numerical_simulation.propagation_setup.acceleration.radiation_pressure(),
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Saturn=[
+        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(8, 8),
+    ],
+    Enceladus=[
+        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(maximum_degree_gravity_enceladus, maximum_degree_gravity_enceladus),
+        numerical_simulation.propagation_setup.acceleration.empirical()
+        # numerical_simulation.propagation_setup.acceleration.aerodynamic()
+    ],
+    Mimas=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Tethys=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Dione=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Rhea=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ]
+)
+
+#######################################################################################################################
+### Estimation ########################################################################################################
+#######################################################################################################################
+
+empirical_acceleration_components_to_estimate = dict()
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.radial_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
+
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.along_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
+
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.across_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
