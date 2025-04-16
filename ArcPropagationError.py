@@ -6,25 +6,19 @@
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary import VehicleParameters as VehicleParam
 from auxiliary import utilities as Util
-from auxiliary import plotting_utilities as PlottingUtil
 
 # Tudat import
 from tudatpy import numerical_simulation
 from tudatpy.data import save2txt
 from tudatpy.util import result2array
 from tudatpy import constants
-from tudatpy.astro import element_conversion
-from tudatpy.kernel.interface import spice_interface, spice
+from tudatpy.kernel.interface import spice
 from tudatpy.math import interpolators
-from tudatpy.numerical_simulation.estimation_setup import observation
-from tudatpy.plotting import trajectory_3d
 
 # Packages import
 import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import matplotlib.patches as mpatches
 import os
 
 
