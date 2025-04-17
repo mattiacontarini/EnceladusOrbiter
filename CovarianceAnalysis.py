@@ -455,9 +455,10 @@ def covariance_analysis(initial_state_index,
     # Apply weights to simulated observations
     doppler_noise = CovAnalysisConfig.doppler_noise
     range_noise = CovAnalysisConfig.range_noise
-    weights_per_observable = {observation.n_way_averaged_doppler_type: doppler_noise ** -2,
-                              observation.n_way_range_type: range_noise ** -2, }
-    covariance_input.set_constant_weight_per_observable(weights_per_observable)
+    doppler_weight = doppler_noise ** -2
+    range_weight = range_noise ** -2
+    simulated_observations.set_constant_weight(doppler_weight, numerical_simulation.estimation.observation_parser(numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type))
+    simulated_observations.set_constant_weight(range_weight, numerical_simulation.estimation.observation_parser(numerical_simulation.estimation_setup.observation.n_way_range_type))
 
     # Perform the covariance analysis
     covariance_output = estimator.compute_covariance(covariance_input)
@@ -577,7 +578,7 @@ def covariance_analysis(initial_state_index,
 
 def main():
     initial_state_index = 1
-    save_results_flag = True
+    save_results_flag = False
 
     covariance_analysis(initial_state_index,
                         save_results_flag)
