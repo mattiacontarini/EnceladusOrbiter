@@ -10,7 +10,7 @@ import os
 
 
 def main():
-    flag_perform_integrator_selection = False
+    flag_perform_integrator_selection = True
     if flag_perform_integrator_selection:
 
         # Select input folder
@@ -52,6 +52,9 @@ def main():
                              "cyan",
                              "lime",
                              "fuchsia"]
+
+        # Set fontsize
+        fontsize = 12
 
         # Maked handles for step sizes
         step_sizes_legend_handles = []
@@ -107,13 +110,14 @@ def main():
                 ax.grid(True)
                 ax.set_yscale("log")
                 ax.set_title(coefficient_set_name)
+                ax.tick_params(axis='both', which='major', labelsize=fontsize)
 
             if coefficient_set_index == 4 or coefficient_set_index == 5:
-                ax.set_xlabel(r"$t - t_{0}$  [days]")
+                ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
             if coefficient_set_index == 0 or coefficient_set_index == 2 or coefficient_set_index == 4:
-                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$  [m]")
+                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$  [m]", fontsize=fontsize)
 
-        ax1.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, )
+        ax6.legend(handles=step_sizes_legend_handles, loc="lower right", ncol=2, fontsize=fontsize)
         plt.savefig(input_folder + "/integration_error.pdf")
         plt.close()
 
@@ -150,11 +154,12 @@ def main():
                 ax.grid(True)
                 ax.set_title(coefficient_set_name)
                 ax.set_ylim(bottom=0)
+                ax.tick_params(axis='both', which='major', labelsize=fontsize)
 
             if coefficient_set_index == 4 or coefficient_set_index == 5:
-                ax.set_xlabel("Step size [s]")
+                ax.set_xlabel("Step size [s]", fontsize=fontsize)
             if coefficient_set_index == 0 or coefficient_set_index == 2 or coefficient_set_index == 4:
-                ax.set_ylabel("Total computational time [s]")
+                ax.set_ylabel("Total computational time [s]", fontsize=fontsize)
 
         plt.savefig(input_folder + "/total_computational_time.pdf")
         plt.close()
@@ -244,7 +249,7 @@ def main():
                                 linestyle=coefficient_set_linestyle,
                                 color=step_size_color)
                         ax.set_yscale("log")
-                        ax.set_title(body + " " + acceleration_label)
+                        ax.set_title(body + " " + acceleration_label + f"; {coefficient_set_label}")
                         ax.grid(True)
 
                         if counter % 2 == 0:
@@ -259,7 +264,7 @@ def main():
         plt.savefig(input_folder + "/integrator_refinement.pdf")
         plt.close()
 
-    flag_check_integrator_performance = True
+    flag_check_integrator_performance = False
     if flag_check_integrator_performance:
 
         # Select input folder
@@ -313,7 +318,7 @@ def main():
         ax.set_xlabel(r"$t - t_{0}$  [days]")
 
         ax.legend(handles=initial_state_legend_handles, loc="lower right", ncol=2)
-        plt.savefig(input_folder + "/integration_error.pdf")
+        plt.savefig(input_folder + "/integration_performance.pdf")
         plt.close()
 
 
