@@ -90,7 +90,7 @@ def main():
         # Plot results
         fig1, ax1 = plt.subplots(figsize=(7, 6))
         fig2, ax2 = plt.subplots(figsize=(7, 6))
-
+        fontsize = 12
         # Plot accelerations of Enceladus and Saturn
         benchmark_dependent_variable_history = np.loadtxt(input_path + f"/dependent_variable_history_benchmark.dat")
         ax1.plot(benchmark_dependent_variable_history[:, 0] / constants.JULIAN_DAY,
@@ -136,48 +136,54 @@ def main():
                          color=bodies_color_code[body][i],
                          label=labels_code[body] + " " + case)
 
-        # Load state history difference for Saturn case
-        state_history_difference = np.loadtxt(input_path + "/state_history_difference_study_Saturn.dat")
-
-        ax2.plot(state_history_difference[:, 0] / constants.JULIAN_DAY,
-                 np.linalg.norm(state_history_difference[:, 1:4], axis=1),
-                 color=bodies_color_code["Saturn"][0],
-                 label=labels_code["Saturn"] + " SH")
-
         pos = ax1.get_position()
         ax1.set_position([pos.x0, pos.y0, pos.width, pos.height * 0.9])
         fig1.legend(loc="upper center", bbox_to_anchor=(0.5, 0.97), ncol=4, fancybox=True)
-        ax1.set_xlabel(r"$t - t_{0}$  [days]")
-        ax1.set_ylabel(r"$|| \mathbf{a}(t) ||$ [m s$^{-2}$]")
+        ax1.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+        ax1.set_ylabel(r"$|| \mathbf{a}(t) ||$ [m s$^{-2}$]", fontsize=fontsize)
         ax1.set_yscale("log")
         ax1.grid(True)
+        ax1.tick_params(axis='both', which='major', labelsize=fontsize)
         fig1.savefig(output_path + "/accelerations_magnitude.pdf")
 
         pos = ax2.get_position()
         ax2.set_position([pos.x0, pos.y0, pos.width, pos.height * 0.9])
         fig2.legend(loc="upper center", bbox_to_anchor=(0.5, 0.97), ncol=4, fancybox=True)
-        ax2.set_xlabel(r"$t - t_{0}$  [days]")
-        ax2.set_ylabel(r"$||\Delta \mathbf{r} (t)||$ [m]")
+        ax2.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+        ax2.set_ylabel(r"$||\Delta \mathbf{r} (t)||$ [m]", fontsize=fontsize)
         ax2.set_yscale("log")
         ax2.grid(True)
+        ax2.tick_params(axis='both', which='major', labelsize=fontsize)
         fig2.savefig(output_path + "/position_difference_norm.pdf")
         plt.close()
 
-        # Load acceleration history difference for Saturn case
-        acceleration_history_difference = np.loadtxt(input_path + "/acceleration_history_difference_study_Saturn.dat")
+        # Plot position history difference for Saturn case
+        state_history_difference_Saturn_case = np.loadtxt(input_path + "/state_history_difference_study_Saturn.dat")
+        fig3, (ax3, ax4) = plt.subplots(1, 2, constrained_layout=True, figsize=(7, 4.5))
+        ax3.plot(state_history_difference_Saturn_case[:, 0] / constants.JULIAN_DAY,
+                 np.linalg.norm(state_history_difference_Saturn_case[:, 1:4], axis=1),
+                 color=bodies_color_code["Saturn"][0],
+                 label=labels_code["Saturn"] + " SH")
+        ax3.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+        ax3.set_ylabel(r"$||\Delta \mathbf{r} (t)||$ [m]", fontsize=fontsize)
+        ax3.set_yscale("log")
+        ax3.grid(True)
+        ax3.tick_params(axis='both', which='major', labelsize=fontsize)
 
-        fig3, ax3 = plt.subplots()
-        ax3.plot(acceleration_history_difference[:, 0] / constants.JULIAN_DAY,
+        # Plot acceleration history difference for Saturn case
+        acceleration_history_difference = np.loadtxt(input_path + "/acceleration_history_difference_study_Saturn.dat")
+        ax4.plot(acceleration_history_difference[:, 0] / constants.JULIAN_DAY,
                  np.linalg.norm(acceleration_history_difference[:, 1:4], axis=1),
                  color=bodies_color_code["Saturn"][0],
                  )
-        ax3.set_title("Point mass vs SH case, Saturn")
-        ax3.set_xlabel(r"$t - t_{0}$  [days]")
-        ax3.set_ylabel(r"$|| \Delta \mathbf{a}(t)||$  [m s$^{-2}$]")
-        ax3.grid(which="both")
-        ax3.set_yscale("log")
-        ax3.set_ylim(bottom=1e-6)
-        fig3.savefig(output_path + "/acceleration_history_difference_study_Saturn.pdf")
+        ax4.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+        ax4.set_ylabel(r"$|| \Delta \mathbf{a}(t)||$  [m s$^{-2}$]", fontsize=fontsize)
+        ax4.grid(which="both")
+        ax4.set_yscale("log")
+        ax4.set_ylim(bottom=1e-6)
+        ax4.tick_params(axis='both', which='major', labelsize=fontsize)
+        fig3.suptitle("Saturn SH vs GM case")
+        fig3.savefig(output_path + "/study_Saturn_case.pdf")
         plt.close()
 
 
