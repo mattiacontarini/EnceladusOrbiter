@@ -5,12 +5,12 @@
 # Files and variables import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary import VehicleParameters as VehicleParam
-from auxiliary import utilities as Util
+from auxiliary.utilities import utilities as Util
+from auxiliary.utilities import environment_setup_utilities as EnvUtil
 
 # Tudat import
 from tudatpy import numerical_simulation
 from tudatpy.data import save2txt
-from tudatpy.util import result2array
 from tudatpy import constants
 from tudatpy.kernel.interface import spice
 from tudatpy.math import interpolators
@@ -24,7 +24,8 @@ import os
 
 def study_propagation_error(initial_state_index,
                             arc_duration,
-                            time_stamp):
+                            time_stamp,
+                            fontsize):
     ###################################################################################################################
     ### Configuration
     ###################################################################################################################
@@ -33,7 +34,7 @@ def study_propagation_error(initial_state_index,
     output_folder = f"./output/arc_wise_propagation_error"
 
     # Build output_path
-    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration/constants.JULIAN_DAY}_days")
+    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days")
     simulation_results_output_path = os.path.join(output_path, "simulation_results")
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(simulation_results_output_path, exist_ok=True)
@@ -48,7 +49,7 @@ def study_propagation_error(initial_state_index,
                                                                                      CovAnalysisConfig.global_frame_orientation)
 
     # Set rotation model settings for Enceladus
-    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(
+    synodic_rotation_rate_enceladus = EnvUtil.get_synodic_rotation_model_enceladus(
         CovAnalysisConfig.simulation_start_epoch)
     initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                  "IAU_Enceladus",
@@ -59,12 +60,13 @@ def study_propagation_error(initial_state_index,
         CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
     # Set gravity field settings for Enceladus
-    body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+        CovAnalysisConfig.maximum_degree_gravity_enceladus)
     body_settings.get(
         "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
 
     # Set gravity field settings for Saturn
-    body_settings.get("Saturn").gravity_field_settings = Util.get_gravity_field_settings_saturn_iess()
+    body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
     body_settings.get(
         "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
@@ -200,7 +202,6 @@ def study_propagation_error(initial_state_index,
     simulation_results = dynamics_simulator.propagation_results.single_arc_results
 
     # Save simulation results for every arc
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 6), constrained_layout=True)
     for i in range(nb_arcs):
         simulation_results_current_arc = simulation_results[i]
         state_history_current_arc = simulation_results_current_arc.state_history
@@ -219,9 +220,10 @@ def study_propagation_error(initial_state_index,
             number_of_points=CovAnalysisConfig.number_of_points
         )
         state_interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
-                                                                                lagrange_interpolation_settings)
-        dependent_variable_interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_dependent_variable_history,
-                                                                                                   lagrange_interpolation_settings)
+                                                                                      lagrange_interpolation_settings)
+        dependent_variable_interpolator = interpolators.create_one_dimensional_vector_interpolator(
+            nominal_dependent_variable_history,
+            lagrange_interpolation_settings)
         state_difference_history = dict()
         acceleration_difference_history = dict()
         for epoch in epochs_arc:
@@ -244,34 +246,11 @@ def study_propagation_error(initial_state_index,
                  f"acceleration_difference_norm_history_arc_{i}.dat",
                  simulation_results_output_path)
 
-        # Plot state and acceleration difference over time
-        state_difference_history_array = result2array(state_difference_history)
-        acceleration_difference_history_array = result2array(acceleration_difference_history)
-        ax1.plot(state_difference_history_array[1:, 0]/constants.JULIAN_DAY, np.linalg.norm(state_difference_history_array[1:, 1:4], axis=1))
-        ax2.plot(acceleration_difference_history_array[:, 0]/constants.JULIAN_DAY, np.linalg.norm(acceleration_difference_history_array[:, 1:4], axis=1))
-
-
-    ax1.set_xlabel("Relative epoch [day]")
-    ax1.set_ylabel(r"$|| \Delta \mathbf{r} ||$  [m]")
-    #ax1.set_xticks(np.arange(CovAnalysisConfig.simulation_start_epoch / constants.JULIAN_DAY, CovAnalysisConfig.simulation_end_epoch / constants.JULIAN_DAY, 1))
-    ax1.set_yscale("log")
-    ax1.grid(True)
-
-    ax2.set_xlabel("Relative epoch [day]")
-    ax2.set_ylabel(r"$|| \Delta \mathbf{a} ||$  [m]")
-    ax2.grid(True)
-    ax2.set_yscale("log")
-    fig.tight_layout()
-
-    plot_output_path = os.path.join(output_path, "arcs_position_difference.pdf")
-    plt.savefig(plot_output_path)
-    plt.close()
-
 
 def study_delta_v_correction(initial_state_index,
-                            arc_duration,
-                            time_stamp):
-
+                             arc_duration,
+                             time_stamp,
+                             max_final_position_deviation):
     ###################################################################################################################
     ### Configuration
     ###################################################################################################################
@@ -280,8 +259,8 @@ def study_delta_v_correction(initial_state_index,
     output_folder = f"./output/arc_wise_propagation_error"
 
     # Build output_path
-    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration/constants.JULIAN_DAY}_days")
-    simulation_results_output_path = os.path.join(output_path, "simulation_results")
+    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days")
+    simulation_results_output_path = os.path.join(output_path, "delta_v_correction")
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(simulation_results_output_path, exist_ok=True)
 
@@ -295,7 +274,7 @@ def study_delta_v_correction(initial_state_index,
                                                                                      CovAnalysisConfig.global_frame_orientation)
 
     # Set rotation model settings for Enceladus
-    synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(
+    synodic_rotation_rate_enceladus = EnvUtil.get_synodic_rotation_model_enceladus(
         CovAnalysisConfig.simulation_start_epoch)
     initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                  "IAU_Enceladus",
@@ -306,12 +285,13 @@ def study_delta_v_correction(initial_state_index,
         CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
     # Set gravity field settings for Enceladus
-    body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+        CovAnalysisConfig.maximum_degree_gravity_enceladus)
     body_settings.get(
         "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
 
     # Set gravity field settings for Saturn
-    body_settings.get("Saturn").gravity_field_settings = Util.get_gravity_field_settings_saturn_iess()
+    body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
     body_settings.get(
         "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
@@ -410,6 +390,8 @@ def study_delta_v_correction(initial_state_index,
     initial_velocity_correction_list = []
 
     for i in range(nb_arcs):
+
+        print(f"Correcting arc {i}")
         if i == 0:
             initial_state = nominal_state_history[CovAnalysisConfig.simulation_start_epoch]
         else:
@@ -420,8 +402,17 @@ def study_delta_v_correction(initial_state_index,
                                                                                     lagrange_interpolation_settings)
             initial_state = interpolator.interpolate(arc_start_times[i])
 
+        # Initialize initial velocity correction
+        initial_velocity_correction = np.zeros((3,))
+        initial_velocity_correction_total = initial_velocity_correction
 
-        propagator_settings = numerical_simulation.propagation_setup.propagator.translational(
+        # Initial convergence flag
+        convergence_check = False
+
+        while not convergence_check:
+            initial_state[3:] = initial_state[3:] + initial_velocity_correction
+
+            propagator_settings = numerical_simulation.propagation_setup.propagator.translational(
                 central_bodies,
                 acceleration_models,
                 bodies_to_propagate,
@@ -433,55 +424,63 @@ def study_delta_v_correction(initial_state_index,
                 CovAnalysisConfig.dependent_variables_to_save
             )
 
-        parameter_settings = numerical_simulation.estimation_setup.parameter.initial_states(
-            propagator_settings, bodies)
-        sensitivity_parameters = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings, bodies, propagator_settings)
+            parameter_settings = numerical_simulation.estimation_setup.parameter.initial_states(
+                propagator_settings, bodies)
+            sensitivity_parameters = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings,
+                                                                                                bodies,
+                                                                                                propagator_settings)
 
-        # Propagate variational equations
-        variational_equations_solver = numerical_simulation.create_variational_equations_solver(
-            bodies, propagator_settings, sensitivity_parameters)
+            # Propagate variational equations
+            variational_equations_solver = numerical_simulation.create_variational_equations_solver(
+                bodies, propagator_settings, sensitivity_parameters)
 
-        state_transition_matrix_history_current_arc = variational_equations_solver.state_transition_matrix_history
-        state_history_current_arc = variational_equations_solver.state_history
+            state_transition_matrix_history_current_arc = variational_equations_solver.state_transition_matrix_history
+            state_history_current_arc = variational_equations_solver.state_history
 
-        # Compute position difference with respect to nominal orbit
-        epochs_arc = list(state_history_current_arc.keys())
-        lagrange_interpolation_settings = interpolators.lagrange_interpolation(
-            number_of_points=CovAnalysisConfig.number_of_points
-        )
-        interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
-                                                                                lagrange_interpolation_settings)
-        state_difference_history = dict()
-        for epoch in epochs_arc:
-            state_arc = state_history_current_arc[epoch]
-            if epoch == CovAnalysisConfig.simulation_start_epoch:
-                state_nominal_orbit = nominal_state_history[epoch]
-            else:
-                state_nominal_orbit = interpolator.interpolate(epoch)
+            # Compute position difference with respect to nominal orbit
+            epochs_arc = list(state_history_current_arc.keys())
+            lagrange_interpolation_settings = interpolators.lagrange_interpolation(
+                number_of_points=CovAnalysisConfig.number_of_points
+            )
+            interpolator = interpolators.create_one_dimensional_vector_interpolator(nominal_state_history,
+                                                                                    lagrange_interpolation_settings)
+            state_difference_history = dict()
+            for epoch in epochs_arc:
+                state_arc = state_history_current_arc[epoch]
+                if epoch == CovAnalysisConfig.simulation_start_epoch:
+                    state_nominal_orbit = nominal_state_history[epoch]
+                else:
+                    state_nominal_orbit = interpolator.interpolate(epoch)
 
-            state_difference_history[epoch] = state_arc - state_nominal_orbit
+                state_difference_history[epoch] = state_arc - state_nominal_orbit
 
-        save2txt(state_difference_history,
-                 f"state_difference_history_arc_{i}.dat",
-                 simulation_results_output_path)
+            # Compute required velocity change at beginning of arc to meet required final state
+            final_state_transition_matrix = state_transition_matrix_history_current_arc[epochs_arc[-1]]
+            initial_velocity_correction = np.dot(np.linalg.inv(final_state_transition_matrix[:3, 3:6]),
+                                                 -state_difference_history[epochs_arc[-1]][:3])
 
-        # Compute required velocity change at beginning of arc to meet required final state
-        final_state_transition_matrix = state_transition_matrix_history_current_arc[epochs_arc[-1]]
-        initial_velocity_correction = np.dot(np.linalg.inv(final_state_transition_matrix[:3, 3:6]),
-                                             -state_difference_history[epochs_arc[-1]][:3])
-        initial_velocity_correction_list.append(np.linalg.norm(initial_velocity_correction))
+            # Update total initial velocity correction required for current arc
+            initial_velocity_correction_total = initial_velocity_correction_total + initial_velocity_correction
 
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, marker='o', color="blue")
-    ax.set_xlabel("Arc index  [-]")
-    ax.set_ylabel(r"Velocity correction norm  [m s$^{-1}$]")
-    ax.set_yscale("log")
-    ax.set_ylim(bottom=1e-5)
-    plt.grid(which="both")
+            # Check convergence status and save state history
+            final_position_deviation_norm = np.linalg.norm(state_difference_history[epochs_arc[-1]][:3])
+            if final_position_deviation_norm <= max_final_position_deviation:
+                convergence_check = True
+                save2txt(state_history_current_arc,
+                         f"state_history_arc_{i}.dat",
+                         simulation_results_output_path)
+                save2txt(state_difference_history,
+                         f"state_difference_history_arc_{i}.dat",
+                         simulation_results_output_path)
 
-    plot_output_path = os.path.join(output_path, "velocity_correction_norm.pdf")
-    plt.savefig(plot_output_path)
-    plt.close()
+            print(f"Final position deviation norm = {final_position_deviation_norm}")
+
+        # Save total initial velocity correction for current arc
+        initial_velocity_correction_list.append(np.linalg.norm(initial_velocity_correction_total))
+
+    # Save initial velocity correction list
+    np.savetxt(simulation_results_output_path + "/multi_arc_initial_velocity_correction.dat",
+               initial_velocity_correction_list)
 
 
 def main():
@@ -499,12 +498,13 @@ def main():
 
     for arc_duration_day in arc_duration_days:
         study_propagation_error(initial_state_index,
-                                arc_duration_day*constants.JULIAN_DAY,
-                                time_stamp)
+                                arc_duration_day * constants.JULIAN_DAY,
+                                time_stamp,
+                                12)
         study_delta_v_correction(initial_state_index,
-                                 arc_duration_day*constants.JULIAN_DAY,
-                                 time_stamp)
-
+                                 arc_duration_day * constants.JULIAN_DAY,
+                                 time_stamp,
+                                 1e-3)
 
 
 if __name__ == "__main__":
