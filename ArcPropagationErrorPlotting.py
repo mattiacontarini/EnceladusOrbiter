@@ -1,5 +1,4 @@
 
-
 # Tudat import
 from tudatpy import constants
 
@@ -51,22 +50,55 @@ def study_delta_v_correction(input_path,
     initial_velocity_correction_list = np.loadtxt(input_path + "/multi_arc_initial_velocity_correction.dat")
     nb_arcs = len(initial_velocity_correction_list)
 
-    fig, ax = plt.subplots(1, 1)
-    ax.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, marker='o', color="blue")
-    ax.set_xlabel("Arc index  [-]", fontsize=fontsize)
-    ax.set_ylabel(r"Velocity correction norm  [m s$^{-1}$]", fontsize=fontsize)
-    ax.set_yscale("log")
-    ax.set_ylim(bottom=1e-5)
-    ax.tick_params(axis='both', which='major', labelsize=fontsize)
-    plt.grid(which="both")
+    fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(9, 5))
+    ax1.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, color="black", alpha=0.5)
+    ax1.set_xlabel("Arc index  [-]", fontsize=fontsize)
+    ax1.set_ylabel(r"Velocity correction norm  [m s$^{-1}$]", fontsize=fontsize)
+    ax1.set_yscale("log")
+    ax1.set_ylim(bottom=1e-5)
+    ax1.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax1.grid(True)
 
-    plot_output_path = os.path.join(output_path, "velocity_correction_norm.pdf")
+    # Plot position difference history after correction
+    for i in range(nb_arcs):
+        color = (np.random.random(), np.random.random(), np.random.random())
+
+        ax1.scatter(i+1, initial_velocity_correction_list[i], marker='o', color=color)
+
+        state_difference_history_current_arc = np.loadtxt(input_path + f"/state_difference_history_arc_{i}.dat")
+        ax2.plot(state_difference_history_current_arc[1:, 0] / constants.JULIAN_DAY,
+                 np.linalg.norm(state_difference_history_current_arc[1:, 1:4], axis=1), color=color)
+        ax2.scatter(state_difference_history_current_arc[-1, 0] / constants.JULIAN_DAY,
+                 np.linalg.norm(state_difference_history_current_arc[-1, 1:4]), marker='o', color=color)
+
+    ax2.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax2.set_ylabel(r"$||\Delta \mathbf{r}(t)||$  [m]", fontsize=fontsize)
+    ax2.set_yscale("log")
+    ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+    ax2.grid(True)
+
+    plot_output_path = os.path.join(output_path, "initial_velocity_correction.pdf")
     plt.savefig(plot_output_path)
     plt.close()
 
 
 def main():
-    input_path = "./output/arc_wise_propagation_error/2025.04.18.11.09.11/arc_duration_1.0_days/delta_v_correction"
-    output_path = input_path
-    study_delta_v_correction(input_path,
-                            output_path)
+
+    flag_study_propagation_error = False
+    if flag_study_propagation_error:
+        input_path = "./output/arc_wise_propagation_error/2025.04.18.11.35.31/arc_duration_1.0_days/simulation_results"
+        output_path = input_path
+        study_propagation_error(input_path,
+                                output_path,
+                                nb_arcs=28)
+
+    flag_study_delta_v_correction = True
+    if flag_study_delta_v_correction:
+        input_path = "./output/arc_wise_propagation_error/2025.04.18.11.35.31/arc_duration_1.0_days/delta_v_correction"
+        output_path = input_path
+        study_delta_v_correction(input_path,
+                                 output_path)
+
+
+if __name__ == "__main__":
+    main()
