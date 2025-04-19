@@ -50,7 +50,7 @@ def study_delta_v_correction(input_path,
     initial_velocity_correction_list = np.loadtxt(input_path + "/multi_arc_initial_velocity_correction.dat")
     nb_arcs = len(initial_velocity_correction_list)
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, constrained_layout=True, figsize=(9, 5))
+    fig1, ax1 = plt.subplots(1, 1)
     ax1.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, color="black", alpha=0.5)
     ax1.set_xlabel("Arc index  [-]", fontsize=fontsize)
     ax1.set_ylabel(r"Velocity correction norm  [m s$^{-1}$]", fontsize=fontsize)
@@ -60,6 +60,7 @@ def study_delta_v_correction(input_path,
     ax1.grid(True)
 
     # Plot position difference history after correction
+    fig2, ax2 = plt.subplots(1, 1)
     for i in range(nb_arcs):
         color = (np.random.random(), np.random.random(), np.random.random())
 
@@ -77,16 +78,18 @@ def study_delta_v_correction(input_path,
     ax2.tick_params(axis='both', which='major', labelsize=fontsize)
     ax2.grid(True)
 
-    plot_output_path = os.path.join(output_path, "initial_velocity_correction.pdf")
-    plt.savefig(plot_output_path)
+    position_difference_output_path = os.path.join(output_path, "arc_wise_position_difference_norm.pdf")
+    initial_velocity_correction_output_path = os.path.join(output_path, "initial_velocity_correction.pdf")
+    fig1.savefig(initial_velocity_correction_output_path)
+    fig2.savefig(position_difference_output_path)
     plt.close()
 
 
 def main():
 
-    flag_study_propagation_error = False
+    flag_study_propagation_error = True
     if flag_study_propagation_error:
-        input_path = "./output/arc_wise_propagation_error/2025.04.18.11.35.31/arc_duration_1.0_days/simulation_results"
+        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.38.47/arc_duration_1.0_days/initial_state_K3/simulation_results"
         output_path = input_path
         study_propagation_error(input_path,
                                 output_path,
@@ -94,7 +97,7 @@ def main():
 
     flag_study_delta_v_correction = True
     if flag_study_delta_v_correction:
-        input_path = "./output/arc_wise_propagation_error/2025.04.18.11.35.31/arc_duration_1.0_days/delta_v_correction"
+        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.38.47/arc_duration_1.0_days/initial_state_K3/delta_v_correction"
         output_path = input_path
         study_delta_v_correction(input_path,
                                  output_path)

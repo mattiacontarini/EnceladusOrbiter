@@ -34,7 +34,8 @@ def study_propagation_error(initial_state_index,
     output_folder = f"./output/arc_wise_propagation_error"
 
     # Build output_path
-    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days")
+    output_path = os.path.join(output_folder, time_stamp,
+                               f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days/initial_state_K{initial_state_index}")
     simulation_results_output_path = os.path.join(output_path, "simulation_results")
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(simulation_results_output_path, exist_ok=True)
@@ -259,7 +260,8 @@ def study_delta_v_correction(initial_state_index,
     output_folder = f"./output/arc_wise_propagation_error"
 
     # Build output_path
-    output_path = os.path.join(output_folder, time_stamp, f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days")
+    output_path = os.path.join(output_folder, time_stamp,
+                               f"arc_duration_{arc_duration / constants.JULIAN_DAY}_days/initial_state_K{initial_state_index}")
     simulation_results_output_path = os.path.join(output_path, "delta_v_correction")
     os.makedirs(output_path, exist_ok=True)
     os.makedirs(simulation_results_output_path, exist_ok=True)
@@ -482,10 +484,12 @@ def study_delta_v_correction(initial_state_index,
     np.savetxt(simulation_results_output_path + "/multi_arc_initial_velocity_correction.dat",
                initial_velocity_correction_list)
 
+    del propagator_settings
+
 
 def main():
-    initial_state_index = 1
-    arc_duration_days = [1]
+    initial_state_index = 3
+    arc_duration_days = 1
 
     # Retrieve current time stamp
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
@@ -496,15 +500,14 @@ def main():
                        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
     spice.load_standard_kernels(kernels_to_load)
 
-    for arc_duration_day in arc_duration_days:
-        study_propagation_error(initial_state_index,
-                                arc_duration_day * constants.JULIAN_DAY,
-                                time_stamp,
-                                12)
-        study_delta_v_correction(initial_state_index,
-                                 arc_duration_day * constants.JULIAN_DAY,
-                                 time_stamp,
-                                 1e-3)
+    study_propagation_error(initial_state_index,
+                            arc_duration_days * constants.JULIAN_DAY,
+                            time_stamp,
+                            12)
+    study_delta_v_correction(initial_state_index,
+                             arc_duration_days * constants.JULIAN_DAY,
+                             time_stamp,
+                             1e-3)
 
 
 if __name__ == "__main__":
