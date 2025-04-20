@@ -578,7 +578,7 @@ def covariance_analysis(initial_state_index,
 
 def main():
     initial_state_index = 1
-    save_results_flag = False
+    save_results_flag = True
 
     covariance_analysis(initial_state_index,
                         save_results_flag)
