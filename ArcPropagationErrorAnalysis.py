@@ -488,7 +488,7 @@ def study_delta_v_correction(initial_state_index,
 
 
 def main():
-    initial_state_index = 1
+    initial_state_index = 3
     arc_duration_days = 1
 
     # Retrieve current time stamp
