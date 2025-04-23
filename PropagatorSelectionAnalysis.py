@@ -12,6 +12,7 @@ from auxiliary import utilities as Util
 from tudatpy.astro import element_conversion
 from tudatpy.interface import spice
 from tudatpy import numerical_simulation
+from tudatpy.util import result2array
 from tudatpy import constants
 
 # Packages import
@@ -32,11 +33,6 @@ def perform_single_propagation_example(initial_cartesian_state,
     # Integrate orbit
     [state_history, dependent_variable_history, computational_time] = UDP.retrieve_history(initial_cartesian_state)
 
-    # Save propagation setup
-    propagation_setup = Util.compile_propagation_setup()
-    Util.save_propagation_setup(propagation_setup=propagation_setup,
-                                output_folder=output_folder)
-
     # Save results
     Util.save_results(state_history=state_history,
                       dependent_variables_history=dependent_variable_history,
@@ -48,6 +44,18 @@ def perform_single_propagation_example(initial_cartesian_state,
                          orbit_ID=orbit_ID,
                          color=["red"])
 
+    # Plot altitude
+    dependent_variable_history_array = result2array(dependent_variable_history)
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    ax.plot(dependent_variable_history_array[:, 0] / constants.JULIAN_DAY,
+            dependent_variable_history_array[:, 2])
+    ax.set_ylabel("Altitude  [m]")
+    ax.set_xlabel(r"$t - t_{0}$  [days]")
+    output_path = os.path.join(output_folder, "altitude_history.pdf")
+    fig.tight_layout()
+    fig.savefig(output_path)
+    plt.close(fig)
 
 def perform_integrators_selection(initial_cartesian_state,
                                   fixed_step_sizes,
@@ -202,8 +210,8 @@ def main():
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
-    kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-                       "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
+    kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+                       "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"]
     spice.load_standard_kernels(kernels_to_load)
 
     flag_perform_single_propagation_example = True
