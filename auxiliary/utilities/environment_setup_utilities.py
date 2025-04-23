@@ -78,6 +78,35 @@ def get_synodic_rotation_model_enceladus(simulation_initial_epoch):
     return rotation_rate_enceladus
 
 
+def get_rotation_settings_enceladus_park():
+
+    ## Input parameters in [deg] from Park et al. (2024)
+    # Linear terms
+    RA0 = 40.59
+    RAdot = -0.0902111773
+    DE0 = 83.534180
+    DEdot = -0.0071054901
+    W0 = 8.325383
+    Wdot = 262.7318870466
+
+    # Sinusoidal terms
+    amplitudes_sinusoidal_terms = [0.026616,
+                                   0.000686,
+                                   -0.000472,
+                                   -0.000897,
+                                   0.002970,
+                                   0.001127,
+                                   0.000519,
+                                   0.000228,
+                                   0.036804,
+                                   -0.001107,
+                                   0.073107,
+                                   -0.000167,
+                                   -0.000376,
+                                   0.000248,
+                                   -0.000137]
+
+
 def atmospheric_density_function_enceladus(h, lon, lat, time):
     data_coordinates = np.array([
         [48.0e3, np.deg2rad(-20), np.deg2rad(360-135)],
