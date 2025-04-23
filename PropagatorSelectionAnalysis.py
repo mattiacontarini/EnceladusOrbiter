@@ -206,7 +206,7 @@ def main():
                        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
     spice.load_standard_kernels(kernels_to_load)
 
-    flag_perform_single_propagation_example = False
+    flag_perform_single_propagation_example = True
     if flag_perform_single_propagation_example:
 
         # Retrieve initial state
@@ -313,7 +313,7 @@ def main():
                                       additional_acceleration_labels=additional_acceleration_labels,
                                       output_folder=output_directory)
 
-    flag_check_integrator_performance = True
+    flag_check_integrator_performance = False
     if flag_check_integrator_performance:
         output_directory = os.path.join(output_folder, "check_integrator_performance")
         os.makedirs(output_directory, exist_ok=True)

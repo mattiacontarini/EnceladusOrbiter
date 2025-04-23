@@ -27,12 +27,32 @@ max_degree_order = dict(
     Saturn=[8, 8],
 )
 
+# Define the accelerations acting on the vehicle
 acceleration_settings_on_vehicle = dict(
+    Sun=[
+        numerical_simulation.propagation_setup.acceleration.radiation_pressure(),
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
     Saturn=[
-        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(max_degree_order["Saturn"][0], max_degree_order["Saturn"][1]),
+        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(8, 8),
     ],
     Enceladus=[
-        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(max_degree_order["Enceladus"][0], max_degree_order["Enceladus"][1])
+        numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(3, 3),
+    ],
+    Mimas=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Tethys=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Dione=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Rhea=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Titan=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ]
 )
 
