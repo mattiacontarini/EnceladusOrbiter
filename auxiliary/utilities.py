@@ -87,7 +87,7 @@ def plot_trajectory(state_history,
 
     plt.tight_layout()
 
-    plt.savefig(output_folder + "/trajectory_3d.png")
+    plt.savefig(output_folder + "/trajectory_3d.pdf")
     plt.close()
 
 
