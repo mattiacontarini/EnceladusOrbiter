@@ -51,8 +51,12 @@ def covariance_analysis(initial_state_index,
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
-    kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-                       "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
+    kernels_to_load = [
+    #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+    #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+    ]
     spice.load_standard_kernels(kernels_to_load)
 
     ###################################################################################################################
@@ -520,7 +524,8 @@ def covariance_analysis(initial_state_index,
 
         # Plot formal errors of empirical accelerations
         formal_errors_empirical_accelerations = formal_errors[indices_empirical_acceleration_components[0]:
-                                                              indices_empirical_acceleration_components[0] + indices_empirical_acceleration_components[1]]
+                                                              indices_empirical_acceleration_components[0] +
+                                                              indices_empirical_acceleration_components[1]]
         formal_errors_empirical_accelerations_radial_direction = []
         formal_errors_empirical_accelerations_along_track_direction = []
         formal_errors_empirical_accelerations_across_track_direction = []
@@ -656,10 +661,12 @@ def covariance_analysis(initial_state_index,
             initial_inertial_to_rsw_rotation_matrix = np.linalg.inv(initial_rsw_to_inertial_rotation_matrix)
             formal_error_initial_inertial_position_current_arc = formal_errors[indices_states[0] + 6 * i:
                                                                                indices_states[0] + 6 * i + 3].T
-            formal_error_initial_position_rsw_current_arc = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(formal_error_initial_inertial_position_current_arc, initial_inertial_to_rsw_rotation_matrix))
+            formal_error_initial_position_rsw_current_arc = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(
+                formal_error_initial_inertial_position_current_arc, initial_inertial_to_rsw_rotation_matrix))
             formal_error_initial_position_radial_direction.append(formal_error_initial_position_rsw_current_arc[0])
             formal_error_initial_position_along_track_direction.append(formal_error_initial_position_rsw_current_arc[1])
-            formal_error_initial_position_across_track_direction.append(formal_error_initial_position_rsw_current_arc[2])
+            formal_error_initial_position_across_track_direction.append(
+                formal_error_initial_position_rsw_current_arc[2])
 
         fig, ax = plt.subplots(1, 1)
         ax.plot(np.arange(1, nb_arcs + 1, 1),
@@ -691,7 +698,7 @@ def covariance_analysis(initial_state_index,
 
 def main():
     initial_state_index = 1
-    save_results_flag = True
+    save_results_flag = False
 
     covariance_analysis(initial_state_index,
                         save_results_flag)
