@@ -11,6 +11,7 @@ import os
 def study_propagation_error(input_path,
                             output_path,
                             nb_arcs,
+                            orbit_solution,
                             fontsize=12):
 
     # Plot state and acceleration difference over time
@@ -35,14 +36,15 @@ def study_propagation_error(input_path,
     ax2.grid(True)
     ax2.tick_params(axis='both', which='major', labelsize=fontsize)
     ax2.set_yscale("log")
-    fig.suptitle("Perturbed vs base case")
-    plot_output_path = os.path.join(output_path, "arcs_position_acceleration_difference.pdf")
+    fig.suptitle(f"Perturbed vs base case - {orbit_solution}", fontsize=fontsize)
+    plot_output_path = os.path.join(output_path, f"{orbit_solution}_arcs_position_acceleration_difference.pdf")
     plt.savefig(plot_output_path)
     plt.close()
 
 
 def study_delta_v_correction(input_path,
                              output_path,
+                             orbit_solution,
                              fontsize=12
                              ):
 
@@ -53,11 +55,12 @@ def study_delta_v_correction(input_path,
     fig1, ax1 = plt.subplots(1, 1)
     ax1.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, color="black", alpha=0.5)
     ax1.set_xlabel("Arc index  [-]", fontsize=fontsize)
-    ax1.set_ylabel(r"Velocity correction norm  [m s$^{-1}$]", fontsize=fontsize)
+    ax1.set_ylabel(r"$||\Delta v_{i} (t_{0,i})  ||$  [m s$^{-1}$]", fontsize=fontsize)
     ax1.set_yscale("log")
     ax1.set_ylim(bottom=1e-5)
     ax1.tick_params(axis='both', which='major', labelsize=fontsize)
     ax1.grid(True)
+    ax1.set_title(f"Velocity correction - {orbit_solution}")
 
     # Plot position difference history after correction
     fig2, ax2 = plt.subplots(1, 1)
@@ -78,8 +81,10 @@ def study_delta_v_correction(input_path,
     ax2.tick_params(axis='both', which='major', labelsize=fontsize)
     ax2.grid(True)
 
-    position_difference_output_path = os.path.join(output_path, "arc_wise_position_difference_norm.pdf")
-    initial_velocity_correction_output_path = os.path.join(output_path, "initial_velocity_correction.pdf")
+    position_difference_output_path = os.path.join(output_path, f"{orbit_solution}_arc_wise_position_difference_norm.pdf")
+    initial_velocity_correction_output_path = os.path.join(output_path, f"{orbit_solution}_initial_velocity_correction.pdf")
+    fig1.tight_layout()
+    fig2.tight_layout()
     fig1.savefig(initial_velocity_correction_output_path)
     fig2.savefig(position_difference_output_path)
     plt.close()
@@ -89,18 +94,20 @@ def main():
 
     flag_study_propagation_error = True
     if flag_study_propagation_error:
-        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.38.47/arc_duration_1.0_days/initial_state_K3/simulation_results"
+        input_path = "./output/arc_wise_propagation_error/2025.04.23.09.46.53/arc_duration_1.0_days/initial_state_K1/simulation_results"
         output_path = input_path
         study_propagation_error(input_path,
                                 output_path,
-                                nb_arcs=28)
+                                28,
+                                "K1")
 
-    flag_study_delta_v_correction = True
+    flag_study_delta_v_correction = False
     if flag_study_delta_v_correction:
-        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.38.47/arc_duration_1.0_days/initial_state_K3/delta_v_correction"
+        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.31.48/arc_duration_1.0_days/initial_state_K2/delta_v_correction"
         output_path = input_path
         study_delta_v_correction(input_path,
-                                 output_path)
+                                 output_path,
+                                 "K2")
 
 
 if __name__ == "__main__":
