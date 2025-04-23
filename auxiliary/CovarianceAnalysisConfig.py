@@ -66,8 +66,17 @@ dependent_variables_to_save = [
     numerical_simulation.propagation_setup.dependent_variable.altitude("Vehicle", "Enceladus"),
     numerical_simulation.propagation_setup.dependent_variable.latitude("Vehicle", "Enceladus"),
     numerical_simulation.propagation_setup.dependent_variable.longitude("Vehicle", "Enceladus"),
-    numerical_simulation.propagation_setup.dependent_variable.total_acceleration("Vehicle")
+    numerical_simulation.propagation_setup.dependent_variable.total_acceleration("Vehicle"),
+    numerical_simulation.propagation_setup.dependent_variable.rsw_to_inertial_rotation_matrix("Vehicle", "Enceladus"),
 ]
+
+indices_dependent_variables = dict(
+    altitude=[1, 2],
+    latitude=[2, 3],
+    longitude=[3, 4],
+    total_acceleration=[4, 7],
+    rsw_to_inertial_rotation_matrix=[7, 16]
+)
 
 #######################################################################################################################
 ### Observations
@@ -84,6 +93,29 @@ ground_station_coordinates_type = {ground_station_names[0]: element_conversion.g
                                    ground_station_names[1]: element_conversion.geodetic_position_type,
                                    ground_station_names[2]: element_conversion.geodetic_position_type}
 
+
+# Radio beacons properties
+lander_names = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
+lander_coordinates = {
+    lander_names[0]: [0.0, np.deg2rad(0.0), np.deg2rad(30.0)],
+    lander_names[1]: [0.0, np.deg2rad(40.0), np.deg2rad(60.0)],
+    lander_names[2]: [0.0, np.deg2rad(80.0), np.deg2rad(30.0)],
+    lander_names[3]: [0.0, np.deg2rad(120.0), np.deg2rad(0.0)],
+    lander_names[4]: [0.0, np.deg2rad(160.0), np.deg2rad(-30.0)],
+    lander_names[5]: [0.0, np.deg2rad(200.0), np.deg2rad(-60.0)],
+    lander_names[6]: [0.0, np.deg2rad(240.0), np.deg2rad(-30.0)],
+    lander_names[7]: [0.0, np.deg2rad(280.0), np.deg2rad(0.0)],
+    lander_names[8]: [0.0, np.deg2rad(320.0), np.deg2rad(30.0)]
+}
+lander_coordinates_type = {lander_names[0]: element_conversion.geodetic_position_type,
+                           lander_names[1]: element_conversion.geodetic_position_type,
+                           lander_names[2]: element_conversion.geodetic_position_type,
+                           lander_names[3]: element_conversion.geodetic_position_type,
+                           lander_names[4]: element_conversion.geodetic_position_type,
+                           lander_names[5]: element_conversion.geodetic_position_type,
+                           lander_names[6]: element_conversion.geodetic_position_type,
+                           lander_names[7]: element_conversion.geodetic_position_type,
+                           lander_names[8]: element_conversion.geodetic_position_type}
 
 # Tracking arcs properties
 tracking_arc_duration = 8.0 * 3600.0
@@ -170,14 +202,19 @@ acceleration_settings_on_vehicle = dict(
 #######################################################################################################################
 
 empirical_acceleration_components_to_estimate = dict()
-empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.radial_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.radial_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.sine_empirical
+                                                                                                                                          ]
 
-empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.along_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
 
-empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.across_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.cosine_empirical,
-                                                                                                                                          numerical_simulation.estimation_setup.parameter.sine_empirical]
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.along_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.sine_empirical
+                                                                                                                                               ]
+
+
+empirical_acceleration_components_to_estimate[numerical_simulation.estimation_setup.parameter.across_track_empirical_acceleration_component] = [numerical_simulation.estimation_setup.parameter.constant_empirical
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.cosine_empirical,
+                                                                                                                                          #numerical_simulation.estimation_setup.parameter.sine_empirical
+                                                                                                                                                ]

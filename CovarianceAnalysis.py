@@ -22,6 +22,7 @@ from tudatpy.numerical_simulation.estimation_setup import observation
 import numpy as np
 import datetime
 import os
+import matplotlib.pyplot as plt
 
 
 def covariance_analysis(initial_state_index,
@@ -75,7 +76,8 @@ def covariance_analysis(initial_state_index,
         CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
     # Set gravity field settings for Enceladus
-    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(CovAnalysisConfig.maximum_degree_gravity_enceladus)
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+        CovAnalysisConfig.maximum_degree_gravity_enceladus)
     body_settings.get(
         "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
 
@@ -225,7 +227,17 @@ def covariance_analysis(initial_state_index,
         )
         numerical_simulation.environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_settings)
 
-    # Define link ends for two-way Doppler and range observables, for each ground station
+    # Create landers settings
+    lander_names = CovAnalysisConfig.lander_names
+    for lander_name in lander_names:
+        lander_settings = numerical_simulation.environment_setup.ground_station.basic_station(
+            lander_name,
+            CovAnalysisConfig.lander_coordinates[lander_name],
+            CovAnalysisConfig.lander_coordinates_type[lander_name]
+        )
+        numerical_simulation.environment_setup.add_ground_station(bodies.get_body("Enceladus"), lander_settings)
+
+    # Define link ends for two-way Doppler and range observables, for each ground station and lander
     link_ends = []
     for station in ground_station_names:
         link_ends_per_station = dict()
@@ -234,6 +246,16 @@ def covariance_analysis(initial_state_index,
         )
         link_ends_per_station[observation.receiver] = observation.body_reference_point_link_end_id(
             "Earth", station
+        )
+        link_ends_per_station[observation.reflector1] = observation.body_origin_link_end_id("Vehicle")
+        link_ends.append(link_ends_per_station)
+    for lander in lander_names:
+        link_ends_per_station = dict()
+        link_ends_per_station[observation.transmitter] = observation.body_reference_point_link_end_id(
+            "Enceladus", lander
+        )
+        link_ends_per_station[observation.receiver] = observation.body_reference_point_link_end_id(
+            "Enceladus", lander
         )
         link_ends_per_station[observation.reflector1] = observation.body_origin_link_end_id("Vehicle")
         link_ends.append(link_ends_per_station)
@@ -432,9 +454,11 @@ def covariance_analysis(initial_state_index,
 
     # Set a priori constraint for empirical accelerations
     indices_empirical_acceleration_components = parameters_to_estimate.indices_for_parameter_type(
-        (numerical_simulation.estimation_setup.parameter.arc_wise_empirical_acceleration_coefficients_type, ("Vehicle", "Enceladus")))[0]
+        (numerical_simulation.estimation_setup.parameter.arc_wise_empirical_acceleration_coefficients_type,
+         ("Vehicle", "Enceladus")))[0]
     for i in range(indices_empirical_acceleration_components[1]):
-        inv_apriori[indices_empirical_acceleration_components[0] + i, indices_empirical_acceleration_components[0] + i] = CovAnalysisConfig.a_priori_empirical_accelerations ** -2
+        inv_apriori[indices_empirical_acceleration_components[0] + i, indices_empirical_acceleration_components[
+            0] + i] = CovAnalysisConfig.a_priori_empirical_accelerations ** -2
 
     # Save inverse of a priori constraints to file
     if save_results_flag:
@@ -457,8 +481,10 @@ def covariance_analysis(initial_state_index,
     range_noise = CovAnalysisConfig.range_noise
     doppler_weight = doppler_noise ** -2
     range_weight = range_noise ** -2
-    simulated_observations.set_constant_weight(doppler_weight, numerical_simulation.estimation.observation_parser(numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type))
-    simulated_observations.set_constant_weight(range_weight, numerical_simulation.estimation.observation_parser(numerical_simulation.estimation_setup.observation.n_way_range_type))
+    simulated_observations.set_constant_weight(doppler_weight, numerical_simulation.estimation.observation_parser(
+        numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type))
+    simulated_observations.set_constant_weight(range_weight, numerical_simulation.estimation.observation_parser(
+        numerical_simulation.estimation_setup.observation.n_way_range_type))
 
     # Perform the covariance analysis
     covariance_output = estimator.compute_covariance(covariance_input)
@@ -492,6 +518,46 @@ def covariance_analysis(initial_state_index,
                                         plots_output_path,
                                         "formal_errors.pdf")
 
+        # Plot formal errors of empirical accelerations
+        formal_errors_empirical_accelerations = formal_errors[indices_empirical_acceleration_components[0]:
+                                                              indices_empirical_acceleration_components[0] + indices_empirical_acceleration_components[1]]
+        formal_errors_empirical_accelerations_radial_direction = []
+        formal_errors_empirical_accelerations_along_track_direction = []
+        formal_errors_empirical_accelerations_across_track_direction = []
+        nb_empirical_acceleration_groups = int(len(formal_errors_empirical_accelerations) / 3)
+        for j in range(nb_empirical_acceleration_groups):
+            formal_errors_empirical_accelerations_radial_direction.append(formal_errors_empirical_accelerations[j])
+            formal_errors_empirical_accelerations_along_track_direction.append(
+                formal_errors_empirical_accelerations[j + 1])
+            formal_errors_empirical_accelerations_across_track_direction.append(
+                formal_errors_empirical_accelerations[j + 2])
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(np.arange(1, nb_empirical_acceleration_groups + 1, 1),
+                formal_errors_empirical_accelerations_radial_direction,
+                label="Radial direction",
+                color="blue",
+                marker="o")
+        ax.plot(np.arange(1, nb_empirical_acceleration_groups + 1, 1),
+                formal_errors_empirical_accelerations_along_track_direction,
+                label="Along track direction",
+                color="red",
+                marker="*")
+        ax.plot(np.arange(1, nb_empirical_acceleration_groups + 1, 1),
+                formal_errors_empirical_accelerations_across_track_direction,
+                label="Across track direction",
+                color="green",
+                marker="x")
+        fig.suptitle("Formal errors RSW empirical accelerations")
+        ax.legend()
+        ax.set_xlabel("Arc Index [-]")
+        ax.set_ylabel(r"Formal Error  [m s$^{-2}$]")
+        ax.set_yscale("log")
+        ax.grid(True)
+        os.makedirs(plots_output_path, exist_ok=True)
+        file_output_path = os.path.join(plots_output_path, "formal_errors_empirical_accelerations_rsw.pdf")
+        plt.savefig(file_output_path)
+        plt.close(fig)
+
         # Plot observation times
         sorted_observations = simulated_observations.sorted_observation_sets
         doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
@@ -513,6 +579,9 @@ def covariance_analysis(initial_state_index,
                                             doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
 
         # Save simulation results for every arc
+        formal_error_initial_position_radial_direction = []
+        formal_error_initial_position_along_track_direction = []
+        formal_error_initial_position_across_track_direction = []
         for i in range(nb_arcs):
             simulation_results_current_arc = simulation_results[i]
             state_history_current_arc = simulation_results_current_arc.state_history
@@ -524,8 +593,10 @@ def covariance_analysis(initial_state_index,
             latitude_history = np.zeros((dim[0], 2))
             longitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
             latitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
-            longitude_history[:, 1] = dependent_variable_history_current_arc_array[:, 3]
-            latitude_history[:, 1] = dependent_variable_history_current_arc_array[:, 2]
+            longitude_history[:, 1] = dependent_variable_history_current_arc_array[:,
+                                      CovAnalysisConfig.indices_dependent_variables["longitude"][0]]
+            latitude_history[:, 1] = dependent_variable_history_current_arc_array[:,
+                                     CovAnalysisConfig.indices_dependent_variables["latitude"][0]]
 
             save2txt(state_history_current_arc,
                      f"state_history_arc_{i}.dat",
@@ -574,6 +645,48 @@ def covariance_analysis(initial_state_index,
                                                 doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
                                                 doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                                 doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
+
+            # Compute uncertainty in RSW coordinates for initial position elements
+            initial_rsw_to_inertial_rotation_matrix = dependent_variable_history_current_arc_array[0,
+                                                      CovAnalysisConfig.indices_dependent_variables[
+                                                          "rsw_to_inertial_rotation_matrix"][0]:
+                                                      CovAnalysisConfig.indices_dependent_variables[
+                                                          "rsw_to_inertial_rotation_matrix"][1]]
+            initial_rsw_to_inertial_rotation_matrix = np.reshape(initial_rsw_to_inertial_rotation_matrix, (3, 3))
+            initial_inertial_to_rsw_rotation_matrix = np.linalg.inv(initial_rsw_to_inertial_rotation_matrix)
+            formal_error_initial_inertial_position_current_arc = formal_errors[indices_states[0] + 6 * i:
+                                                                               indices_states[0] + 6 * i + 3].T
+            formal_error_initial_position_rsw_current_arc = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(formal_error_initial_inertial_position_current_arc, initial_inertial_to_rsw_rotation_matrix))
+            formal_error_initial_position_radial_direction.append(formal_error_initial_position_rsw_current_arc[0])
+            formal_error_initial_position_along_track_direction.append(formal_error_initial_position_rsw_current_arc[1])
+            formal_error_initial_position_across_track_direction.append(formal_error_initial_position_rsw_current_arc[2])
+
+        fig, ax = plt.subplots(1, 1)
+        ax.plot(np.arange(1, nb_arcs + 1, 1),
+                formal_error_initial_position_radial_direction,
+                label="Radial direction",
+                color="blue",
+                marker="o")
+        ax.plot(np.arange(1, nb_arcs + 1, 1),
+                formal_error_initial_position_along_track_direction,
+                label="Along track direction",
+                color="red",
+                marker="*")
+        ax.plot(np.arange(1, nb_arcs + 1, 1),
+                formal_error_initial_position_across_track_direction,
+                label="Across track direction",
+                color="green",
+                marker="x")
+        fig.suptitle("Formal errors initial RSW position")
+        ax.legend()
+        ax.set_xlabel("Arc Index [-]")
+        ax.set_ylabel("Formal Error  [m]")
+        ax.grid(True)
+        ax.set_yscale("log")
+        os.makedirs(plots_output_path, exist_ok=True)
+        file_output_path = os.path.join(plots_output_path, "formal_errors_initial_position_rsw.pdf")
+        plt.savefig(file_output_path)
+        plt.close(fig)
 
 
 def main():
