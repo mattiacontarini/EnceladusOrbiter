@@ -29,7 +29,8 @@ bodies_to_create = ["Sun",
                     "Mimas",
                     "Tethys",
                     "Dione",
-                    "Rhea"]
+                    "Rhea",
+                    "Titan"]
 
 # Frame settings
 global_frame_origin = "Enceladus"
@@ -165,6 +166,7 @@ range_noise = 0.2
 # Kaula constraint factor
 kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
 #kaula_constraint_multiplier = 1e-3  # From Zannoni et al., 2020
+
 #######################################################################################################################
 ### Accelerations #####################################################################################################
 #######################################################################################################################
@@ -193,6 +195,9 @@ acceleration_settings_on_vehicle = dict(
         numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ],
     Rhea=[
+        numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
+    ],
+    Titan=[
         numerical_simulation.propagation_setup.acceleration.point_mass_gravity()
     ]
 )
