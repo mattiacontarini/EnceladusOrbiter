@@ -9,24 +9,21 @@ from auxiliary import BenedikterInitialStates as Benedikter
 from auxiliary import utilities as Util
 
 # Tudat import
-from tudatpy.astro import element_conversion
 from tudatpy.interface import spice
 from tudatpy import numerical_simulation
 from tudatpy.util import result2array
 from tudatpy import constants
 
 # Packages import
-import numpy as np
 import datetime
 import matplotlib.pyplot as plt
-import matplotlib.lines as mlines
-import matplotlib.patches as mpatches
 import os
 
 
 def perform_single_propagation_example(initial_cartesian_state,
                                        orbit_ID,
-                                       output_folder):
+                                       output_folder,
+                                       fontsize=12):
     # Define propagator object
     UDP = OrbitPropagator.from_config()
 
@@ -42,7 +39,7 @@ def perform_single_propagation_example(initial_cartesian_state,
     Util.plot_trajectory(state_history=state_history,
                          output_folder=output_folder,
                          orbit_ID=orbit_ID,
-                         color=["red"])
+                         color=["red", "blue"])
 
     # Plot altitude
     dependent_variable_history_array = result2array(dependent_variable_history)
@@ -50,9 +47,14 @@ def perform_single_propagation_example(initial_cartesian_state,
     ax = fig.add_subplot()
     ax.plot(dependent_variable_history_array[:, 0] / constants.JULIAN_DAY,
             dependent_variable_history_array[:, 2])
-    ax.set_ylabel("Altitude  [m]")
-    ax.set_xlabel(r"$t - t_{0}$  [days]")
-    output_path = os.path.join(output_folder, "altitude_history.pdf")
+    ax.set_ylabel("Altitude  [m]", fontsize=fontsize)
+    ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax.set_title(orbit_ID, fontsize=fontsize)
+    ax.set_yscale("log")
+    ax.set_ylim(bottom=1.5e5, top=2.8e5)
+    ax.grid(which="both")
+    ax.tick_params(which="both", labelsize=fontsize)
+    output_path = os.path.join(output_folder, f"{orbit_ID}_altitude_history.pdf")
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -218,16 +220,20 @@ def main():
     if flag_perform_single_propagation_example:
 
         # Retrieve initial state
-        initial_cartesian_state = Benedikter.K1_initial_cartesian_state
+        initial_cartesian_state_index = 2
+        if initial_cartesian_state_index == 1:
+            orbit_ID = "K1"
+            initial_cartesian_state = Benedikter.K1_initial_cartesian_state
+        elif initial_cartesian_state_index == 2:
+            orbit_ID = "K2"
+            initial_cartesian_state = Benedikter.K2_initial_cartesian_state
+        elif initial_cartesian_state_index == 3:
+            orbit_ID = "K3"
+            initial_cartesian_state = Benedikter.K3_initial_cartesian_state
+        else:
+            raise ValueError("Incorrect initial cartesian state index")
 
-        if initial_cartesian_state.all() == Benedikter.K1_initial_cartesian_state.all():
-            orbit_ID = "K1' Enceladus orbit"
-        elif initial_cartesian_state.all() == Benedikter.K2_initial_cartesian_state.all():
-            orbit_ID = "K2' Enceladus orbit"
-        elif initial_cartesian_state.all() == Benedikter.K3_initial_cartesian_state.all():
-            orbit_ID = "K3' Enceladus orbit"
-
-        perform_single_propagation_example(initial_cartesian_state, orbit_ID, output_folder)
+        perform_single_propagation_example(initial_cartesian_state, orbit_ID, output_folder, 14)
 
     flag_perform_integrators_selection = False
     if flag_perform_integrators_selection:

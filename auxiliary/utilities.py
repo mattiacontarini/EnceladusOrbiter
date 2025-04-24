@@ -84,10 +84,10 @@ def plot_trajectory(state_history,
     y = np.outer(np.sin(u), Enceladus_radius * np.sin(v))
     z = np.outer(np.ones(np.size(u)), Enceladus_radius * np.cos(v))
     ax.plot_surface(x, y, z, color='blue', alpha=0.5)
-
+    ax.set_title(orbit_ID)
     plt.tight_layout()
 
-    plt.savefig(output_folder + "/trajectory_3d.pdf")
+    plt.savefig(output_folder + f"/{orbit_ID}_trajectory_3d.pdf")
     plt.close()
 
 
