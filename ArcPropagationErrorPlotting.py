@@ -1,3 +1,4 @@
+import sys
 
 # Tudat import
 from tudatpy import constants
@@ -36,6 +37,7 @@ def study_propagation_error(input_path,
     ax2.grid(True)
     ax2.tick_params(axis='both', which='major', labelsize=fontsize)
     ax2.set_yscale("log")
+    ax2.set_ylim(top=1e-5)
     fig.suptitle(f"Perturbed vs base case - {orbit_solution}", fontsize=fontsize)
     plot_output_path = os.path.join(output_path, f"{orbit_solution}_arcs_position_acceleration_difference.pdf")
     plt.savefig(plot_output_path)
@@ -57,7 +59,7 @@ def study_delta_v_correction(input_path,
     ax1.set_xlabel("Arc index  [-]", fontsize=fontsize)
     ax1.set_ylabel(r"$||\Delta v_{i} (t_{0,i})  ||$  [m s$^{-1}$]", fontsize=fontsize)
     ax1.set_yscale("log")
-    ax1.set_ylim(bottom=1e-5)
+    ax1.set_ylim(bottom=1e-5, top=1e-2)
     ax1.tick_params(axis='both', which='major', labelsize=fontsize)
     ax1.grid(True)
     ax1.set_title(f"Velocity correction - {orbit_solution}")
@@ -94,20 +96,22 @@ def main():
 
     flag_study_propagation_error = True
     if flag_study_propagation_error:
-        input_path = "./output/arc_wise_propagation_error/2025.04.23.09.46.53/arc_duration_1.0_days/initial_state_K1/simulation_results"
+        orbit_solution = "K1"
+        input_path = f"./output/arc_wise_propagation_error/2025.04.23.11.53.57/arc_duration_1.0_days/initial_state_{orbit_solution}/simulation_results"
         output_path = input_path
         study_propagation_error(input_path,
                                 output_path,
                                 28,
-                                "K1")
+                                orbit_solution)
 
-    flag_study_delta_v_correction = False
+    flag_study_delta_v_correction = True
     if flag_study_delta_v_correction:
-        input_path = "./output/arc_wise_propagation_error/2025.04.19.10.31.48/arc_duration_1.0_days/initial_state_K2/delta_v_correction"
+        orbit_solution = "K1"
+        input_path = f"./output/arc_wise_propagation_error/2025.04.23.11.53.57/arc_duration_1.0_days/initial_state_{orbit_solution}/delta_v_correction"
         output_path = input_path
         study_delta_v_correction(input_path,
                                  output_path,
-                                 "K2")
+                                 orbit_solution)
 
 
 if __name__ == "__main__":
