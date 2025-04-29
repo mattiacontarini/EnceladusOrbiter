@@ -17,10 +17,7 @@ import matplotlib.pyplot as plt
 import sys
 
 
-def tuning_parameters_spectrum_analysis():
-
-    # Retrieve current time stamp
-    time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+def tuning_parameters_spectrum_analysis(time_stamp):
 
     # Add path to compiled version of Tudat
     sys.path.insert(0,
@@ -79,11 +76,45 @@ def tuning_parameters_spectrum_analysis():
                     UDP.perform_covariance_analysis(output_path)
 
 
+def single_case_analysis(time_stamp):
+
+    # Load SPICE kernels for simulation
+    spice.load_standard_kernels()
+    kernels_to_load = [
+        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+    ]
+    spice.load_standard_kernels(kernels_to_load)
+
+    # Set output path
+    output_folder = "./output/covariance_analysis/single_case_analysis"
+    output_path = os.path.join(output_folder, time_stamp)
+    os.makedirs(output_path, exist_ok=True)
+
+    # Initialize covariance analysis object
+    UDP = CovarianceAnalysis.from_config()
+
+    # Set flag for saving results
+    UDP.save_results_flag = True
+
+    # Perform covariance analysis
+    UDP.perform_covariance_analysis(output_path)
+
+
 def main():
+
+    # Add path to compiled version of Tudat
+    sys.path.insert(0,
+                    "/Users/mattiacontarini/tudat-bundle/tudatpy/src/tudatpy/numerical_simulation/environment_setup/rotation_model/expose_rotation_model.cpp")
+
+    # Retrieve current time stamp
+    time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     perform_tuning_parameters_spectrum_analysis_flag = True
     if perform_tuning_parameters_spectrum_analysis_flag:
-        tuning_parameters_spectrum_analysis()
+        tuning_parameters_spectrum_analysis(time_stamp)
 
 
 if __name__ == "__main__":
