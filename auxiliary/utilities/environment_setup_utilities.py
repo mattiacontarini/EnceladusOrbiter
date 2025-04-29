@@ -1,5 +1,10 @@
-# Files and variables import
+# Packages import
+import numpy as np
+import sys
 
+# Add path to built tudatpy kernel
+sys.path.insert(0,
+                    "/Users/mattiacontarini/tudat-bundle/cmake-build-debug/")
 
 # Tudat import
 from tudatpy.kernel.interface import spice
@@ -7,9 +12,6 @@ from tudatpy.kernel.astro import gravitation
 from tudatpy import numerical_simulation
 from tudatpy.astro import element_conversion
 from tudatpy import constants
-
-# Packages import
-import numpy as np
 
 
 def get_gravity_field_settings_enceladus_park(max_degree):

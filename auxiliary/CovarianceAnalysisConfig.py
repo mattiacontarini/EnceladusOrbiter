@@ -16,6 +16,7 @@ simulation_start_epoch = DateTime(2000, 1, 1).epoch()  # From Benedikter et al. 
 simulation_duration = 28 * constants.JULIAN_DAY  # From Benedikter et al. (2022)
 simulation_end_epoch = simulation_start_epoch + simulation_duration
 
+initial_state_index = 1
 
 #######################################################################################################################
 ### Environment #######################################################################################################

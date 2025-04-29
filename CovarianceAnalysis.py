@@ -10,10 +10,8 @@ from tudatpy.kernel.interface import spice
 from tudatpy import constants
 
 # Packages import
-import numpy as np
 import datetime
 import os
-import matplotlib.pyplot as plt
 import sys
 
 
@@ -105,16 +103,16 @@ def single_case_analysis(time_stamp):
 
 def main():
 
-    # Add path to compiled version of Tudat
-    sys.path.insert(0,
-                    "/Users/mattiacontarini/tudat-bundle/tudatpy/src/tudatpy/numerical_simulation/environment_setup/rotation_model/expose_rotation_model.cpp")
-
     # Retrieve current time stamp
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
-    perform_tuning_parameters_spectrum_analysis_flag = True
+    perform_tuning_parameters_spectrum_analysis_flag = False
     if perform_tuning_parameters_spectrum_analysis_flag:
         tuning_parameters_spectrum_analysis(time_stamp)
+
+    perform_single_case_analysis_flag = True
+    if perform_single_case_analysis_flag:
+        single_case_analysis(time_stamp)
 
 
 if __name__ == "__main__":
