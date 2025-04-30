@@ -17,6 +17,7 @@ from tudatpy.util import result2array
 from tudatpy.kernel.interface import spice
 from tudatpy.math import interpolators
 from tudatpy.numerical_simulation.estimation_setup import observation
+from tudatpy import constants
 
 # Packages import
 import numpy as np
@@ -73,9 +74,9 @@ class CovarianceAnalysis:
                                    output_directory: str):
         problem_configuration = {
             "initial_state_index": self.initial_state_index,
-            "simulation_duration": self.simulation_duration,
-            "arc_duration": self.arc_duration,
-            "tracking_arc_duration": self.tracking_arc_duration,
+            "simulation_duration [days]": self.simulation_duration / constants.JULIAN_DAY,
+            "arc_duration [days]": self.arc_duration / constants.JULIAN_DAY,
+            "tracking_arc_duration [hours]": self.tracking_arc_duration / 3600.0,
             "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
@@ -185,13 +186,13 @@ class CovarianceAnalysis:
 
         # Retrieve the nominal base orbit
         if self.initial_state_index == 1:
-            nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_1.dat")
+            nominal_state_history_array = np.loadtxt(f"nominal_orbits/simulation_duration_{self.simulation_duration}/nominal_state_history_1.dat")
             nominal_state_history = Util.array2dict(nominal_state_history_array)
         elif self.initial_state_index == 2:
-            nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_2.dat")
+            nominal_state_history_array = np.loadtxt(f"nominal_orbits/simulation_duration_{self.simulation_duration}/nominal_state_history_2.dat")
             nominal_state_history = Util.array2dict(nominal_state_history_array)
         elif self.initial_state_index == 3:
-            nominal_state_history_array = np.loadtxt("nominal_orbits/nominal_state_history_3.dat")
+            nominal_state_history_array = np.loadtxt(f"nominal_orbits/simulation_duration_{self.simulation_duration}/nominal_state_history_3.dat")
             nominal_state_history = Util.array2dict(nominal_state_history_array)
         else:
             raise ValueError("Initial state index not valid")
