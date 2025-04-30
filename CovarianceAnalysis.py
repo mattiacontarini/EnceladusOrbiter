@@ -102,15 +102,8 @@ def perform_tuning_parameters_analysis(time_stamp,
 
     # Set output path
     output_folder = "./output/covariance_analysis/tuning_parameters_analysis"
-    output_path = os.path.join(output_folder, time_stamp)
-    os.makedirs(output_path, exist_ok=True)
-
-    # Initialize covariance analysis object
-    UDP = CovarianceAnalysis.from_config()
-
-    # Set flag for saving results
-    UDP.save_simulation_results_flag = save_simulation_results_flag
-    UDP.save_covariance_results_flag = save_covariance_results_flag
+    output_folder = os.path.join(output_folder, time_stamp)
+    os.makedirs(output_folder, exist_ok=True)
 
     # Set initial states to consider
     initial_state_indices = [1, 2, 3]
@@ -145,13 +138,24 @@ def perform_tuning_parameters_analysis(time_stamp,
 
     # Perform covariance analysis varying one parameter singularly
     for parameter_key in list(parameters_to_tune.keys()):
-        UDP = CovarianceAnalysis.from_config()
-        output_path = os.path.join(output_path, parameter_key)
-        os.makedirs(output_path, exist_ok=True)
+        print(f"Analysing parameter {parameter_key}")
+
+        output_path_parameter = os.path.join(output_folder, parameter_key)
+        os.makedirs(output_path_parameter, exist_ok=True)
 
         for parameter_value in parameters_to_tune[parameter_key]:
+            print(f"Running with parameter value = {parameter_value}")
+
+            # Initialize covariance analysis object
+            UDP = CovarianceAnalysis.from_config()
+
+            # Set flag for saving results
+            UDP.save_simulation_results_flag = save_simulation_results_flag
+            UDP.save_covariance_results_flag = save_covariance_results_flag
+
             parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
-            output_path = os.path.join(output_path, f"configuration_{parameter_value_index}")
+            output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
+            os.makedirs(output_path, exist_ok=True)
             if parameter_key == "simulation_duration":
                 UDP.simulation_duration = parameter_value
             elif parameter_key == "arc_duration":
@@ -203,8 +207,8 @@ def main():
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     # Set whether the results of the covariance analysis should be saved
-    save_covariance_results_flag = True
     save_simulation_results_flag = False
+    save_covariance_results_flag = True
 
     perform_full_parameters_spectrum_analysis_flag = False
     if perform_full_parameters_spectrum_analysis_flag:
