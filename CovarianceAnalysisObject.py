@@ -20,7 +20,6 @@ from tudatpy.numerical_simulation.estimation_setup import observation
 
 # Packages import
 import numpy as np
-import datetime
 import os
 import matplotlib.pyplot as plt
 import sys
@@ -30,53 +29,51 @@ class CovarianceAnalysis:
 
     def __init__(self,
                  initial_state_index: int,
-                 save_results_flag: bool,
+                 save_simulation_results_flag: bool,
+                 save_covariance_results_flag: bool,
                  simulation_duration: float,
                  arc_duration: float,
                  tracking_arc_duration: float,
                  kaula_constraint_multiplier: float,
+                 a_priori_empirical_accelerations: float,
+                 a_priori_lander_position: float,
                  ):
         self.initial_state_index = initial_state_index
-        self.save_results_flag = save_results_flag
+        self.save_simulation_results_flag = save_simulation_results_flag
+        self.save_covariance_results_flag = save_covariance_results_flag
         self.simulation_duration = simulation_duration
         self.arc_duration = arc_duration
         self.tracking_arc_duration = tracking_arc_duration
         self.kaula_constraint_multiplier = kaula_constraint_multiplier
+        self.a_priori_empirical_accelerations = a_priori_empirical_accelerations
+        self.a_priori_lander_position = a_priori_lander_position
 
     @classmethod
     def from_config(cls):
         initial_state_index = CovAnalysisConfig.initial_state_index
-        save_results_flag = True
+        save_simulation_results_flag = False
+        save_covariance_results_flag = False
         simulation_duration = CovAnalysisConfig.simulation_duration
         arc_duration = CovAnalysisConfig.arc_duration
         tracking_arc_duration = CovAnalysisConfig.tracking_arc_duration
         kaula_constraint_multiplier = CovAnalysisConfig.kaula_constraint_multiplier
+        a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
+        a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
         return cls(initial_state_index,
-                   save_results_flag,
+                   save_simulation_results_flag,
+                   save_covariance_results_flag,
                    simulation_duration,
                    arc_duration,
                    tracking_arc_duration,
-                   kaula_constraint_multiplier)
+                   kaula_constraint_multiplier,
+                   a_priori_empirical_accelerations,
+                   a_priori_lander_position)
 
     def perform_covariance_analysis(self,
                                     output_path: str):
 
         # Determine final epoch of simulation
         simulation_end_epoch = CovAnalysisConfig.simulation_start_epoch + self.simulation_duration
-
-        ###################################################################################################################
-        ### Configuration
-        ###################################################################################################################
-
-        if self.save_results_flag:
-            # Build output paths
-            covariance_results_output_path = os.path.join(output_path, "covariance_results")
-            simulation_results_output_path = os.path.join(output_path, "simulation_results")
-            plots_output_path = os.path.join(output_path, "plots")
-            os.makedirs(output_path, exist_ok=True)
-            os.makedirs(covariance_results_output_path, exist_ok=True)
-            os.makedirs(simulation_results_output_path, exist_ok=True)
-            os.makedirs(plots_output_path, exist_ok=True)
 
         ###################################################################################################################
         ### Environment setup #############################################################################################
@@ -94,14 +91,14 @@ class CovarianceAnalysis:
         initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                      "IAU_Enceladus",
                                                                                      CovAnalysisConfig.simulation_start_epoch)
-        #body_settings.get(
-        #    "Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
-        #    "J2000", "IAU_Enceladus", initial_orientation_enceladus,
-        #    CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
-        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
-            base_frame=CovAnalysisConfig.global_frame_orientation,
-            target_frame="IAU_Enceladus"
-        )
+        body_settings.get(
+            "Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
+            "J2000", "IAU_Enceladus", initial_orientation_enceladus,
+            CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
+        #body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
+        #    base_frame=CovAnalysisConfig.global_frame_orientation,
+        #    target_frame="IAU_Enceladus"
+        #)
 
         # Set gravity field settings for Enceladus
         body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
@@ -498,19 +495,19 @@ class CovarianceAnalysis:
              ("Vehicle", "Enceladus")))[0]
         for i in range(indices_empirical_acceleration_components[1]):
             inv_apriori[indices_empirical_acceleration_components[0] + i, indices_empirical_acceleration_components[
-                0] + i] = CovAnalysisConfig.a_priori_empirical_accelerations ** -2
+                0] + i] = self.a_priori_empirical_accelerations ** -2
 
-        # Save inverse of a priori constraints to file
-        if self.save_results_flag:
-            inv_apriori_constraints_filename = os.path.join(covariance_results_output_path,
-                                                            "inv_a_priori_constraints.dat")
-            np.savetxt(inv_apriori_constraints_filename, inv_apriori)
+        # Set a priori constraint for landers' position
+        for lander_name in lander_names:
+            indices_lander_position = parameters_to_estimate.indices_for_parameter_type(
+                (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
+                 ("Enceladus", lander_name)))[0]
+            for i in range(indices_lander_position[1]):
+                inv_apriori[indices_lander_position[0] + i, indices_lander_position[
+                    0] + i] = self.a_priori_lander_position ** -2
 
-        # Retrieve full vector of a priori constraints and save it to file
+        # Retrieve full vector of a priori constraints
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
-        if self.save_results_flag:
-            apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
-            np.savetxt(apriori_constraints_filename, apriori_constraints)
 
         # Create input object for covariance analysis
         covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
@@ -536,7 +533,16 @@ class CovarianceAnalysis:
         formal_errors = covariance_output.formal_errors
         partials = covariance_output.weighted_design_matrix
 
-        if self.save_results_flag:
+        # Compute condition number of output covariance matrix
+        condition_number = np.linalg.cond(covariance)
+
+        plots_output_path = os.path.join(output_path, "plots")
+        if self.save_covariance_results_flag:
+
+            # Build output paths
+            covariance_results_output_path = os.path.join(output_path, "covariance_results")
+            os.makedirs(covariance_results_output_path, exist_ok=True)
+            os.makedirs(plots_output_path, exist_ok=True)
             covariance_filename = os.path.join(covariance_results_output_path, "covariance_matrix.dat")
             np.savetxt(covariance_filename, covariance)
 
@@ -549,7 +555,21 @@ class CovarianceAnalysis:
             partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
             np.savetxt(partials_filename, partials)
 
+            inv_apriori_constraints_filename = os.path.join(covariance_results_output_path,
+                                                            "inv_a_priori_constraints.dat")
+            np.savetxt(inv_apriori_constraints_filename, inv_apriori)
+
+            apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
+            np.savetxt(apriori_constraints_filename, apriori_constraints)
+
+            condition_number_filename = os.path.join(covariance_results_output_path, "condition_number_covariance_matrix.dat")
+            np.savetxt(condition_number_filename, [condition_number])
+
             # Plot correlations
+            PlottingUtil.plot_correlations(correlations,
+                                           plots_output_path,
+                                           "correlations.svg")
+            
             PlottingUtil.plot_correlations(correlations,
                                            plots_output_path,
                                            "correlations.pdf")
@@ -600,6 +620,36 @@ class CovarianceAnalysis:
             plt.savefig(file_output_path)
             plt.close(fig)
 
+            # Plot formal error of SH gravity coefficients and a priori constraint
+            formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
+                                                     indices_cosine_coef[0] + indices_cosine_coef[1]]
+            a_priori_constraints_cosine_coef = apriori_constraints[indices_cosine_coef[0]:
+                                                                   indices_cosine_coef[0] + indices_cosine_coef[1]]
+            formal_error_zonal_cosine_coef = []
+            a_priori_constraints_zonal_cosine_coef = []
+            degrees = np.arange(CovAnalysisConfig.minimum_degree_c_enceladus, CovAnalysisConfig.maximum_degree_gravity_enceladus, 1)
+            i = 0
+            for degree in degrees:
+                a_priori_constraint = a_priori_constraints_cosine_coef[i]
+                formal_error = formal_error_cosine_coef[i]
+                formal_error_zonal_cosine_coef.append(formal_error)
+                a_priori_constraints_zonal_cosine_coef.append(a_priori_constraint)
+                i = i + degree + 1
+
+            fig = plt.figure()
+            ax = fig.add_subplot()
+            ax.plot(degrees, formal_error_zonal_cosine_coef, label="Formal error", color="blue")
+            ax.plot(degrees, a_priori_constraints_zonal_cosine_coef, label="A priori constraint", color="orange")
+            ax.set_xlabel("Degree zonal cosine coefficient  [-]")
+            ax.set_ylabel(r"$\sigma$  [-]")
+            ax.set_yscale("log")
+            ax.grid(True)
+            ax.set_title("Formal error zonal cosine coefficients")
+            ax.legend(loc="lower right")
+            file_output_path = os.path.join(plots_output_path, "formal_error_zonal_cosine_coefficients.pdf")
+            plt.savefig(file_output_path)
+            plt.close(fig)
+
             # Plot observation times
             sorted_observations = simulated_observations.sorted_observation_sets
             doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
@@ -619,6 +669,12 @@ class CovarianceAnalysis:
                                                 doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
                                                 doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                                 doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
+
+        if self.save_simulation_results_flag:
+
+            simulation_results_output_path = os.path.join(output_path, "simulation_results")
+            os.makedirs(simulation_results_output_path, exist_ok=True)
+            os.makedirs(plots_output_path, exist_ok=True)
 
             # Save simulation results for every arc
             formal_error_initial_position_radial_direction = []
