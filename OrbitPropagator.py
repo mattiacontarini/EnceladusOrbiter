@@ -6,7 +6,8 @@ The OrbitPropagator class is used to propagate the selected initial condition fo
 # Files and variables import
 from auxiliary import VehicleParameters as VehicleParam
 from auxiliary import OrbitPropagatorConfig as PropConfig
-from auxiliary import utilities as Util
+from auxiliary.utilities import environment_setup_utilities as EnvUtil
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 
 # Tudat import
 from tudatpy import numerical_simulation
@@ -102,7 +103,7 @@ class OrbitPropagator:
             )
 
         # Set rotation model settings for Enceladus
-        synodic_rotation_rate_enceladus = Util.get_synodic_rotation_model_enceladus(self.simulation_start_epoch)
+        synodic_rotation_rate_enceladus = EnvUtil.get_synodic_rotation_model_enceladus(self.simulation_start_epoch)
         initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
                                                                                      "IAU_Enceladus",
                                                                                      self.simulation_start_epoch)
@@ -111,12 +112,14 @@ class OrbitPropagator:
             self.simulation_start_epoch, synodic_rotation_rate_enceladus)
 
         # Set gravity field settings for Enceladus
-        body_settings.get("Enceladus").gravity_field_settings = Util.get_gravity_field_settings_enceladus_park()
+        body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+            CovAnalysisConfig.maximum_degree_gravity_enceladus
+        )
         body_settings.get(
             "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = 0.335  # From Iess et al. (2014)
 
         # Set gravity field settings for Saturn
-        body_settings.get("Saturn").gravity_field_settings = Util.get_gravity_field_settings_saturn_iess()
+        body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
         body_settings.get(
             "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = 0.210  # From NASA Saturn Fact Sheet
 
