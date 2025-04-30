@@ -69,6 +69,20 @@ class CovarianceAnalysis:
                    a_priori_empirical_accelerations,
                    a_priori_lander_position)
 
+    def save_problem_configuration(self,
+                                   output_directory: str):
+        problem_configuration = {
+            "initial_state_index": self.initial_state_index,
+            "simulation_duration": self.simulation_duration,
+            "arc_duration": self.arc_duration,
+            "tracking_arc_duration": self.tracking_arc_duration,
+            "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
+            "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
+            "a_priori_lander_position": self.a_priori_lander_position,
+        }
+
+        save2txt(problem_configuration, "problem_configuration.txt", output_directory)
+
     def perform_covariance_analysis(self,
                                     output_path: str):
 
@@ -536,6 +550,32 @@ class CovarianceAnalysis:
         # Compute condition number of output covariance matrix
         condition_number = np.linalg.cond(covariance)
 
+        # Retrieve formal error of SH zonal gravity coefficients
+        formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
+                                                 indices_cosine_coef[0] + indices_cosine_coef[1]]
+        a_priori_constraints_cosine_coef = apriori_constraints[indices_cosine_coef[0]:
+                                                               indices_cosine_coef[0] + indices_cosine_coef[1]]
+        formal_error_zonal_cosine_coef = []
+        a_priori_constraints_zonal_cosine_coef = []
+        degrees = np.arange(CovAnalysisConfig.minimum_degree_c_enceladus,
+                            CovAnalysisConfig.maximum_degree_gravity_enceladus, 1)
+        i = 0
+        for degree in degrees:
+            a_priori_constraint = a_priori_constraints_cosine_coef[i]
+            formal_error = formal_error_cosine_coef[i]
+            formal_error_zonal_cosine_coef.append(formal_error)
+            a_priori_constraints_zonal_cosine_coef.append(a_priori_constraint)
+            i = i + degree + 1
+        # Determine when formal error of SH gravity coeffs converges to a priori constraint
+        for i in range(len(degrees)):
+            delta = (np.absolute(formal_error_zonal_cosine_coef[i] - a_priori_constraints_zonal_cosine_coef[i]) /
+                     a_priori_constraints_zonal_cosine_coef[i])
+            if delta < 0.1:
+                max_estimatable_degree_gravity_field = degrees[i] - 1
+                break
+            else:
+                max_estimatable_degree_gravity_field = degrees[-1]
+
         plots_output_path = os.path.join(output_path, "plots")
         if self.save_covariance_results_flag:
 
@@ -562,14 +602,19 @@ class CovarianceAnalysis:
             apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
             np.savetxt(apriori_constraints_filename, apriori_constraints)
 
-            condition_number_filename = os.path.join(covariance_results_output_path, "condition_number_covariance_matrix.dat")
+            condition_number_filename = os.path.join(covariance_results_output_path,
+                                                     "condition_number_covariance_matrix.dat")
             np.savetxt(condition_number_filename, [condition_number])
+
+            max_estimatable_degree_gravity_field_filename = os.path.join(covariance_results_output_path,
+                                                                         "max_estimatable_degree_gravity_field.dat")
+            np.savetxt(max_estimatable_degree_gravity_field_filename, [max_estimatable_degree_gravity_field])
 
             # Plot correlations
             PlottingUtil.plot_correlations(correlations,
                                            plots_output_path,
                                            "correlations.svg")
-            
+
             PlottingUtil.plot_correlations(correlations,
                                            plots_output_path,
                                            "correlations.pdf")
@@ -621,21 +666,6 @@ class CovarianceAnalysis:
             plt.close(fig)
 
             # Plot formal error of SH gravity coefficients and a priori constraint
-            formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
-                                                     indices_cosine_coef[0] + indices_cosine_coef[1]]
-            a_priori_constraints_cosine_coef = apriori_constraints[indices_cosine_coef[0]:
-                                                                   indices_cosine_coef[0] + indices_cosine_coef[1]]
-            formal_error_zonal_cosine_coef = []
-            a_priori_constraints_zonal_cosine_coef = []
-            degrees = np.arange(CovAnalysisConfig.minimum_degree_c_enceladus, CovAnalysisConfig.maximum_degree_gravity_enceladus, 1)
-            i = 0
-            for degree in degrees:
-                a_priori_constraint = a_priori_constraints_cosine_coef[i]
-                formal_error = formal_error_cosine_coef[i]
-                formal_error_zonal_cosine_coef.append(formal_error)
-                a_priori_constraints_zonal_cosine_coef.append(a_priori_constraint)
-                i = i + degree + 1
-
             fig = plt.figure()
             ax = fig.add_subplot()
             ax.plot(degrees, formal_error_zonal_cosine_coef, label="Formal error", color="blue")
@@ -650,7 +680,7 @@ class CovarianceAnalysis:
             plt.savefig(file_output_path)
             plt.close(fig)
 
-            # Plot observation times
+            # Plot observation times for the entire mission
             sorted_observations = simulated_observations.sorted_observation_sets
             doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
                                                       sorted_observations[observation.n_way_averaged_doppler_type][0][
@@ -661,14 +691,24 @@ class CovarianceAnalysis:
             doppler_obs_time_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
                                                      sorted_observations[observation.n_way_averaged_doppler_type][2][
                                                          0].observation_times]
-
-            # Plot observation times
             PlottingUtil.plot_observation_times(f"entire mission",
                                                 plots_output_path,
-                                                f"observation_times_arc_{i}.eps",
+                                                f"observation_times_entire_mission.pdf",
                                                 doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
                                                 doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                                 doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
+
+            # Save formal error interval for arc-wise initial position components
+            formal_error_initial_state = formal_errors[indices_states[0]:indices_states[0] + indices_states[1]]
+            formal_error_initial_position = []
+            for i in range(nb_arcs):
+                formal_error_initial_position_current_arc = formal_error_initial_state[6 * i: 6 * i + 3]
+                for sigma in formal_error_initial_position_current_arc:
+                    formal_error_initial_position.append(sigma)
+            formal_error_initial_position_interval = [min(formal_error_initial_position), max(formal_error_initial_position)]
+            formal_error_initial_position_interval_filename = os.path.join(covariance_results_output_path,
+                                                                           "formal_error_initial_position_interval.dat")
+            np.savetxt(formal_error_initial_position_interval_filename, formal_error_initial_position_interval)
 
         if self.save_simulation_results_flag:
 
