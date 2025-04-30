@@ -97,12 +97,12 @@ def plot_observation_times(arc_ID,
                            ):
     plt.figure(figsize=(7.5, 6))
     if doppler_obs_times_new_norcia_current_arc is not None:
-        plt.plot(doppler_obs_times_new_norcia_current_arc, np.ones((len(doppler_obs_times_new_norcia_current_arc), 1)))
+        plt.scatter(doppler_obs_times_new_norcia_current_arc, np.ones((len(doppler_obs_times_new_norcia_current_arc), 1)))
     if doppler_obs_times_cebreros_current_arc is not None:
-        plt.plot(doppler_obs_times_cebreros_current_arc,
+        plt.scatter(doppler_obs_times_cebreros_current_arc,
                  2.0 * np.ones((len(doppler_obs_times_cebreros_current_arc), 1)))
     if doppler_obs_times_malargue_current_arc is not None:
-        plt.plot(doppler_obs_times_malargue_current_arc,
+        plt.scatter(doppler_obs_times_malargue_current_arc,
                  3.0 * np.ones((len(doppler_obs_times_malargue_current_arc), 1)))
 
     plt.xlabel('Observation times [h]')
