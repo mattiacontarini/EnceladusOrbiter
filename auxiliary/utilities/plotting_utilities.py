@@ -84,7 +84,7 @@ def plot_correlations(correlations,
 
     os.makedirs(output_path, exist_ok=True)
     file_output_path = os.path.join(output_path, filename)
-    plt.savefig(file_output_path, format="eps")
+    plt.savefig(file_output_path)
     plt.close()
 
 
