@@ -101,19 +101,10 @@ class CovarianceAnalysis:
             CovAnalysisConfig.global_frame_orientation)
 
         # Set rotation model settings for Enceladus
-        synodic_rotation_rate_enceladus = EnvUtil.get_synodic_rotation_model_enceladus(
-            CovAnalysisConfig.simulation_start_epoch)
-        initial_orientation_enceladus = spice.compute_rotation_matrix_between_frames("J2000",
-                                                                                     "IAU_Enceladus",
-                                                                                     CovAnalysisConfig.simulation_start_epoch)
-        body_settings.get(
-            "Enceladus").rotation_model_settings = numerical_simulation.environment_setup.rotation_model.simple(
-            "J2000", "IAU_Enceladus", initial_orientation_enceladus,
-            CovAnalysisConfig.simulation_start_epoch, synodic_rotation_rate_enceladus)
-        #body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
-        #    base_frame=CovAnalysisConfig.global_frame_orientation,
-        #    target_frame="IAU_Enceladus"
-        #)
+        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
+            base_frame=CovAnalysisConfig.global_frame_orientation,
+            target_frame="IAU_Enceladus"
+        )
 
         # Set gravity field settings for Enceladus
         body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
