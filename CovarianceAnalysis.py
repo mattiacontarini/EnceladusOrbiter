@@ -1,6 +1,7 @@
 #######################################################################################################################
 ### Import statements #################################################################################################
 #######################################################################################################################
+import numpy as np
 
 # Files and variables import
 from CovarianceAnalysisObject import CovarianceAnalysis
@@ -12,15 +13,11 @@ from tudatpy import constants
 # Packages import
 import datetime
 import os
-import sys
-
+import matplotlib.pyplot as plt
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
                                       save_covariance_results_flag, ):
-    # Add path to compiled version of Tudat
-    sys.path.insert(0,
-                    "/Users/mattiacontarini/tudat-bundle/tudatpy/src/tudatpy/numerical_simulation/environment_setup/rotation_model/expose_rotation_model.cpp")
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -85,10 +82,8 @@ def full_parameters_spectrum_analysis(time_stamp,
 
 def perform_tuning_parameters_analysis(time_stamp,
                                        save_simulation_results_flag,
-                                       save_covariance_results_flag, ):
-    # Add path to the compiled version of Tudat
-    sys.path.insert(0,
-                    "/Users/mattiacontarini/tudat-bundle/cmake-build-debug")
+                                       save_covariance_results_flag,
+                                       fontsize=12):
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -129,11 +124,19 @@ def perform_tuning_parameters_analysis(time_stamp,
     a_priori_lander_position = [1e2, 1e3]
 
     parameters_to_tune = {
-        "simulation_duration": simulation_durations,
         "arc_duration": arc_durations,
+        "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position
+    }
+
+    parameters_to_tune_axis_labels = {
+        "simulation_duration": "Simulation duration  [days]",
+        "arc_duration": "Arc duration  [days]",
+        "kaula_constraint_multiplier": "Kaula constraint multiplier  [-]",
+        "a_priori_empirical_acceleration": r"A priori empirical acceleration [m s$^{-2}$]",
+        "a_priori_lander_position": r"A priori lander position [m]",
     }
 
     # Perform covariance analysis varying one parameter singularly
@@ -171,6 +174,48 @@ def perform_tuning_parameters_analysis(time_stamp,
 
             UDP.save_problem_configuration(output_path)
             UDP.perform_covariance_analysis(output_path)
+
+    # Analyse figures of merit
+    for parameter_key in list(parameters_to_tune.keys()):
+
+        output_path_parameter = os.path.join(output_folder, parameter_key)
+        os.makedirs(output_path_parameter, exist_ok=True)
+
+        # Create figures of merit plot for current considered parameter
+        fig, axes = plt.subplots(nrows=2, ncols=2, constrained_layout=True)
+        for parameter_value in parameters_to_tune[parameter_key]:
+
+            # Load output data
+            parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
+            input_directory = f"{output_folder}/{parameter_key}/configuration_{parameter_value_index}/covariance_results"
+            condition_number_covariance_matrix = np.loadtxt(os.path.join(input_directory, "condition_number_covariance_matrix.dat"))
+            max_estimatable_degree_gravity_field = np.loadtxt(os.path.join(input_directory, "max_estimatable_degree_gravity_field.dat"))
+            formal_error_initial_position_interval = np.loadtxt(os.path.join(input_directory, "formal_error_initial_position_interval.dat"))
+
+            if parameter_key == "simulation_duration":
+                parameter_value = parameter_value / constants.JULIAN_DAY
+            elif parameter_key == "arc_duration":
+                parameter_value = parameter_value / constants.JULIAN_DAY
+
+            # Make plots
+            axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="black")
+            axes[0, 1].scatter(parameter_value, max_estimatable_degree_gravity_field, color="black")
+            axes[1, 0].scatter(parameter_value, formal_error_initial_position_interval[0], color="blue", label="Min value")
+            axes[1, 0].scatter(parameter_value, formal_error_initial_position_interval[1], color="orange", label="Max value")
+        axes[1, 0].set_xlabel(parameters_to_tune_axis_labels[parameter_key], fontsize=fontsize)
+        plt.delaxes(axes[1, 1])
+        axes[0, 1].set_xlabel(parameters_to_tune_axis_labels[parameter_key], fontsize=fontsize)
+
+        axes[0, 0].set_ylabel("Condition number  [-]", fontsize=fontsize)
+        axes[0, 1].set_ylabel("Maximum estimatable degree gravity field  [-]", fontsize=fontsize)
+        axes[1, 0].set_ylabel("Formal error initial position  [-]", fontsize=fontsize)
+        axes[0, 0].tick_params(labelsize=fontsize)
+        axes[0, 1].tick_params(labelsize=fontsize)
+        axes[1, 0].tick_params(labelsize=fontsize)
+
+        figure_filename = os.path.join(output_path_parameter, "figures_of_merit.pdf")
+        fig.savefig(fname=figure_filename)
+        plt.close(fig)
 
 
 def single_case_analysis(time_stamp,
