@@ -1,8 +1,6 @@
 #######################################################################################################################
 ### Import statements #################################################################################################
 #######################################################################################################################
-import numpy as np
-
 # Files and variables import
 from CovarianceAnalysisObject import CovarianceAnalysis
 
@@ -14,10 +12,13 @@ from tudatpy import constants
 import datetime
 import os
 import matplotlib.pyplot as plt
+import numpy as np
+import time
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
-                                      save_covariance_results_flag, ):
+                                      save_covariance_results_flag,
+                                      fontsize=12):
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -30,9 +31,9 @@ def full_parameters_spectrum_analysis(time_stamp,
     spice.load_standard_kernels(kernels_to_load)
 
     # Set output path
-    output_folder = "./output/covariance_analysis/parameters_spectrum_analysis"
-    output_path = os.path.join(output_folder, time_stamp)
-    os.makedirs(output_path, exist_ok=True)
+    output_directory = "./output/covariance_analysis/parameters_spectrum_analysis"
+    output_directory = os.path.join(output_directory, time_stamp)
+    os.makedirs(output_directory, exist_ok=True)
 
     # Initialize covariance analysis object
     UDP = CovarianceAnalysis.from_config()
@@ -64,6 +65,8 @@ def full_parameters_spectrum_analysis(time_stamp,
     # Set list of value for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
 
+    configuration_index = 0
+
     # Perform covariance analysis with all parameters
     for initial_state_index in initial_state_indices:
         UDP.initial_state_index = initial_state_index
@@ -77,7 +80,52 @@ def full_parameters_spectrum_analysis(time_stamp,
                         UDP.a_priori_empirical_accelerations = a_priori_empirical_accelerations_current
                         for a_priori_lander_position_current in a_priori_lander_position:
                             UDP.a_priori_lander_position = a_priori_lander_position_current
+
+                            # Create output path for results of current problem configuration
+                            output_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
+                            os.makedirs(output_path, exist_ok=True)
+
+                            # Perform covariance analysis
+                            UDP.save_problem_configuration(output_path)
                             UDP.perform_covariance_analysis(output_path)
+
+                            # Update configuration index
+                            configuration_index += 1
+
+    # Create plots for figures of merit
+    fig, axes = plt.subplots(2, 2, constrained_layout=True)
+    nb_configurations = configuration_index
+    for configuration_index in range(nb_configurations):
+
+        # Define input path
+        input_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
+
+        # Load figures of merit
+        condition_number_covariance_matrix = np.loadtxt(os.path.join(input_path, "condition_number_covariance_matrix.dat"))
+        max_estimatable_degree_gravity_field = np.loadtxt(
+            os.path.join(input_path, "max_estimatable_degree_gravity_field.dat"))
+        formal_error_initial_position_interval = np.loadtxt(
+            os.path.join(input_path, "formal_error_initial_position_interval.dat"))
+
+        # Make plots
+        axes[0, 0].scatter(configuration_index, condition_number_covariance_matrix, color="black")
+        axes[0, 1].scatter(configuration_index, max_estimatable_degree_gravity_field, color="black")
+        axes[1, 0].scatter(configuration_index, formal_error_initial_position_interval[0], color="blue")
+        axes[1, 0].scatter(configuration_index, formal_error_initial_position_interval[1], color="red")
+    plt.delaxes(axes[1, 1])
+    axes[1, 0].set_xlabel("Configuration idx  [-]", fontsize=fontsize)
+    axes[0, 1].set_xlabel("Configuration idx  [-]", fontsize=fontsize)
+    axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
+    axes[0, 1].set_ylabel("Max estimatable degree gravity field  [-]", fontsize=fontsize)
+    axes[1, 0].set_ylabel("Formal error initial position  [m]", fontsize=fontsize)
+    axes[1, 0].legend(fontsize=fontsize)
+
+    for ax in axes:
+        ax.tick_params(labelsize=fontsize)
+
+    figure_filepath = os.path.join(output_directory, "figures_of_merit.pdf")
+    fig.savefig(fname=figure_filepath)
+    plt.close(fig)
 
 
 def perform_tuning_parameters_analysis(time_stamp,
@@ -175,6 +223,9 @@ def perform_tuning_parameters_analysis(time_stamp,
             UDP.save_problem_configuration(output_path)
             UDP.perform_covariance_analysis(output_path)
 
+            # Pause execution for 3 seconds
+            time.sleep(3)
+
     # Analyse figures of merit
     for parameter_key in list(parameters_to_tune.keys()):
 
@@ -206,9 +257,10 @@ def perform_tuning_parameters_analysis(time_stamp,
         plt.delaxes(axes[1, 1])
         axes[0, 1].set_xlabel(parameters_to_tune_axis_labels[parameter_key], fontsize=fontsize)
 
-        axes[0, 0].set_ylabel("Condition number  [-]", fontsize=fontsize)
+        axes[0, 0].set_ylabel("Condition number cov. matrix [-]", fontsize=fontsize)
         axes[0, 1].set_ylabel("Maximum estimatable degree gravity field  [-]", fontsize=fontsize)
         axes[1, 0].set_ylabel("Formal error initial position  [-]", fontsize=fontsize)
+        axes[1, 0].legend(fontsize=fontsize)
         axes[0, 0].tick_params(labelsize=fontsize)
         axes[0, 1].tick_params(labelsize=fontsize)
         axes[1, 0].tick_params(labelsize=fontsize)
@@ -253,7 +305,7 @@ def main():
 
     # Set whether the results of the covariance analysis should be saved
     save_simulation_results_flag = False
-    save_covariance_results_flag = True
+    save_covariance_results_flag = False
 
     perform_full_parameters_spectrum_analysis_flag = False
     if perform_full_parameters_spectrum_analysis_flag:
