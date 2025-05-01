@@ -236,7 +236,11 @@ class CovarianceAnalysis:
             )
 
         # Concatenate all arc-wise propagator settings into multi-arc propagator settings
-        propagator_settings = numerical_simulation.propagation_setup.propagator.multi_arc(propagator_settings_list)
+        propagator_settings = numerical_simulation.propagation_setup.propagator.multi_arc(
+            propagator_settings_list,
+            False,
+            numerical_simulation.propagation_setup.propagator.multi_arc_processing_settings()
+        )
 
         # Propagate dynamics and retrieve simulation results
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
@@ -826,3 +830,5 @@ class CovarianceAnalysis:
             file_output_path = os.path.join(plots_output_path, "formal_errors_initial_position_rsw.pdf")
             plt.savefig(file_output_path)
             plt.close(fig)
+
+        print("Covariance analysis performed successfully.")
