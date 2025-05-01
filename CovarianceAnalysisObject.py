@@ -831,4 +831,4 @@ class CovarianceAnalysis:
             plt.savefig(file_output_path)
             plt.close(fig)
 
-        print("Covariance analysis performed successfully.")
+        print(r"$\\\\Covariance analysis performed successfully!\\\\$")
