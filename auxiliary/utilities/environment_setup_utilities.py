@@ -1,10 +1,5 @@
 # Packages import
 import numpy as np
-import sys
-
-# Add path to built tudatpy kernel
-sys.path.insert(0,
-                    "/Users/mattiacontarini/tudat-bundle/cmake-build-debug/")
 
 # Tudat import
 from tudatpy.kernel.interface import spice
@@ -189,7 +184,7 @@ def get_rotation_model_settings_enceladus_park(base_frame,
     # Format sinusoidal coefficients
     pole_periodic_terms = dict()
     for key in list(phase_frequency_sinusoidal_terms.keys()):
-        amps = np.array([RA_amplitude_sinusoidal_terms[key], DE_amplitude_sinusoidal_terms[key], ])
+        amps = np.array([RA_amplitude_sinusoidal_terms[key], DE_amplitude_sinusoidal_terms[key]])
         phase = phase_frequency_sinusoidal_terms[key][0]
         freq = phase_frequency_sinusoidal_terms[key][1]
         pole_periodic_terms[freq] = (amps, phase)
