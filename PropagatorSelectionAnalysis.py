@@ -338,7 +338,7 @@ def main():
                                     Benedikter.K3_initial_cartesian_state]
 
         # Select time steps for fixed step size integrator
-        fixed_step_sizes = [15]
+        fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
 
         # Select coefficient sets for fixed step size integrator
         fixed_step_integrator_coefficients = [numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56]
