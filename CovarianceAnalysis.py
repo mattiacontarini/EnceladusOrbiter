@@ -93,6 +93,7 @@ def full_parameters_spectrum_analysis(time_stamp,
                             configuration_index += 1
 
                             # Pause execution for 3 seconds
+                            print(f"Pausing execution for 3 seconds...")
                             time.sleep(3)
 
     # Create plots for figures of merit
@@ -192,13 +193,14 @@ def perform_tuning_parameters_analysis(time_stamp,
 
     # Perform covariance analysis varying one parameter singularly
     for parameter_key in list(parameters_to_tune.keys()):
-        print(f"Analysing parameter {parameter_key}")
 
         output_path_parameter = os.path.join(output_folder, parameter_key)
         os.makedirs(output_path_parameter, exist_ok=True)
 
         for parameter_value in parameters_to_tune[parameter_key]:
-            print(f"Running with parameter value = {parameter_value}")
+            print(f""
+                  f"Analysing parameter {parameter_key} with value = {parameter_value}"
+                  f"")
 
             # Initialize covariance analysis object
             UDP = CovarianceAnalysis.from_config()
@@ -227,6 +229,7 @@ def perform_tuning_parameters_analysis(time_stamp,
             UDP.perform_covariance_analysis(output_path)
 
             # Pause execution for 3 seconds
+            print(f"Pausing execution for 3 seconds...")
             time.sleep(3)
 
     # Analyse figures of merit
