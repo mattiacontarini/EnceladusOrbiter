@@ -3,6 +3,7 @@
 #######################################################################################################################
 # Files and variables import
 from CovarianceAnalysisObject import CovarianceAnalysis
+from auxiliary.utilities import plotting_utilities as PlotUtil
 
 # Tudat import
 from tudatpy.kernel.interface import spice
@@ -157,9 +158,10 @@ def perform_tuning_parameters_analysis(time_stamp,
 
     # Set list of simulation durations to consider
     simulation_durations = [28.0 * constants.JULIAN_DAY,
-                            60.0 * constants.JULIAN_DAY,
-                            180.0 * constants.JULIAN_DAY,
-                            1.0 * constants.JULIAN_YEAR]
+                            #60.0 * constants.JULIAN_DAY,
+                            #180.0 * constants.JULIAN_DAY,
+                            #1.0 * constants.JULIAN_YEAR
+                            ]
 
     # Set list of arc durations to consider
     arc_durations = [1.0 * constants.JULIAN_DAY,
@@ -313,23 +315,32 @@ def main():
     save_simulation_results_flag = False
     save_covariance_results_flag = False
 
+    # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
     if perform_full_parameters_spectrum_analysis_flag:
         full_parameters_spectrum_analysis(time_stamp,
                                           save_simulation_results_flag,
                                           save_covariance_results_flag)
 
+    # Analyse parameters of interest varying one at a time
     perform_tuning_paramaters_analysis_flag = True
     if perform_tuning_paramaters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
+    # Perform the covariance analysis for only one base set
     perform_single_case_analysis_flag = False
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
                              save_covariance_results_flag)
+
+    # Plot the distribution of the landers
+    plot_lander_distribution_flag = False
+    if plot_lander_distribution_flag:
+        output_path = "./output/covariance_analysis"
+        PlotUtil.plot_lander_distribution(output_path, fontsize=14)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 # Tudat import
-from tudatpy import plotting
 from tudatpy.interface import spice
 from tudatpy.util import result2array
 
@@ -8,6 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import matplotlib.lines as mlines
+
+# Files and variables import
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
+from auxiliary.CovarianceAnalysisConfig import initial_state_index
+
 
 def plot_trajectory(state_history,
                     output_path,
@@ -131,3 +135,60 @@ def plot_formal_errors(formal_errors_vector, output_path, filename):
     file_output_path = os.path.join(output_path, filename)
     plt.savefig(file_output_path)
     plt.close()
+
+
+def plot_lander_distribution(output_path,
+                             fontsize=12):
+    initial_state_index = [1, 2, 3]
+    lander_name = CovAnalysisConfig.lander_names
+    lander_coordinate = CovAnalysisConfig.lander_coordinates
+
+    latitude = []
+    longitude = []
+    for lander in lander_name:
+        latitude.append(np.rad2deg(lander_coordinate[lander][1]))
+        longitude.append(np.rad2deg(lander_coordinate[lander][2]))
+
+    fig, axes = plt.subplots(nrows=2, ncols=2, constrained_layout=True, figsize=(10, 10))
+    for index in initial_state_index:
+        nominal_orbit_dependent_variable_history = np.loadtxt(f"nominal_orbits/simulation_duration_2419200.0/nominal_dependent_variable_history_{index}.dat")
+        dim = nominal_orbit_dependent_variable_history.shape
+        longitude_history = np.zeros((dim[0], 2))
+        latitude_history = np.zeros((dim[0], 2))
+        longitude_history[:, 0] = nominal_orbit_dependent_variable_history[:, 0]
+        latitude_history[:, 0] = nominal_orbit_dependent_variable_history[:, 0]
+        longitude_history[:, 1] = nominal_orbit_dependent_variable_history[:,
+                              CovAnalysisConfig.indices_dependent_variables["longitude"][0]]
+        latitude_history[:, 1] = nominal_orbit_dependent_variable_history[:,
+                             CovAnalysisConfig.indices_dependent_variables["latitude"][0]]
+
+        # Resolve 2pi ambiguity in longitude
+        nb_epochs = latitude_history.shape[0]
+        for i in range(nb_epochs):
+            if longitude_history[i, 1] < 0:
+                longitude_history[i, 1] = longitude_history[i, 1] + 2.0 * np.pi
+
+        if index == 1:
+            ax = axes[0, 0]
+            ax.set_ylabel("Latitude  [deg]", fontsize=fontsize)
+        elif index == 2:
+            ax = axes[0, 1]
+            ax.set_xlabel("Longitude  [deg]", fontsize=fontsize)
+        elif index == 3:
+            ax = axes[1, 0]
+            ax.set_xlabel("Longitude  [deg]", fontsize=fontsize)
+            ax.set_ylabel("Latitude  [deg]", fontsize=fontsize)
+        ax.plot(longitude_history[:, 1] * 180 / np.pi, latitude_history[:, 1] * 180 / np.pi, ".", color="blue",
+            markersize=1, alpha=0.08)
+        ax.scatter(longitude, latitude, color="red", label="Lander")
+        ax.grid(True)
+        ax.set_xticks(np.arange(0, 361, 40))
+        ax.tick_params(labelsize=fontsize)
+        ax.set_title(f"K{index} orbit", fontsize=fontsize)
+        ax.legend(fontsize=fontsize)
+        ax.set_ylim(bottom=-90, top=90)
+    plt.delaxes(axes[1, 1])
+    fig.suptitle("Radio beacons distribution", fontsize=fontsize)
+    fig.savefig(os.path.join(output_path, f"radio_beacons_distribution.pdf"))
+    plt.close(fig)
+
