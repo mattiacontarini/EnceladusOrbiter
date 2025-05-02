@@ -296,14 +296,14 @@ def generate_benchmarks(initial_state,
 
         # Write results to file
         if output_path is not None:
-            save2txt(first_benchmark_dependent_variable_history,
-                     'benchmark_1_fixed_step_' + str(first_benchmark_step_size) + "_coefficient_set_" +
-                     coefficient_set_name + '_dependent_variables.dat',
-                     output_path)
-            save2txt(second_benchmark_dependent_variable_history,
-                     'benchmark_2_fixed_step_' + str(second_benchmark_step_size) + "_coefficient_set_" +
-                     coefficient_set_name + '_dependent_variables.dat',
-                     output_path)
+            #save2txt(first_benchmark_dependent_variable_history,
+            #         'benchmark_1_fixed_step_' + str(first_benchmark_step_size) + "_coefficient_set_" +
+            #         coefficient_set_name + '_dependent_variables.dat',
+            #         output_path)
+            #save2txt(second_benchmark_dependent_variable_history,
+            #         'benchmark_2_fixed_step_' + str(second_benchmark_step_size) + "_coefficient_set_" +
+            #         coefficient_set_name + '_dependent_variables.dat',
+            #         output_path)
             np.savetxt(output_path + "/benchmark_1_fixed_step_" + str(first_benchmark_step_size) + "_coefficient_set_" +
                        coefficient_set_name + "_computational_time.dat",
                        [first_benchmark_computational_time])
