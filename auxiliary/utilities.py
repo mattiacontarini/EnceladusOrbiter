@@ -7,7 +7,7 @@ from auxiliary import OrbitPropagatorConfig as PropConfig
 
 # Tudat import
 from tudatpy.data import save2txt
-from tudatpy.kernel.interface import spice_interface, spice
+from tudatpy.kernel.interface import spice
 from tudatpy.kernel.astro import gravitation
 from tudatpy import numerical_simulation
 from tudatpy.astro import element_conversion

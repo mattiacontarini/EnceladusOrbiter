@@ -12,9 +12,7 @@ from auxiliary import utilities as Util
 from tudatpy import numerical_simulation
 from tudatpy.numerical_simulation import environment_setup
 from tudatpy.numerical_simulation import propagation_setup
-from tudatpy.astro import element_conversion
-from tudatpy.kernel.interface import spice_interface, spice
-from tudatpy import constants
+from tudatpy.kernel.interface import spice_interface
 
 
 class OrbitPropagator:

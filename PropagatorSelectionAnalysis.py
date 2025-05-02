@@ -269,7 +269,7 @@ def main():
                                       output_folder=output_directory
                                       )
 
-    flag_perform_integrator_refinement = True
+    flag_perform_integrator_refinement = False
     if flag_perform_integrator_refinement:
         # Output directory
         output_directory = os.path.join(output_folder, "integrator_refinement")
