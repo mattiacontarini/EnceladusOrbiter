@@ -23,8 +23,7 @@ from tudatpy import constants
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-import sys
-
+import time
 
 class CovarianceAnalysis:
 
@@ -246,6 +245,10 @@ class CovarianceAnalysis:
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
         simulation_results = dynamics_simulator.propagation_results.single_arc_results
 
+        # Pause execution for 3 seconds
+        print(f"Pausing execution for 10 seconds...")
+        time.sleep(10)
+
         ###################################################################################################################
         ### Observations setup ############################################################################################
         ###################################################################################################################
@@ -330,16 +333,16 @@ class CovarianceAnalysis:
         for i in range(nb_arcs):
 
             # Doppler observables
-            time = tracking_arcs_start[i]
-            while time <= tracking_arcs_end[i]:
-                observation_times_doppler.append(time)
-                time += CovAnalysisConfig.doppler_cadence
+            t = tracking_arcs_start[i]
+            while t <= tracking_arcs_end[i]:
+                observation_times_doppler.append(t)
+                t += CovAnalysisConfig.doppler_cadence
 
             # Range observables
-            time = tracking_arcs_start[i]
-            while time <= tracking_arcs_end[i]:
-                observation_times_range.append(time)
-                time += CovAnalysisConfig.range_cadence
+            t = tracking_arcs_start[i]
+            while t <= tracking_arcs_end[i]:
+                observation_times_range.append(t)
+                t += CovAnalysisConfig.range_cadence
 
         observation_times_per_type = dict()
         observation_times_per_type[observation.n_way_averaged_doppler_type] = observation_times_doppler
@@ -452,6 +455,10 @@ class CovarianceAnalysis:
             estimator.observation_simulators,
             bodies
         )
+
+        # Pause execution for 2 seconds
+        print(f"Pausing execution for 3 seconds...")
+        time.sleep(3)
 
         ###################################################################################################################
         ### Covariance analysis
@@ -831,4 +838,6 @@ class CovarianceAnalysis:
             plt.savefig(file_output_path)
             plt.close(fig)
 
-        print(r"$\\\\Covariance analysis performed successfully!\\\\$")
+        print(""
+              "Covariance analysis performed successfully!"
+              "")
