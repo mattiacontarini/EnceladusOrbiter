@@ -99,11 +99,11 @@ ground_station_coordinates_type = {ground_station_names[0]: element_conversion.g
 # Radio beacons properties
 lander_names = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
 lander_coordinates = {
-    lander_names[0]: [0.0, np.deg2rad(30.0), np.deg2rad(0.0)],
-    lander_names[1]: [0.0, np.deg2rad(60.0), np.deg2rad(40.0)],
-    lander_names[2]: [0.0, np.deg2rad(30.0), np.deg2rad(80.0)],
-    lander_names[3]: [0.0, np.deg2rad(0.0), np.deg2rad(120.0)],
-    lander_names[4]: [0.0, np.deg2rad(-30.0), np.deg2rad(160.0)],
+    lander_names[0]: [0.0, np.deg2rad(-60.0), np.deg2rad(0.0)],
+    lander_names[1]: [0.0, np.deg2rad(-30.0), np.deg2rad(40.0)],
+    lander_names[2]: [0.0, np.deg2rad(0.0), np.deg2rad(80.0)],
+    lander_names[3]: [0.0, np.deg2rad(30.0), np.deg2rad(120.0)],
+    lander_names[4]: [0.0, np.deg2rad(60.0), np.deg2rad(160.0)],
     lander_names[5]: [0.0, np.deg2rad(-60.0), np.deg2rad(200.0)],
     lander_names[6]: [0.0, np.deg2rad(-30.0), np.deg2rad(240.0)],
     lander_names[7]: [0.0, np.deg2rad(0.0), np.deg2rad(280.0)],
