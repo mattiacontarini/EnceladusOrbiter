@@ -92,6 +92,9 @@ def full_parameters_spectrum_analysis(time_stamp,
                             # Update configuration index
                             configuration_index += 1
 
+                            # Pause execution for 3 seconds
+                            time.sleep(3)
+
     # Create plots for figures of merit
     fig, axes = plt.subplots(2, 2, constrained_layout=True)
     nb_configurations = configuration_index
