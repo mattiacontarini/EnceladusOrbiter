@@ -37,6 +37,8 @@ class CovarianceAnalysis:
                  kaula_constraint_multiplier: float,
                  a_priori_empirical_accelerations: float,
                  a_priori_lander_position: float,
+                 lander_to_include: list[str],
+                 include_lander_range_observable_flag: bool,
                  ):
         self.initial_state_index = initial_state_index
         self.save_simulation_results_flag = save_simulation_results_flag
@@ -47,6 +49,8 @@ class CovarianceAnalysis:
         self.kaula_constraint_multiplier = kaula_constraint_multiplier
         self.a_priori_empirical_accelerations = a_priori_empirical_accelerations
         self.a_priori_lander_position = a_priori_lander_position
+        self.lander_to_include = lander_to_include
+        self.include_lander_range_observable_flag = include_lander_range_observable_flag
 
     @classmethod
     def from_config(cls):
@@ -59,6 +63,8 @@ class CovarianceAnalysis:
         kaula_constraint_multiplier = CovAnalysisConfig.kaula_constraint_multiplier
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
+        lander_to_include = CovAnalysisConfig.lander_names
+        include_lander_range_observable_flag = True
         return cls(initial_state_index,
                    save_simulation_results_flag,
                    save_covariance_results_flag,
@@ -67,7 +73,9 @@ class CovarianceAnalysis:
                    tracking_arc_duration,
                    kaula_constraint_multiplier,
                    a_priori_empirical_accelerations,
-                   a_priori_lander_position)
+                   a_priori_lander_position,
+                   lander_to_include,
+                   include_lander_range_observable_flag)
 
     def save_problem_configuration(self,
                                    output_directory: str):
@@ -79,6 +87,10 @@ class CovarianceAnalysis:
             "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
+            "save_simulation_results_flag": self.save_simulation_results_flag,
+            "save_covariance_results_flag": self.save_covariance_results_flag,
+            "lander_to_include": self.lander_to_include,
+            "include_lander_range_observable_flag": self.include_lander_range_observable_flag,
         }
 
         save2txt(problem_configuration, "problem_configuration.txt", output_directory)
@@ -245,10 +257,6 @@ class CovarianceAnalysis:
         dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
         simulation_results = dynamics_simulator.propagation_results.single_arc_results
 
-        # Pause execution for 3 seconds
-        print(f"Pausing execution for 10 seconds...")
-        time.sleep(10)
-
         ###################################################################################################################
         ### Observations setup ############################################################################################
         ###################################################################################################################
@@ -287,7 +295,7 @@ class CovarianceAnalysis:
             )
             link_ends_per_station[observation.reflector1] = observation.body_origin_link_end_id("Vehicle")
             link_ends.append(link_ends_per_station)
-        for lander in lander_names:
+        for lander in self.lander_to_include:
             link_ends_per_station = dict()
             link_ends_per_station[observation.transmitter] = observation.body_reference_point_link_end_id(
                 "Enceladus", lander
@@ -317,7 +325,8 @@ class CovarianceAnalysis:
 
         # Define observation settings list
         observation_settings_list = []
-        for link_end in link_ends:
+        for i in range(len(ground_station_names)):
+            link_end = link_ends[i]
             link_definition = observation.LinkDefinition(link_end)
             range_observation = observation.two_way_range(link_definition,
                                                           [light_time_correction_settings],
@@ -326,6 +335,22 @@ class CovarianceAnalysis:
                                                                        [light_time_correction_settings])
             observation_settings_list.append(doppler_observation)
             observation_settings_list.append(range_observation)
+        for i in range(len(ground_station_names), len(ground_station_names) + len(self.lander_to_include)):
+            link_end = link_ends[i]
+            link_definition = observation.LinkDefinition(link_end)
+            doppler_observation = observation.two_way_doppler_averaged(
+                link_definition,
+                [light_time_correction_settings]
+            )
+            observation_settings_list.append(doppler_observation)
+
+            if self.include_lander_range_observable_flag:
+                range_observation = observation.two_way_range(
+                    link_definition,
+                    [light_time_correction_settings],
+                    range_bias_settings
+                )
+                observation_settings_list.append(range_observation)
 
         observation_times_doppler = []
         observation_times_range = []
@@ -374,7 +399,7 @@ class CovarianceAnalysis:
                 ["Earth", station],
                 CovAnalysisConfig.minimum_elevation_angle_visibility)
             )
-        for lander in lander_names:
+        for lander in self.lander_to_include:
             viability_settings.append(observation.elevation_angle_viability(
                 ["Enceladus", lander],
                 CovAnalysisConfig.minimum_elevation_angle_visibility
@@ -429,7 +454,7 @@ class CovarianceAnalysis:
                                                                                             arc_start_times)
         )
         # Add landers position
-        for lander in CovAnalysisConfig.lander_names:
+        for lander in self.lander_to_include:
             parameter_settings.append(
                 numerical_simulation.estimation_setup.parameter.ground_station_position("Enceladus",
                                                                                         lander)
@@ -455,10 +480,6 @@ class CovarianceAnalysis:
             estimator.observation_simulators,
             bodies
         )
-
-        # Pause execution for 2 seconds
-        print(f"Pausing execution for 3 seconds...")
-        time.sleep(3)
 
         ###################################################################################################################
         ### Covariance analysis
@@ -515,7 +536,7 @@ class CovarianceAnalysis:
                 0] + i] = self.a_priori_empirical_accelerations ** -2
 
         # Set a priori constraint for landers' position
-        for lander_name in lander_names:
+        for lander_name in self.lander_to_include:
             indices_lander_position = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
                  ("Enceladus", lander_name)))[0]
@@ -532,14 +553,60 @@ class CovarianceAnalysis:
         covariance_input.define_covariance_settings(reintegrate_variational_equations=False, save_design_matrix=True)
 
         # Apply weights to simulated observations
-        doppler_noise = CovAnalysisConfig.doppler_noise
-        range_noise = CovAnalysisConfig.range_noise
-        doppler_weight = doppler_noise ** -2
-        range_weight = range_noise ** -2
-        simulated_observations.set_constant_weight(doppler_weight, numerical_simulation.estimation.observation_parser(
-            numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type))
-        simulated_observations.set_constant_weight(range_weight, numerical_simulation.estimation.observation_parser(
-            numerical_simulation.estimation_setup.observation.n_way_range_type))
+        Earth_gs_doppler_weight = CovAnalysisConfig.doppler_noise_Earth_ground_station ** -2
+        Earth_gs_range_weight = CovAnalysisConfig.range_noise_Earth_ground_station ** -2
+        for ground_station_name in ground_station_names:
+            Earth_gs_doppler_parser_list = []
+            Earth_gs_doppler_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type)
+            Earth_gs_doppler_parser_list.append(("Earth", ground_station_name))
+            Earth_gs_doppler_parser = numerical_simulation.estimation.observation_parser(
+                Earth_gs_doppler_parser_list,
+                combine_conditions = True
+            )
+            simulated_observations.set_constant_weight(
+                Earth_gs_doppler_weight,
+                Earth_gs_doppler_parser
+            )
+
+            Earth_gs_range_parser_list = []
+            Earth_gs_range_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_range_type)
+            Earth_gs_range_parser_list.append(("Earth", ground_station_name))
+            Earth_gs_range_parser = numerical_simulation.estimation.observation_parser(
+                Earth_gs_range_weight,
+                combine_conditions = True
+            )
+            simulated_observations.set_constant_weight(
+                Earth_gs_range_weight,
+                Earth_gs_range_parser
+            )
+        Enceladus_lander_doppler_weight = CovAnalysisConfig.doppler_noise_lander ** -2
+        Enceladus_lander_range_weight = CovAnalysisConfig.range_noise_lander ** -2
+        for lander_name in self.lander_to_include:
+            Enceladus_lander_doppler_parser_list = []
+            Enceladus_lander_doppler_parser_list.append(
+                numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type)
+            Enceladus_lander_doppler_parser_list.append(("Enceladus", lander_name))
+            Enceladus_lander_doppler_parser = numerical_simulation.estimation.observation_parser(
+                Enceladus_lander_doppler_parser_list,
+                combine_conditions=True
+            )
+            simulated_observations.set_constant_weight(
+                Enceladus_lander_doppler_weight,
+                Enceladus_lander_doppler_parser
+            )
+
+            if self.include_lander_range_observable_flag:
+                Enceladus_lander_range_parser_list = []
+                Enceladus_lander_range_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_range_type)
+                Enceladus_lander_range_parser_list.append(("Enceladus", lander_name))
+                Enceladus_lander_range_parser = numerical_simulation.estimation.observation_parser(
+                    Enceladus_lander_range_parser_list,
+                    combine_conditions=True
+                )
+                simulated_observations.set_constant_weight(
+                    Enceladus_lander_range_weight,
+                    Enceladus_lander_range_parser
+                )
 
         # Perform the covariance analysis
         covariance_output = estimator.compute_covariance(covariance_input)
@@ -694,9 +761,9 @@ class CovarianceAnalysis:
             doppler_obs_time_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
                                                      sorted_observations[observation.n_way_averaged_doppler_type][2][
                                                          0].observation_times]
-            PlottingUtil.plot_observation_times(f"entire mission",
+            PlottingUtil.plot_observation_times("entire mission",
                                                 plots_output_path,
-                                                f"observation_times_entire_mission.pdf",
+                                                "observation_times_entire_mission.pdf",
                                                 doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
                                                 doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                                 doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
@@ -712,6 +779,7 @@ class CovarianceAnalysis:
             formal_error_initial_position_interval_filename = os.path.join(covariance_results_output_path,
                                                                            "formal_error_initial_position_interval.dat")
             np.savetxt(formal_error_initial_position_interval_filename, formal_error_initial_position_interval)
+
 
         if self.save_simulation_results_flag:
 
@@ -838,6 +906,4 @@ class CovarianceAnalysis:
             plt.savefig(file_output_path)
             plt.close(fig)
 
-        print(""
-              "Covariance analysis performed successfully!"
-              "")
+        print("Covariance analysis performed successfully!")
