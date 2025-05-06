@@ -15,6 +15,7 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import time
+import subprocess
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
@@ -172,17 +173,21 @@ def perform_tuning_parameters_analysis(time_stamp,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
 
     # Set list of value for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
+
+    # Include range observable flag
+    include_lander_range_observable_flag = [False, True]
 
     parameters_to_tune = {
         "arc_duration": arc_durations,
         "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
-        "a_priori_lander_position": a_priori_lander_position
+        "a_priori_lander_position": a_priori_lander_position,
+        "include_lander_range_observable_flag": include_lander_range_observable_flag,
     }
 
     parameters_to_tune_axis_labels = {
@@ -191,6 +196,7 @@ def perform_tuning_parameters_analysis(time_stamp,
         "kaula_constraint_multiplier": "Kaula constraint multiplier  [-]",
         "a_priori_empirical_acceleration": r"A priori empirical acceleration [m s$^{-2}$]",
         "a_priori_lander_position": r"A priori lander position [m]",
+        "include_lander_range_observable_flag": r"Lander range observable included",
     }
 
     # Perform covariance analysis varying one parameter singularly
@@ -200,9 +206,9 @@ def perform_tuning_parameters_analysis(time_stamp,
         os.makedirs(output_path_parameter, exist_ok=True)
 
         for parameter_value in parameters_to_tune[parameter_key]:
-            print(f""
+            print(f" "
                   f"Analysing parameter {parameter_key} with value = {parameter_value}"
-                  f"")
+                  f" ")
 
             # Initialize covariance analysis object
             UDP = CovarianceAnalysis.from_config()
@@ -230,9 +236,17 @@ def perform_tuning_parameters_analysis(time_stamp,
             UDP.save_problem_configuration(output_path)
             UDP.perform_covariance_analysis(output_path)
 
-            # Pause execution for 3 seconds
-            print(f"Pausing execution for 3 seconds...")
-            time.sleep(3)
+            # # Pause execution for 3 seconds
+            # print(f"Pausing execution for 3 seconds...")
+            # time.sleep(3)
+            # print("Pause terminated.")
+
+            # Close python3.11 to unload memory
+            print("Terminating python process")
+            process1 = subprocess.Popen("/Users/mattiacontarini/miniconda3/envs/tudat-bundle/bin/python3.11")
+            process2 = subprocess.Popen("/Users/mattiacontarini/miniconda3/envs/tudat-bundle/bin/python")
+            process1.kill()
+            process2.kill()
 
     # Analyse figures of merit
     for parameter_key in list(parameters_to_tune.keys()):
@@ -303,7 +317,10 @@ def single_case_analysis(time_stamp,
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
 
+    UDP.lander_to_include = []
+
     # Perform covariance analysis
+    UDP.save_problem_configuration(output_path)
     UDP.perform_covariance_analysis(output_path)
 
 
@@ -313,7 +330,7 @@ def main():
 
     # Set whether the results of the covariance analysis should be saved
     save_simulation_results_flag = False
-    save_covariance_results_flag = False
+    save_covariance_results_flag = True
 
     # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
@@ -323,14 +340,14 @@ def main():
                                           save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_paramaters_analysis_flag = True
+    perform_tuning_paramaters_analysis_flag = False
     if perform_tuning_paramaters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = False
+    perform_single_case_analysis_flag = True
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
