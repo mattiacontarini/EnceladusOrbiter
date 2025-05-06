@@ -164,12 +164,12 @@ minimum_elevation_angle_visibility = np.deg2rad(15.0)
 minimum_sep_angle = np.deg2rad(5.0)
 
 # Measurements noise
-doppler_noise = 12.0e-6
-range_noise = 0.2
-#doppler_noise_Earth_ground_station = 12.0e-6
-#range_noise_Earth_ground_station = 0.2
-#doppler_noise_lander = 1e-4
-#range_noise_lander = 1
+# doppler_noise = 12.0e-6
+# range_noise = 0.2
+doppler_noise_Earth_ground_station = 12.0e-6
+range_noise_Earth_ground_station = 0.2
+doppler_noise_lander = 1e-4
+range_noise_lander = 1
 
 # Kaula constraint factor
 kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
