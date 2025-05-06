@@ -79,6 +79,11 @@ class CovarianceAnalysis:
 
     def save_problem_configuration(self,
                                    output_directory: str):
+        if len(self.lander_to_include) == 0:
+            lander_to_include = ["None"]
+        else:
+            lander_to_include = self.lander_to_include
+
         problem_configuration = {
             "initial_state_index": self.initial_state_index,
             "simulation_duration [days]": self.simulation_duration / constants.JULIAN_DAY,
@@ -89,7 +94,7 @@ class CovarianceAnalysis:
             "a_priori_lander_position": self.a_priori_lander_position,
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
-            "lander_to_include": self.lander_to_include,
+            "lander_to_include": lander_to_include,
             "include_lander_range_observable_flag": self.include_lander_range_observable_flag,
         }
 
@@ -556,9 +561,18 @@ class CovarianceAnalysis:
         Earth_gs_doppler_weight = CovAnalysisConfig.doppler_noise_Earth_ground_station ** -2
         Earth_gs_range_weight = CovAnalysisConfig.range_noise_Earth_ground_station ** -2
         for ground_station_name in ground_station_names:
+            # Doppler observations
             Earth_gs_doppler_parser_list = []
-            Earth_gs_doppler_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type)
-            Earth_gs_doppler_parser_list.append(("Earth", ground_station_name))
+            Earth_gs_doppler_parser_list.append(
+                numerical_simulation.estimation.observation_parser(
+                    numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type
+                )
+            )
+            Earth_gs_doppler_parser_list.append(
+                numerical_simulation.estimation.observation_parser(
+                    ("Earth", ground_station_name)
+                )
+            )
             Earth_gs_doppler_parser = numerical_simulation.estimation.observation_parser(
                 Earth_gs_doppler_parser_list,
                 combine_conditions = True
@@ -567,12 +581,20 @@ class CovarianceAnalysis:
                 Earth_gs_doppler_weight,
                 Earth_gs_doppler_parser
             )
-
+            # Range observations
             Earth_gs_range_parser_list = []
-            Earth_gs_range_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_range_type)
-            Earth_gs_range_parser_list.append(("Earth", ground_station_name))
+            Earth_gs_range_parser_list.append(
+                numerical_simulation.estimation.observation_parser(
+                    numerical_simulation.estimation_setup.observation.n_way_range_type
+                )
+            )
+            Earth_gs_range_parser_list.append(
+                numerical_simulation.estimation.observation_parser(
+                    ("Earth", ground_station_name)
+                )
+            )
             Earth_gs_range_parser = numerical_simulation.estimation.observation_parser(
-                Earth_gs_range_weight,
+                Earth_gs_range_parser_list,
                 combine_conditions = True
             )
             simulated_observations.set_constant_weight(
@@ -584,8 +606,15 @@ class CovarianceAnalysis:
         for lander_name in self.lander_to_include:
             Enceladus_lander_doppler_parser_list = []
             Enceladus_lander_doppler_parser_list.append(
-                numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type)
-            Enceladus_lander_doppler_parser_list.append(("Enceladus", lander_name))
+                numerical_simulation.estimation.observation_parser(
+                    numerical_simulation.estimation_setup.observation.n_way_averaged_doppler_type
+                )
+            )
+            Enceladus_lander_doppler_parser_list.append(
+                numerical_simulation.estimation.observation_parser(
+                    ("Enceladus", lander_name)
+                )
+            )
             Enceladus_lander_doppler_parser = numerical_simulation.estimation.observation_parser(
                 Enceladus_lander_doppler_parser_list,
                 combine_conditions=True
@@ -597,8 +626,16 @@ class CovarianceAnalysis:
 
             if self.include_lander_range_observable_flag:
                 Enceladus_lander_range_parser_list = []
-                Enceladus_lander_range_parser_list.append(numerical_simulation.estimation_setup.observation.n_way_range_type)
-                Enceladus_lander_range_parser_list.append(("Enceladus", lander_name))
+                Enceladus_lander_range_parser_list.append(
+                    numerical_simulation.estimation.observation_parser(
+                        numerical_simulation.estimation_setup.observation.n_way_range_type
+                    )
+                )
+                Enceladus_lander_range_parser_list.append(
+                    numerical_simulation.estimation.observation_parser(
+                        ("Enceladus", lander_name)
+                    )
+                )
                 Enceladus_lander_range_parser = numerical_simulation.estimation.observation_parser(
                     Enceladus_lander_range_parser_list,
                     combine_conditions=True
