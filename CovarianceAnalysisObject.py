@@ -80,9 +80,11 @@ class CovarianceAnalysis:
     def save_problem_configuration(self,
                                    output_directory: str):
         if len(self.lander_to_include) == 0:
-            lander_to_include = ["None"]
+            lander_to_include = "None"
         else:
-            lander_to_include = self.lander_to_include
+            lander_to_include = self.lander_to_include[0]
+            for lander in self.lander_to_include[1:]:
+                lander_to_include = lander_to_include + "; " + lander
 
         problem_configuration = {
             "initial_state_index": self.initial_state_index,
