@@ -954,7 +954,7 @@ class CovarianceAnalysis:
                 formal_error_initial_inertial_position_current_arc = formal_errors[indices_states[0] + 6 * i:
                                                                                    indices_states[0] + 6 * i + 3].T
                 formal_error_initial_position_rsw_current_arc = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(
-                    formal_error_initial_inertial_position_current_arc, initial_inertial_to_rsw_rotation_matrix))
+                    formal_error_initial_inertial_position_current_arc, initial_rsw_to_inertial_rotation_matrix))
                 formal_error_initial_position_radial_direction.append(formal_error_initial_position_rsw_current_arc[0])
                 formal_error_initial_position_along_track_direction.append(
                     formal_error_initial_position_rsw_current_arc[1])
