@@ -159,6 +159,12 @@ a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
 # A priori constraint on position of landers on Enceladus
 a_priori_lander_position = 1e2
 
+# A priori constraint on range bias for Earth GSs
+a_priori_range_bias_Earth_ground_station = 2.0
+
+# A priori constraint on range bias for Enceladus landers
+a_priori_range_bias_lander = 2.0
+
 # Minimum elevation angle for visibility
 minimum_elevation_angle_visibility = np.deg2rad(15.0)
 minimum_sep_angle = np.deg2rad(5.0)

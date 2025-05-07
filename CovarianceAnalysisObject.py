@@ -467,10 +467,22 @@ class CovarianceAnalysis:
                                                                                         lander)
             )
 
+        # Define consider parameters
+        # Add arc-wise lander range biases as consider parameters
+        consider_parameter_settings = []
+        for link_end in link_ends:
+            consider_parameter_settings.append(
+                numerical_simulation.estimation_setup.parameter.arcwise_absolute_observation_bias(
+                    observation.LinkDefinition(link_end), observation.n_way_range_type, tracking_arcs_start, observation.receiver
+                )
+            )
+
+
         # Create parameters to estimate object
         parameters_to_estimate = numerical_simulation.estimation_setup.create_parameter_set(parameter_settings,
                                                                                             bodies,
-                                                                                            propagator_settings)  # consider_parameter_settings
+                                                                                            propagator_settings,
+                                                                                            consider_parameter_settings)
         numerical_simulation.estimation_setup.print_parameter_names(parameters_to_estimate)
         nb_parameters = len(parameters_to_estimate.parameter_vector)
         print(f"Total number of parameters to estimate: {nb_parameters}")
@@ -554,9 +566,27 @@ class CovarianceAnalysis:
         # Retrieve full vector of a priori constraints
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
 
+        # Define consider parameters covariance
+        nb_consider_parameters = nb_arcs * (len(ground_station_names) + len(self.lander_to_include))
+        consider_parameter_covariance = np.zeros((nb_consider_parameters, nb_consider_parameters))
+        # Set consider covariance for range biases
+        for ground_station_name in ground_station_names:
+            indices_range_bias = (0, nb_arcs*len(ground_station_names))
+            for i in range(indices_range_bias[1]):
+                consider_parameter_covariance[indices_range_bias[0] + i, indices_range_bias[0] + i] = (
+                        CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** -2)
+
+        for lander_name in self.lander_to_include:
+            indices_range_bias = (nb_arcs*len(ground_station_names), nb_arcs * (len(ground_station_names) + len(self.lander_to_include)) )
+            for i in range(indices_range_bias[1]):
+                consider_parameter_covariance[indices_range_bias[0] + i, indices_range_bias[0] + i] = (
+                        CovAnalysisConfig.a_priori_range_bias_lander ** -2)
+
+
         # Create input object for covariance analysis
         covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
-                                                                                   inv_apriori)  # consider_covariance
+                                                                                   inv_apriori,
+                                                                                   consider_parameter_covariance)
         covariance_input.define_covariance_settings(reintegrate_variational_equations=False, save_design_matrix=True)
 
         # Apply weights to simulated observations
@@ -655,6 +685,19 @@ class CovarianceAnalysis:
         covariance = covariance_output.covariance
         formal_errors = covariance_output.formal_errors
         partials = covariance_output.weighted_design_matrix
+
+        # Retrieve results with consider parameters
+        consider_covariance_contribution = covariance_output.consider_covariance_contribution
+        covariance_with_consider_parameters = covariance_output.unnormalized_covariance_with_consider_parameters
+        formal_errors_with_consider_parameters = np.sqrt(np.diag(covariance_with_consider_parameters))
+        correlations_with_consider_parameters = covariance_with_consider_parameters
+        for i in range(nb_parameters):
+            for j in range(nb_parameters):
+                correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
+
+        # Propagate formal errors
+        output_times = np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0)
+        propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
 
         # Compute condition number of output covariance matrix
         condition_number = np.linalg.cond(covariance)
