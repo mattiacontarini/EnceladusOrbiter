@@ -318,6 +318,7 @@ def single_case_analysis(time_stamp,
     UDP.save_covariance_results_flag = save_covariance_results_flag
 
     UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
+    UDP.use_station_position_consider_parameter_flag = True
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
@@ -340,8 +341,8 @@ def main():
                                           save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_paramaters_analysis_flag = False
-    if perform_tuning_paramaters_analysis_flag:
+    perform_tuning_parameters_analysis_flag = False
+    if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)

@@ -14,7 +14,6 @@ from auxiliary.utilities import covariance_analysis_utilities as CovUtil
 from tudatpy import numerical_simulation
 from tudatpy.data import save2txt
 from tudatpy.util import result2array
-from tudatpy.kernel.interface import spice
 from tudatpy.math import interpolators
 from tudatpy.numerical_simulation.estimation_setup import observation
 from tudatpy import constants
@@ -39,6 +38,8 @@ class CovarianceAnalysis:
                  a_priori_lander_position: float,
                  lander_to_include: list[str],
                  include_lander_range_observable_flag: bool,
+                 use_range_bias_consider_parameter_flag: bool,
+                 use_station_position_consider_parameter_flag: bool,
                  ):
         self.initial_state_index = initial_state_index
         self.save_simulation_results_flag = save_simulation_results_flag
@@ -51,6 +52,8 @@ class CovarianceAnalysis:
         self.a_priori_lander_position = a_priori_lander_position
         self.lander_to_include = lander_to_include
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
+        self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
+        self.use_station_position_consider_parameter_flag = use_station_position_consider_parameter_flag
 
     @classmethod
     def from_config(cls):
@@ -64,7 +67,9 @@ class CovarianceAnalysis:
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
         lander_to_include = CovAnalysisConfig.lander_names
-        include_lander_range_observable_flag = True
+        include_lander_range_observable_flag = False
+        use_range_bias_consider_parameter_flag = False
+        use_station_position_consider_parameter_flag = True
         return cls(initial_state_index,
                    save_simulation_results_flag,
                    save_covariance_results_flag,
@@ -75,7 +80,9 @@ class CovarianceAnalysis:
                    a_priori_empirical_accelerations,
                    a_priori_lander_position,
                    lander_to_include,
-                   include_lander_range_observable_flag)
+                   include_lander_range_observable_flag,
+                   use_range_bias_consider_parameter_flag,
+                   use_station_position_consider_parameter_flag)
 
     def save_problem_configuration(self,
                                    output_directory: str):
@@ -98,6 +105,8 @@ class CovarianceAnalysis:
             "save_covariance_results_flag": self.save_covariance_results_flag,
             "lander_to_include": lander_to_include,
             "include_lander_range_observable_flag": self.include_lander_range_observable_flag,
+            "use_range_bias_consider_parameter_flag": self.use_range_bias_consider_parameter_flag,
+            "use_station_position_consider_parameter_flag": self.use_station_position_consider_parameter_flag,
         }
 
         save2txt(problem_configuration, "problem_configuration.txt", output_directory)
@@ -470,12 +479,18 @@ class CovarianceAnalysis:
         # Define consider parameters
         # Add arc-wise lander range biases as consider parameters
         consider_parameter_settings = []
-        for link_end in link_ends:
-            consider_parameter_settings.append(
-                numerical_simulation.estimation_setup.parameter.arcwise_absolute_observation_bias(
-                    observation.LinkDefinition(link_end), observation.n_way_range_type, tracking_arcs_start, observation.receiver
+        if self.use_range_bias_consider_parameter_flag:
+            for link_end in link_ends:
+                consider_parameter_settings.append(
+                    numerical_simulation.estimation_setup.parameter.arcwise_absolute_observation_bias(
+                        observation.LinkDefinition(link_end), observation.n_way_range_type, tracking_arcs_start, observation.receiver
+                    )
                 )
-            )
+        if self.use_station_position_consider_parameter_flag:
+            for ground_station_name in ground_station_names:
+                consider_parameter_settings.append(
+                    numerical_simulation.estimation_setup.parameter.ground_station_position("Earth", ground_station_name)
+                )
 
 
         # Create parameters to estimate object
@@ -567,24 +582,47 @@ class CovarianceAnalysis:
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
 
         # Define consider parameters covariance
-        nb_consider_parameters = nb_arcs * (len(ground_station_names) + len(self.lander_to_include))
-        consider_parameter_covariance = np.zeros((nb_consider_parameters, nb_consider_parameters))
-        # Set consider covariance for range biases
-        indices_range_bias_Earth_ground_station = (0, nb_arcs*len(ground_station_names))
-        for i in range(indices_range_bias_Earth_ground_station[1]):
-                consider_parameter_covariance[indices_range_bias_Earth_ground_station[0] + i, indices_range_bias_Earth_ground_station[0] + i] = (
-                        CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** -2)
+        if self.use_range_bias_consider_parameter_flag or self.use_range_bias_consider_parameter_flag:
+            nb_consider_parameters = 0
+            if self.use_range_bias_consider_parameter_flag:
+                nb_consider_parameters += nb_arcs * (len(ground_station_names) + len(self.lander_to_include))
+            if self.use_station_position_consider_parameter_flag:
+                nb_consider_parameters += 3 * len(ground_station_names)
 
-        indices_range_bias_lander = (nb_arcs*len(ground_station_names), nb_arcs * len(self.lander_to_include) )
-        for i in range(indices_range_bias_lander[1]):
-                consider_parameter_covariance[indices_range_bias_lander[0] + i, indices_range_bias_lander[0] + i] = (
-                        CovAnalysisConfig.a_priori_range_bias_lander ** -2)
+            consider_parameter_covariance = np.zeros((nb_consider_parameters, nb_consider_parameters))
+            # Set consider covariance for range biases
+            if self.use_range_bias_consider_parameter_flag:
+                indices_range_bias_Earth_ground_station = (0, nb_arcs*len(ground_station_names))
+                for i in range(indices_range_bias_Earth_ground_station[1]):
+                    consider_parameter_covariance[indices_range_bias_Earth_ground_station[0] + i, indices_range_bias_Earth_ground_station[0] + i] = (
+                            CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** -2)
+                indices_range_bias_lander = (nb_arcs*len(ground_station_names), nb_arcs * len(self.lander_to_include) )
+                for i in range(indices_range_bias_lander[1]):
+                    consider_parameter_covariance[indices_range_bias_lander[0] + i, indices_range_bias_lander[0] + i] = (
+                            CovAnalysisConfig.a_priori_range_bias_lander ** -2)
 
+            # Set consider covariance for ground station and lander position
+            if self.use_station_position_consider_parameter_flag:
+                if self.use_range_bias_consider_parameter_flag:
+                    indices_station_position_Earth_ground_station = (
+                        nb_arcs * (len(ground_station_names) + len(self.lander_to_include)), 3 * len(ground_station_names)
+                    )
+                else:
+                    indices_station_position_Earth_ground_station = (0, 3 * len(ground_station_names))
+                for i in range(indices_station_position_Earth_ground_station[1]):
+                    consider_parameter_covariance[indices_station_position_Earth_ground_station[0] + i, indices_station_position_Earth_ground_station[0] + i] = (
+                        CovAnalysisConfig.a_priori_station_position_Earth_ground_station ** -2
+                    )
 
-        # Create input object for covariance analysis
-        covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
-                                                                                   inv_apriori,
-                                                                                   consider_parameter_covariance)
+            # Create input object for covariance analysis
+            covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
+                                                                                       inv_apriori,
+                                                                                       consider_parameter_covariance)
+        else:
+            # Create input object for covariance analysis
+            covariance_input = numerical_simulation.estimation.CovarianceAnalysisInput(simulated_observations,
+                                                                                       inv_apriori)
+
         covariance_input.define_covariance_settings(reintegrate_variational_equations=False, save_design_matrix=True)
 
         # Apply weights to simulated observations
@@ -685,13 +723,14 @@ class CovarianceAnalysis:
         partials = covariance_output.weighted_design_matrix
 
         # Retrieve results with consider parameters
-        consider_covariance_contribution = covariance_output.consider_covariance_contribution
-        covariance_with_consider_parameters = covariance_output.unnormalized_covariance_with_consider_parameters
-        formal_errors_with_consider_parameters = np.sqrt(np.diag(covariance_with_consider_parameters))
-        correlations_with_consider_parameters = covariance_with_consider_parameters
-        for i in range(nb_parameters):
-            for j in range(nb_parameters):
-                correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
+        if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
+            consider_covariance_contribution = covariance_output.consider_covariance_contribution
+            covariance_with_consider_parameters = covariance_output.unnormalized_covariance_with_consider_parameters
+            formal_errors_with_consider_parameters = np.sqrt(np.diag(covariance_with_consider_parameters))
+            correlations_with_consider_parameters = covariance_with_consider_parameters
+            for i in range(nb_parameters):
+                for j in range(nb_parameters):
+                    correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
 
         # # Propagate formal errors
         # output_times = np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0)
@@ -770,15 +809,22 @@ class CovarianceAnalysis:
                                            "correlations.pdf")
 
             # Plot correlations with consider parameters
-            PlottingUtil.plot_correlations(correlations_with_consider_parameters,
-                                           plots_output_path,
-                                           "correlations_with_consider_parameters.pdf")
+            if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
+                PlottingUtil.plot_correlations(correlations_with_consider_parameters,
+                                               plots_output_path,
+                                               "correlations_with_consider_parameters.pdf")
 
             # Plot formal errors with contribution from consider parameters
-            PlottingUtil.plot_formal_errors(formal_errors,
-                                            formal_errors_with_consider_parameters,
-                                            plots_output_path,
-                                            "formal_errors.pdf")
+            if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
+                PlottingUtil.plot_formal_errors(formal_errors,
+                                                formal_errors_with_consider_parameters,
+                                                plots_output_path,
+                                                "formal_errors.pdf")
+            else:
+                PlottingUtil.plot_formal_errors(formal_errors,
+                                                [],
+                                                plots_output_path,
+                                                "formal_errors.pdf")
 
             # Plot formal errors of empirical accelerations
             formal_errors_empirical_accelerations = formal_errors[indices_empirical_acceleration_components[0]:
