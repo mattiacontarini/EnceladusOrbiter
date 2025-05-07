@@ -391,20 +391,35 @@ class CovarianceAnalysis:
 
         # Define observation settings for both observables, and all link ends (i.e., all ground stations)
         observation_simulation_settings = []
-        for link_end in link_ends:
+        for i in range(len(ground_station_names)):
+            link_end = link_ends[i]
             # Doppler observables
             observation_simulation_settings.append(observation.tabulated_simulation_settings(
                 observation.n_way_averaged_doppler_type,
                 observation.LinkDefinition(link_end),
                 observation_times_per_type[observation.n_way_averaged_doppler_type]
             ))
-
             # Range observables
             observation_simulation_settings.append(observation.tabulated_simulation_settings(
                 observation.n_way_range_type,
                 observation.LinkDefinition(link_end),
                 observation_times_per_type[observation.n_way_range_type]
             ))
+        for i in range(len(ground_station_names), len(ground_station_names) + len(self.lander_to_include)):
+            link_end = link_ends[i]
+            # Doppler observables
+            observation_simulation_settings.append(observation.tabulated_simulation_settings(
+                observation.n_way_averaged_doppler_type,
+                observation.LinkDefinition(link_end),
+                observation_times_per_type[observation.n_way_averaged_doppler_type]
+            ))
+            if self.include_lander_range_observable_flag:
+                # Range observables
+                observation_simulation_settings.append(observation.tabulated_simulation_settings(
+                    observation.n_way_range_type,
+                    observation.LinkDefinition(link_end),
+                    observation_times_per_type[observation.n_way_range_type]
+                ))
 
         # Create viability settings which define when an observation is feasible
         viability_settings = []
@@ -439,6 +454,9 @@ class CovarianceAnalysis:
         ###################################################################################################################
         ### Estimation setup ##############################################################################################
         ###################################################################################################################
+
+        # Generate arc start times for empirical accelerations
+
 
         # Define parameters to estimate
         # Add arc-wise initial states of the vehicle wrt Enceladus
