@@ -7,6 +7,8 @@ from tudatpy.astro import element_conversion
 # Packages import
 import numpy as np
 
+from example.JUICE_GCO500 import kaula_constraint_multiplier
+
 #######################################################################################################################
 ### Configuration #####################################################################################################
 #######################################################################################################################
@@ -178,8 +180,8 @@ doppler_noise_lander = 1e-4
 range_noise_lander = 1
 
 # Kaula constraint factor
-kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
-#kaula_constraint_multiplier = 1e-3  # From Zannoni et al., 2020
+#kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
+kaula_constraint_multiplier = 1e-3  # From Zannoni et al., 2020
 
 #######################################################################################################################
 ### Accelerations #####################################################################################################
