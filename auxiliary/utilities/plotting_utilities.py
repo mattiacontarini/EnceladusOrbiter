@@ -122,12 +122,13 @@ def plot_observation_times(arc_ID,
     plt.close()
 
 
-def plot_formal_errors(formal_errors_vector, output_path, filename):
+def plot_formal_errors(formal_errors, formal_errors_with_consider_parameters, output_path, filename):
 
-    plt.semilogy(np.arange(1, len(formal_errors_vector) + 1, 1), formal_errors_vector)
-    plt.title("Formal Errors")
+    plt.semilogy(np.arange(1, len(formal_errors) + 1, 1), formal_errors, color="blue", label="Nominal errors")
+    plt.semilogy(np.arange(1, len(formal_errors) + 1, 1), formal_errors_with_consider_parameters, color="red", label="Errors w/ consider parameters")
+    plt.title("Formal errors")
     plt.xlabel("Index - Estimated Parameter  [-]")
-    plt.ylabel("Formal Error  [respective IS unit]")
+    plt.ylabel("Formal error  [respective IS unit]")
     plt.tight_layout()
     plt.grid()
 
