@@ -130,7 +130,7 @@ empirical_accelerations_arc_duration = 0.5 * constants.JULIAN_DAY
 doppler_cadence = 60
 range_cadence = 300.0
 
-range_bias = 1.5
+range_bias = 2.0
 
 # Minimum D/O for spherical harmonic cosine coefficients of Enceladus
 minimum_degree_c_enceladus = 2
