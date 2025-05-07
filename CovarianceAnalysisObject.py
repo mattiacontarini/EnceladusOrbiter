@@ -570,16 +570,14 @@ class CovarianceAnalysis:
         nb_consider_parameters = nb_arcs * (len(ground_station_names) + len(self.lander_to_include))
         consider_parameter_covariance = np.zeros((nb_consider_parameters, nb_consider_parameters))
         # Set consider covariance for range biases
-        for ground_station_name in ground_station_names:
-            indices_range_bias = (0, nb_arcs*len(ground_station_names))
-            for i in range(indices_range_bias[1]):
-                consider_parameter_covariance[indices_range_bias[0] + i, indices_range_bias[0] + i] = (
+        indices_range_bias_Earth_ground_station = (0, nb_arcs*len(ground_station_names))
+        for i in range(indices_range_bias_Earth_ground_station[1]):
+                consider_parameter_covariance[indices_range_bias_Earth_ground_station[0] + i, indices_range_bias_Earth_ground_station[0] + i] = (
                         CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** -2)
 
-        for lander_name in self.lander_to_include:
-            indices_range_bias = (nb_arcs*len(ground_station_names), nb_arcs * (len(ground_station_names) + len(self.lander_to_include)) )
-            for i in range(indices_range_bias[1]):
-                consider_parameter_covariance[indices_range_bias[0] + i, indices_range_bias[0] + i] = (
+        indices_range_bias_lander = (nb_arcs*len(ground_station_names), nb_arcs * len(self.lander_to_include) )
+        for i in range(indices_range_bias_lander[1]):
+                consider_parameter_covariance[indices_range_bias_lander[0] + i, indices_range_bias_lander[0] + i] = (
                         CovAnalysisConfig.a_priori_range_bias_lander ** -2)
 
 
@@ -695,9 +693,9 @@ class CovarianceAnalysis:
             for j in range(nb_parameters):
                 correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
 
-        # Propagate formal errors
-        output_times = np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0)
-        propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
+        # # Propagate formal errors
+        # output_times = np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0)
+        # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
 
         # Compute condition number of output covariance matrix
         condition_number = np.linalg.cond(covariance)
@@ -762,7 +760,7 @@ class CovarianceAnalysis:
                                                                          "max_estimatable_degree_gravity_field.dat")
             np.savetxt(max_estimatable_degree_gravity_field_filename, [max_estimatable_degree_gravity_field])
 
-            # Plot correlations
+            # Plot nominal correlations
             PlottingUtil.plot_correlations(correlations,
                                            plots_output_path,
                                            "correlations.svg")
@@ -771,8 +769,14 @@ class CovarianceAnalysis:
                                            plots_output_path,
                                            "correlations.pdf")
 
-            # Plot formal errors
+            # Plot correlations with consider parameters
+            PlottingUtil.plot_correlations(correlations_with_consider_parameters,
+                                           plots_output_path,
+                                           "correlations_with_consider_parameters.pdf")
+
+            # Plot formal errors with contribution from consider parameters
             PlottingUtil.plot_formal_errors(formal_errors,
+                                            formal_errors_with_consider_parameters,
                                             plots_output_path,
                                             "formal_errors.pdf")
 
