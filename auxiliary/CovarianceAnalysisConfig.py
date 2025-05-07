@@ -7,8 +7,6 @@ from tudatpy.astro import element_conversion
 # Packages import
 import numpy as np
 
-from example.JUICE_GCO500 import kaula_constraint_multiplier
-
 #######################################################################################################################
 ### Configuration #####################################################################################################
 #######################################################################################################################
@@ -125,6 +123,9 @@ lander_coordinates_type = {lander_names[0]: element_conversion.geodetic_position
 tracking_arc_duration = 8.0 * 3600.0
 tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
 
+# Length of the arc over which the empirical accelerations are estimated
+empirical_accelerations_arc_duration = 0.5 * constants.JULIAN_DAY
+
 # Define observation simulation times for both Doppler and range observarbles
 doppler_cadence = 60
 range_cadence = 300.0
@@ -161,19 +162,20 @@ a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
 # A priori constraint on position of landers on Enceladus
 a_priori_lander_position = 1e2
 
-# A priori constraint on range bias for Earth GSs
+# A priori constraint on range bias for Earth ground stations
 a_priori_range_bias_Earth_ground_station = 2.0
 
 # A priori constraint on range bias for Enceladus landers
 a_priori_range_bias_lander = 2.0
+
+# A priori constraint on station position for Earth ground stations
+a_priori_station_position_Earth_ground_station = 5.0e-3
 
 # Minimum elevation angle for visibility
 minimum_elevation_angle_visibility = np.deg2rad(15.0)
 minimum_sep_angle = np.deg2rad(5.0)
 
 # Measurements noise
-# doppler_noise = 12.0e-6
-# range_noise = 0.2
 doppler_noise_Earth_ground_station = 12.0e-6
 range_noise_Earth_ground_station = 0.2
 doppler_noise_lander = 1e-4
