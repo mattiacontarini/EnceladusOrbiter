@@ -125,12 +125,15 @@ def plot_observation_times(arc_ID,
 def plot_formal_errors(formal_errors, formal_errors_with_consider_parameters, output_path, filename):
 
     plt.semilogy(np.arange(1, len(formal_errors) + 1, 1), formal_errors, color="blue", label="Nominal errors")
-    plt.semilogy(np.arange(1, len(formal_errors) + 1, 1), formal_errors_with_consider_parameters, color="red", label="Errors w/ consider parameters")
+    if formal_errors_with_consider_parameters is not None:
+        plt.semilogy(np.arange(1, len(formal_errors) + 1, 1), formal_errors_with_consider_parameters, color="red",
+                    label="Errors w/ consider parameters", linestyle="dashed")
     plt.title("Formal errors")
     plt.xlabel("Index - Estimated Parameter  [-]")
     plt.ylabel("Formal error  [respective IS unit]")
     plt.tight_layout()
     plt.grid()
+    plt.legend()
 
     os.makedirs(output_path, exist_ok=True)
     file_output_path = os.path.join(output_path, filename)
