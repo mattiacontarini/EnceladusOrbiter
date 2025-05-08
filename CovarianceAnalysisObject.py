@@ -103,6 +103,7 @@ class CovarianceAnalysis:
             "simulation_duration [days]": self.simulation_duration / constants.JULIAN_DAY,
             "arc_duration [days]": self.arc_duration / constants.JULIAN_DAY,
             "tracking_arc_duration [hours]": self.tracking_arc_duration / 3600.0,
+            "empirical_accelerations_arc_duration  [hours]": self.empirical_accelerations_arc_duration / 3600.0,
             "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
