@@ -28,7 +28,9 @@ def full_parameters_spectrum_analysis(time_stamp,
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
     ]
     spice.load_standard_kernels(kernels_to_load)
 
@@ -145,7 +147,9 @@ def perform_tuning_parameters_analysis(time_stamp,
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
     ]
     spice.load_standard_kernels(kernels_to_load)
 
@@ -187,6 +191,13 @@ def perform_tuning_parameters_analysis(time_stamp,
     # Set list of values for the cadence of the data
     tracking_arc_duration = [4.0 * 3600.0, 6.0 * 3600.0, 8.0 * 3600.0]
 
+    # Set list of number of landers to include in the simulation
+    lander_to_include = [ [None],
+                          ["L1"],
+                          ["L1", "L2"],
+                          ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
+
+
     parameters_to_tune = {
         "arc_duration": arc_durations,
         "simulation_duration": simulation_durations,
@@ -196,6 +207,7 @@ def perform_tuning_parameters_analysis(time_stamp,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
         "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
         "tracking_arc_duration": tracking_arc_duration,
+        "lander_to_include": lander_to_include,
     }
 
     parameters_to_tune_axis_labels = {
@@ -203,10 +215,11 @@ def perform_tuning_parameters_analysis(time_stamp,
         "arc_duration": "Arc duration  [days]",
         "kaula_constraint_multiplier": "Kaula constraint multiplier  [-]",
         "a_priori_empirical_acceleration": r"A priori empirical acceleration [m s$^{-2}$]",
-        "a_priori_lander_position": r"A priori lander position [m]",
-        "include_lander_range_observable_flag": r"Lander range observable included",
-        "empirical_acceleration_arc_duration": r"Empirical accelerations arc duration [hours]",
-        "tracking_arc_duration": r"Tracking arc duration [hours]",
+        "a_priori_lander_position": "A priori lander position [m]",
+        "include_lander_range_observable_flag": "Lander range observable included",
+        "empirical_acceleration_arc_duration": "Empirical accelerations arc duration [hours]",
+        "tracking_arc_duration": "Tracking arc duration [hours]",
+        "lander_to_include": "Lander to  include  [-]",
     }
 
     # Perform covariance analysis varying one parameter singularly
@@ -240,6 +253,14 @@ def perform_tuning_parameters_analysis(time_stamp,
                 UDP.a_priori_empirical_accelerations = parameter_value
             elif parameter_key == "a_priori_lander_position":
                 UDP.a_priori_lander_position = parameter_value
+            elif parameter_key == "include_lander_range_observable_flag":
+                UDP.include_lander_range_observable_flag = parameter_value
+            elif parameter_key == "empirical_accelerations_arc_duration":
+                UDP.empirical_accelerations_arc_duration = parameter_value
+            elif parameter_key == "tracking_arc_duration":
+                UDP.tracking_arc_duration = parameter_value
+            elif parameter_key == "lander_to_include":
+                UDP.lander_to_include = parameter_value
             else:
                 raise Exception("Unknown key for parameters to tune.")
 
@@ -315,7 +336,9 @@ def single_case_analysis(time_stamp,
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
         #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
     ]
     spice.load_standard_kernels(kernels_to_load)
 
