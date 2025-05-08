@@ -175,11 +175,17 @@ def perform_tuning_parameters_analysis(time_stamp,
     # Set list of values for the a priori constraint on the empirical accelerations
     a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
 
-    # Set list of value for the a priori constraint on the landers position
+    # Set list of values for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
 
     # Include range observable flag
     include_lander_range_observable_flag = [False, True]
+
+    # Set list of values for the duration of the arc-wise empirical accelerations
+    empirical_accelerations_arc_duration = [0.5 * constants.JULIAN_DAY, 1.0 * constants.JULIAN_DAY]
+
+    # Set list of values for the cadence of the data
+    tracking_arc_duration = [4.0 * 3600.0, 6.0 * 3600.0, 8.0 * 3600.0]
 
     parameters_to_tune = {
         "arc_duration": arc_durations,
@@ -188,6 +194,8 @@ def perform_tuning_parameters_analysis(time_stamp,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
+        "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
+        "tracking_arc_duration": tracking_arc_duration,
     }
 
     parameters_to_tune_axis_labels = {
@@ -197,6 +205,8 @@ def perform_tuning_parameters_analysis(time_stamp,
         "a_priori_empirical_acceleration": r"A priori empirical acceleration [m s$^{-2}$]",
         "a_priori_lander_position": r"A priori lander position [m]",
         "include_lander_range_observable_flag": r"Lander range observable included",
+        "empirical_acceleration_arc_duration": r"Empirical accelerations arc duration [hours]",
+        "tracking_arc_duration": r"Tracking arc duration [hours]",
     }
 
     # Perform covariance analysis varying one parameter singularly
@@ -269,6 +279,10 @@ def perform_tuning_parameters_analysis(time_stamp,
                 parameter_value = parameter_value / constants.JULIAN_DAY
             elif parameter_key == "arc_duration":
                 parameter_value = parameter_value / constants.JULIAN_DAY
+            elif parameter_key == "empirical_accelerations_arc_duration":
+                parameter_value = parameter_value / 3600.0
+            elif parameter_key == "tracking_arc_duration":
+                parameter_value = parameter_value / 3600.0
 
             # Make plots
             axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="black")
@@ -317,6 +331,7 @@ def single_case_analysis(time_stamp,
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
 
+    UDP.include_lander_range_observable_flag = False
     UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
     UDP.use_station_position_consider_parameter_flag = True
 
