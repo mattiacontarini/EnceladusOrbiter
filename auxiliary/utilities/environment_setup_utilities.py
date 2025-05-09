@@ -1,5 +1,6 @@
 # Packages import
 import numpy as np
+import cmath
 
 # Tudat import
 from tudatpy.kernel.interface import spice
@@ -25,22 +26,6 @@ def get_gravity_field_settings_enceladus_park(max_degree):
     enceladus_unnormalized_sine_coeffs[2, 1] = 7.6E-06
     enceladus_unnormalized_sine_coeffs[2, 2] = -275.31E-06
 
-    """
-    enceladus_unnormalized_cosine_coeffs = np.array([  # Park et al.
-        [1, 0, 0, 0],
-        [0, 0, 0, 0],
-        [-5477.45E-06, 7.86E-06, 1517.9E-06, 0],
-        [177.82E-06, 0, 0, 0]
-    ])
-
-    enceladus_unnormalized_sine_coeffs = np.array([  # Park et al.
-        [0, 0, 0, 0],
-        [0, 0, 0, 0],
-        [0, 7.6E-06, -275.31E-06, 0],  # 2 0 - 2 1 - 2 2
-        [0, 0, 0, 0]
-    ])
-    
-    """
     enceladus_normalized_coeffs = gravitation.normalize_spherical_harmonic_coefficients(
         enceladus_unnormalized_cosine_coeffs, enceladus_unnormalized_sine_coeffs
     )
@@ -59,6 +44,19 @@ def get_gravity_field_settings_enceladus_park(max_degree):
     )
 
     return enceladus_gravity_field_settings
+
+
+def get_gravity_field_variation_list_enceladus():
+    tide_raising_body = "Saturn"
+    love_numbers = dict()
+    love_numbers[2] = complex(0.02, 0.01)  # From Genova et al. 2024
+
+    gravity_field_variation_list = [
+        numerical_simulation.environment_setup.gravity_field_variation.solid_body_tide_degree_variable_complex_k(
+            tide_raising_body, love_numbers
+        )
+    ]
+    return gravity_field_variation_list
 
 
 def get_synodic_rotation_model_enceladus(simulation_initial_epoch):
