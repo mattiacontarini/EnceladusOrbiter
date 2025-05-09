@@ -162,6 +162,9 @@ a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
 # A priori constraint on position of landers on Enceladus
 a_priori_lander_position = 1e2
 
+# A priori constraint for tidal k2 love number - [Re, Im]
+a_priori_k2_love_number = [3.5e-4, 1.7e-4]
+
 # A priori constraint on range bias for Earth ground stations
 a_priori_range_bias_Earth_ground_station = 2.0
 

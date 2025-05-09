@@ -25,6 +25,10 @@ import matplotlib.pyplot as plt
 import statistics
 import matplotlib.lines as mlines
 
+#######################################################################################################################
+### Class definition ##################################################################################################
+#######################################################################################################################
+
 class CovarianceAnalysis:
 
     def __init__(self,
@@ -37,6 +41,7 @@ class CovarianceAnalysis:
                  kaula_constraint_multiplier: float,
                  a_priori_empirical_accelerations: float,
                  a_priori_lander_position: float,
+                 a_priori_k2_love_number,
                  lander_to_include: list[str],
                  include_lander_range_observable_flag: bool,
                  use_range_bias_consider_parameter_flag: bool,
@@ -53,6 +58,7 @@ class CovarianceAnalysis:
         self.kaula_constraint_multiplier = kaula_constraint_multiplier
         self.a_priori_empirical_accelerations = a_priori_empirical_accelerations
         self.a_priori_lander_position = a_priori_lander_position
+        self.a_priori_k2_love_number = a_priori_k2_love_number
         self.lander_to_include = lander_to_include
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
         self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
@@ -69,6 +75,7 @@ class CovarianceAnalysis:
         kaula_constraint_multiplier = CovAnalysisConfig.kaula_constraint_multiplier
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
+        a_priori_k2_love_number = CovAnalysisConfig.a_priori_k2_love_number
         lander_to_include = CovAnalysisConfig.lander_names
         include_lander_range_observable_flag = False
         use_range_bias_consider_parameter_flag = False
@@ -83,6 +90,7 @@ class CovarianceAnalysis:
                    kaula_constraint_multiplier,
                    a_priori_empirical_accelerations,
                    a_priori_lander_position,
+                   a_priori_k2_love_number,
                    lander_to_include,
                    include_lander_range_observable_flag,
                    use_range_bias_consider_parameter_flag,
@@ -107,6 +115,7 @@ class CovarianceAnalysis:
             "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
+            "a_priori_k2_love_number": self.a_priori_k2_love_number,
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
             "lander_to_include": lander_to_include,
@@ -144,6 +153,8 @@ class CovarianceAnalysis:
             CovAnalysisConfig.maximum_degree_gravity_enceladus)
         body_settings.get(
             "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
+        gravity_field_variation_list_Enceladus = EnvUtil.get_gravity_field_variation_list_enceladus()
+        body_settings.get("Enceladus").gravity_field_variation_settings = gravity_field_variation_list_Enceladus
 
         # Set gravity field settings for Saturn
         body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
@@ -505,6 +516,14 @@ class CovarianceAnalysis:
                 numerical_simulation.estimation_setup.parameter.ground_station_position("Enceladus",
                                                                                         lander)
             )
+        # Add k2 complex Love number
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.order_invariant_k_love_number(
+                "Enceladus",
+                2,
+                True
+            )
+        )
 
         # Define consider parameters
         # Add arc-wise lander range biases as consider parameters
@@ -607,6 +626,14 @@ class CovarianceAnalysis:
             for i in range(indices_lander_position[1]):
                 inv_apriori[indices_lander_position[0] + i, indices_lander_position[
                     0] + i] = self.a_priori_lander_position ** -2
+
+        # Set a priori constraint for k2 tidal love number
+        indices_tidal_love_number = parameters_to_estimate.indices_for_parameter_type(
+            (numerical_simulation.estimation_setup.parameter.full_degree_tidal_love_number_type,
+            ("Enceladus", "")))[0]
+        for i in range(indices_tidal_love_number[1]):
+            inv_apriori[indices_tidal_love_number[0] + i, indices_tidal_love_number[0] + i] = (
+                    self.a_priori_k2_love_number[i] ** -2)
 
         # Retrieve full vector of a priori constraints
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
