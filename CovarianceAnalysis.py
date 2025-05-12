@@ -19,8 +19,7 @@ import subprocess
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
-                                      save_covariance_results_flag,
-                                      fontsize=12):
+                                      save_covariance_results_flag):
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -127,8 +126,8 @@ def perform_tuning_parameters_analysis(time_stamp,
     # Set list of simulation durations to consider
     simulation_durations = [28.0 * constants.JULIAN_DAY,
                             60.0 * constants.JULIAN_DAY,
-                            180.0 * constants.JULIAN_DAY,
-                            1.0 * constants.JULIAN_YEAR
+                            #180.0 * constants.JULIAN_DAY,
+                            #1.0 * constants.JULIAN_YEAR
                             ]
 
     # Set list of arc durations to consider
@@ -181,9 +180,10 @@ def perform_tuning_parameters_analysis(time_stamp,
         os.makedirs(output_path_parameter, exist_ok=True)
 
         for parameter_value in parameters_to_tune[parameter_key]:
-            print(f" "
-                  f"Analysing parameter {parameter_key} with value = {parameter_value}"
-                  f" ")
+
+            print(" ")
+            print(f"Analysing parameter {parameter_key} with value = {parameter_value}")
+            print(" ")
 
             # Initialize covariance analysis object
             UDP = CovarianceAnalysis.from_config()
