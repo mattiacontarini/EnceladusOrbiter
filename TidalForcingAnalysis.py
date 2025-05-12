@@ -7,6 +7,7 @@
 from tudatpy import constants
 from tudatpy.interface import spice
 from tudatpy.data import save2txt
+from tudatpy.astro.element_conversion import cartesian_to_keplerian
 
 # General import
 import numpy as np
@@ -81,6 +82,7 @@ def main():
     # Generate vector of epochs to study
     arc_end = arc_start + arc_duration
     epochs = np.arange(arc_start, arc_end, epochs_step)
+    nb_epochs = len(epochs)
 
     # Load SPICE kernels
     spice.load_standard_kernels()
@@ -106,11 +108,13 @@ def main():
         output_path = os.path.join(output_directory, f"degree_{degree}")
         os.makedirs(output_path, exist_ok=True)
 
+        distance_history = dict()
+        kepler_elements_history = dict()
         tidal_forcing = dict()
         for epoch in epochs:
 
             # Retrieve Cartesian state of Enceladus wrt Saturn
-            enceladus_cartesian_position = spice.get_body_cartesian_position_at_epoch(
+            enceladus_cartesian_state = spice.get_body_cartesian_state_at_epoch(
                 "Enceladus",
                 "Saturn",
                 "J2000",
@@ -118,8 +122,17 @@ def main():
                 epoch
             )
 
+            # Retrieve Cartesian position of Enceladus wrt Saturn
+            enceladus_cartesian_position = enceladus_cartesian_state[:3]
+
             # Compute distance between Saturn and Enceladus
             distance = np.linalg.norm(enceladus_cartesian_position)
+            distance_history[epoch] = distance
+
+            # Convert Cartesian state to Keplerian elements
+            kepler_elements = cartesian_to_keplerian(enceladus_cartesian_state,
+                                                     saturn_gravitational_parameter)
+            kepler_elements_history[epoch] = kepler_elements
 
             # Compute tidal forcing at current epoch
             tidal_forcing[epoch] = []
@@ -137,9 +150,15 @@ def main():
                                     normalised_legendre_function * np.sin(order * longitude))
             tidal_forcing[epoch].append( tidal_forcing_sine )
 
-        # Save tidal forcing history to file
+        # Save tidal forcing and variables history to file
         save2txt(tidal_forcing,
                  "tidal_forcing_history.dat",
+                 output_path)
+        save2txt(distance_history,
+                 "distance_history.dat",
+                 output_path)
+        save2txt(kepler_elements_history,
+                 "kepler_elements_history.dat",
                  output_path)
 
 
