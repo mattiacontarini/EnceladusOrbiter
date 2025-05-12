@@ -115,7 +115,7 @@ class CovarianceAnalysis:
             "kaula_constraint_multiplier": self.kaula_constraint_multiplier,
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
-            "a_priori_k2_love_number": self.a_priori_k2_love_number,
+            "a_priori_k2_love_number": complex(self.a_priori_k2_love_number[0], self.a_priori_k2_love_number[1]),
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
             "lander_to_include": lander_to_include,
@@ -878,6 +878,24 @@ class CovarianceAnalysis:
             else:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
+        # Compute ratio of lander data to ground station data
+        if lander_names is not None:
+            indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
+                (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
+                ("Enceladus", lander_names[0])))[0]
+            nb_landers = len(lander_names)
+            indices_lander_position = [indices_lander_position_first_lander[0], 3 * nb_landers]
+
+            nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials,
+                                                                                      "lander",
+                                                                                      indices_lander_position)
+            nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials,
+                                                                                              "ground_station",
+                                                                                              indices_lander_position)
+            nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
+        else:
+            nb_observations_ratio = 0.0
+
         plots_output_path = os.path.join(output_path, "plots")
         if self.save_covariance_results_flag:
 
@@ -1056,6 +1074,9 @@ class CovarianceAnalysis:
             file_output_path = os.path.join(plots_output_path, "formal_error_empirical_accelerations_rsw.pdf")
             fig.savefig(file_output_path)
 
+            # Save ratio of number of lander observations to number of ground station observations
+            nb_observations_ratio_filename = os.path.join(covariance_results_output_path, "nb_observations_ratio.dat")
+            np.savetxt(nb_observations_ratio_filename, [nb_observations_ratio])
 
         if self.save_simulation_results_flag:
 

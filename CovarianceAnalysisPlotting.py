@@ -127,7 +127,7 @@ def plot_tuning_parameters_analysis(input_path,
         input_path_parameter = os.path.join(input_path, parameter_key)
 
         # Create plot of figures of merit for current considered parameter
-        fig, axes = plt.subplots(2, 2, constrained_layout=True)
+        fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
         for parameter_value in parameters_to_tune[parameter_key]:
             parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
             input_path_configuration = os.path.join(input_path_parameter, f"configuration_{parameter_value_index}")
@@ -145,6 +145,9 @@ def plot_tuning_parameters_analysis(input_path,
             )
             formal_error_empirical_accelerations_rsw_interval = np.loadtxt(
                 os.path.join(input_path_covariance_results, "formal_error_empirical_accelerations_rsw_interval.dat")
+            )
+            nb_observations_ratio = np.loadtxt(
+                os.path.join(input_path_covariance_results, "nb_observations_ratio.dat")
             )
 
             if parameter_key == "simulation_duration":
@@ -171,11 +174,11 @@ def plot_tuning_parameters_analysis(input_path,
                                        formal_error_empirical_accelerations_rsw_interval[i, j],
                                        color=colors_rsw_interval[i],
                                        marker=markers_rsw_interval[j])
+            axes[2, 0].scatter(parameter_value, nb_observations_ratio, color="blue")
 
         axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
         axes[0, 1].set_ylabel("Maximum estimatable degree gravity field [-]", fontsize=fontsize)
         axes[1, 0].set_ylabel("Formal error initial position  [m]", fontsize=fontsize)
-        axes[1, 0].set_xlabel(parameters_to_tune_label[parameter_key], fontsize=fontsize)
         axes[1, 0].legend(handles=[rsw_interval_min_value_handle,
                                    rsw_interval_median_value_handle,
                                    rsw_interval_max_value_handle,
@@ -185,8 +188,11 @@ def plot_tuning_parameters_analysis(input_path,
                           fontsize=fontsize)
         axes[1, 1].set_ylabel("Formal error empirical accelerations  [m/s$^{2}$]", fontsize=fontsize)
         axes[1, 1].set_xlabel(parameters_to_tune_label[parameter_key], fontsize=fontsize)
+        axes[2, 0].set_ylabel("no. lander data / no. GS data  [-]", fontsize=fontsize)
+        axes[2, 0].set_xlabel(parameters_to_tune_label[parameter_key], fontsize=fontsize)
         axes.grid(True, which="both")
         axes.tick_params(labelsize=fontsize)
+        plt.delaxes(axes[2, 2])
         fig.savefig(os.path.join(input_path_parameter, "figures_of_merit.pdf"))
         plt.close(fig)
 
@@ -204,30 +210,3 @@ def main():
         time_stamp_folder = "2025.05.12.08.39.55"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
