@@ -597,7 +597,7 @@ class CovarianceAnalysis:
             (numerical_simulation.estimation_setup.parameter.spherical_harmonics_sine_coefficient_block_type,
              ("Enceladus", "")))[0]
         # Apply Kaula's constraint to Enceladus' gravity field
-        inv_apriori = CovUtil.apply_kaula_constraint_a_priori(CovAnalysisConfig.kaula_constraint_multiplier,
+        inv_apriori = CovUtil.apply_kaula_constraint_a_priori(self.kaula_constraint_multiplier,
                                                               CovAnalysisConfig.maximum_degree_gravity_enceladus,
                                                               indices_cosine_coef,
                                                               indices_sine_coef,
@@ -776,6 +776,8 @@ class CovarianceAnalysis:
         # Retrieve covariance results
         correlations = covariance_output.correlations
         covariance = covariance_output.covariance
+        normalized_covariance = covariance_output.normalized_covariance
+        normalized_covariance_with_consider_parameters = covariance_output.normalized_covariance_with_consider_parameters
         formal_errors = covariance_output.formal_errors
         partials = covariance_output.weighted_design_matrix
 
@@ -790,9 +792,9 @@ class CovarianceAnalysis:
                     correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
 
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
-            formal_errors_to_use = formal_errors_with_consider_parameters
+            covariance_to_use = covariance_with_consider_parameters
         else:
-            formal_errors_to_use = formal_errors
+            covariance_to_use = covariance
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -808,11 +810,13 @@ class CovarianceAnalysis:
             initial_rsw_to_inertial_rotation_matrix = np.reshape(initial_rsw_to_inertial_rotation_matrix, (3, 3))
             initial_inertial_to_rsw_rotation_matrix = initial_rsw_to_inertial_rotation_matrix.T
 
-            formal_error_initial_inertial_position_current_arc = formal_errors_to_use[indices_states[0] + 6 * i:
-                                                                           indices_states[0] + 6 * i + 3].T
-            formal_error_initial_position_rsw_current_arc = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(
-                formal_error_initial_inertial_position_current_arc, initial_rsw_to_inertial_rotation_matrix))
-            formal_error_initial_position_rsw[i, :] = formal_error_initial_position_rsw_current_arc
+            covariance_initial_position_inertial = covariance_to_use[
+                                           indices_states[0] + 6 * i : indices_states[0] + 6 * i + 3,
+                                           indices_states[0] + 6 * i: indices_states[0] + 6 * i + 3
+                                           ]
+            covariance_initial_position_rsw = np.dot(initial_inertial_to_rsw_rotation_matrix, np.dot(
+                covariance_initial_position_inertial, initial_rsw_to_inertial_rotation_matrix))
+            formal_error_initial_position_rsw[i, :] = np.sqrt(np.diag(covariance_initial_position_rsw))
 
         # Rotate formal errors of empirical accelerations to RSW frame (considering that the empirical accelerations
         # only have the constant term)
@@ -834,15 +838,16 @@ class CovarianceAnalysis:
                 inertial_to_rsw_rotation_matrix = rsw_to_inertial_rotation_matrix.T
                 for j in range(nb_empirical_accelerations_arc):
                     if empirical_accelerations_arc_start_times[j] <= epoch <= empirical_accelerations_arc_end_times[j]:
-                        formal_error_empirical_accelerations_inertial = formal_errors[
-                            indices_empirical_acceleration_components[0] + 3 * j: indices_empirical_acceleration_components[0] + 3 * j + 3
-                        ].T
+                        covariance_empirical_accelerations_inertial = covariance_to_use[
+                            indices_empirical_acceleration_components[0] + 3 * j:indices_empirical_acceleration_components[0] + 3 * j + 3,
+                            indices_empirical_acceleration_components[0] + 3 * j:indices_empirical_acceleration_components[0] + 3 * j + 3
+                        ]
                         break
-                formal_error_empirical_accelerations_rsw = np.dot(
-                    inertial_to_rsw_rotation_matrix, np.dot(formal_error_empirical_accelerations_inertial, rsw_to_inertial_rotation_matrix)
+                covariance_empirical_accelerations_rsw = np.dot(
+                    inertial_to_rsw_rotation_matrix, np.dot(covariance_empirical_accelerations_inertial, rsw_to_inertial_rotation_matrix)
                 )
                 formal_error_empirical_accelerations_rsw_current_arc[epoch_index, 0] = epoch
-                formal_error_empirical_accelerations_rsw_current_arc[epoch_index, 1:] = formal_error_empirical_accelerations_rsw
+                formal_error_empirical_accelerations_rsw_current_arc[epoch_index, 1:] = np.sqrt(np.diag(covariance_empirical_accelerations_rsw))
             formal_error_empirical_accelerations_rsw_list.append(formal_error_empirical_accelerations_rsw_current_arc)
 
         # # Propagate formal errors
@@ -850,7 +855,7 @@ class CovarianceAnalysis:
         # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
 
         # Compute condition number of output covariance matrix
-        condition_number = np.linalg.cond(covariance)
+        condition_number = np.linalg.cond(normalized_covariance)
 
         # Retrieve formal error of SH zonal gravity coefficients
         formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
@@ -872,7 +877,7 @@ class CovarianceAnalysis:
         for i in range(len(degrees)):
             delta = (np.absolute(formal_error_zonal_cosine_coef[i] - a_priori_constraints_zonal_cosine_coef[i]) /
                      a_priori_constraints_zonal_cosine_coef[i]) * 100
-            if delta <= 0.1:
+            if delta <= 10:
                 max_estimatable_degree_gravity_field = degrees[i] - 1
                 break
             else:
