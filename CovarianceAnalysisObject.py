@@ -307,8 +307,8 @@ class CovarianceAnalysis:
             numerical_simulation.environment_setup.add_ground_station(bodies.get_body("Earth"), ground_station_settings)
 
         # Create landers settings
-        lander_names = CovAnalysisConfig.lander_names
-        for lander_name in lander_names:
+        lander_to_include = self.lander_to_include
+        for lander_name in lander_to_include:
             lander_settings = numerical_simulation.environment_setup.ground_station.basic_station(
                 lander_name,
                 CovAnalysisConfig.lander_coordinates[lander_name],
@@ -884,11 +884,11 @@ class CovarianceAnalysis:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
         # Compute ratio of lander data to ground station data
-        if lander_names is not None:
+        if lander_to_include is not None:
             indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
-                ("Enceladus", lander_names[0])))[0]
-            nb_landers = len(lander_names)
+                ("Enceladus", lander_to_include[0])))[0]
+            nb_landers = len(lander_to_include)
             indices_lander_position = [indices_lander_position_first_lander[0], 3 * nb_landers]
 
             nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials,
