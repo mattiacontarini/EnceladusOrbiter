@@ -12,10 +12,6 @@ from tudatpy import constants
 # Packages import
 import datetime
 import os
-import matplotlib.pyplot as plt
-import numpy as np
-import time
-import subprocess
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
@@ -63,7 +59,7 @@ def full_parameters_spectrum_analysis(time_stamp,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3]
+    a_priori_empirical_accelerations = [1e-8, 1e-7, 1e-6]
 
     # Set list of value for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
@@ -94,8 +90,6 @@ def full_parameters_spectrum_analysis(time_stamp,
 
                             # Update configuration index
                             configuration_index += 1
-
-
 
 
 
@@ -154,7 +148,7 @@ def perform_tuning_parameters_analysis(time_stamp,
     tracking_arc_duration = [4.0 * 3600.0, 6.0 * 3600.0, 8.0 * 3600.0]
 
     # Set list of number of landers to include in the simulation
-    lander_to_include = [ [None],
+    lander_to_include = [ [ ],
                           ["L1"],
                           ["L1", "L2"],
                           ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
@@ -170,56 +164,64 @@ def perform_tuning_parameters_analysis(time_stamp,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
         "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
         "tracking_arc_duration": tracking_arc_duration,
-        "lander_to_include": lander_to_include,
+        # "lander_to_include": lander_to_include,
     }
 
-    # Perform covariance analysis varying one parameter singularly
-    for parameter_key in list(parameters_to_tune.keys()):
+    # Perform analysis of tuning parameters,
+    for lander in lander_to_include:
+        output_path_lander = os.path.join(output_folder, f"lander_to_include_case_{lander_to_include.index(lander)}")
+        os.makedirs(output_path_lander, exist_ok=True)
 
-        output_path_parameter = os.path.join(output_folder, parameter_key)
-        os.makedirs(output_path_parameter, exist_ok=True)
+        # Perform covariance analysis varying one parameter singularly
+        for parameter_key in list(parameters_to_tune.keys()):
 
-        for parameter_value in parameters_to_tune[parameter_key]:
+            output_path_parameter = os.path.join(output_path_lander, parameter_key)
+            os.makedirs(output_path_parameter, exist_ok=True)
 
-            print(" ")
-            print(f"Analysing parameter {parameter_key} with value = {parameter_value}")
-            print(" ")
+            for parameter_value in parameters_to_tune[parameter_key]:
 
-            # Initialize covariance analysis object
-            UDP = CovarianceAnalysis.from_config()
+                print(" ")
+                print(f"Analysing parameter {parameter_key} with value = {parameter_value} of {lander} lander case.")
+                print(" ")
 
-            # Set flag for saving results
-            UDP.save_simulation_results_flag = save_simulation_results_flag
-            UDP.save_covariance_results_flag = save_covariance_results_flag
+                # Initialize covariance analysis object
+                UDP = CovarianceAnalysis.from_config()
 
-            parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
-            output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
-            os.makedirs(output_path, exist_ok=True)
-            if parameter_key == "initial_state_index":
-                UDP.initial_state_index = parameter_value
-            elif parameter_key == "simulation_duration":
-                UDP.simulation_duration = parameter_value
-            elif parameter_key == "arc_duration":
-                UDP.arc_duration = parameter_value
-            elif parameter_key == "kaula_constraint_multiplier":
-                UDP.kaula_constraint_multiplier = parameter_value
-            elif parameter_key == "a_priori_empirical_acceleration":
-                UDP.a_priori_empirical_accelerations = parameter_value
-            elif parameter_key == "a_priori_lander_position":
-                UDP.a_priori_lander_position = parameter_value
-            elif parameter_key == "include_lander_range_observable_flag":
-                UDP.include_lander_range_observable_flag = parameter_value
-            elif parameter_key == "empirical_accelerations_arc_duration":
-                UDP.empirical_accelerations_arc_duration = parameter_value
-            elif parameter_key == "tracking_arc_duration":
-                UDP.tracking_arc_duration = parameter_value
-            elif parameter_key == "lander_to_include":
-                UDP.lander_to_include = parameter_value
-            else:
-                raise Exception("Unknown key for parameters to tune.")
+                # Set flag for saving results
+                UDP.save_simulation_results_flag = save_simulation_results_flag
+                UDP.save_covariance_results_flag = save_covariance_results_flag
 
-            UDP.save_problem_configuration(output_path)
-            UDP.perform_covariance_analysis(output_path)
+                # Set landers to include in the simulation
+                UDP.lander_to_include = lander
+
+                parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
+                output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
+                os.makedirs(output_path, exist_ok=True)
+                if parameter_key == "initial_state_index":
+                    UDP.initial_state_index = parameter_value
+                elif parameter_key == "simulation_duration":
+                    UDP.simulation_duration = parameter_value
+                elif parameter_key == "arc_duration":
+                    UDP.arc_duration = parameter_value
+                elif parameter_key == "kaula_constraint_multiplier":
+                    UDP.kaula_constraint_multiplier = parameter_value
+                elif parameter_key == "a_priori_empirical_acceleration":
+                    UDP.a_priori_empirical_accelerations = parameter_value
+                elif parameter_key == "a_priori_lander_position":
+                    UDP.a_priori_lander_position = parameter_value
+                elif parameter_key == "include_lander_range_observable_flag":
+                    UDP.include_lander_range_observable_flag = parameter_value
+                elif parameter_key == "empirical_accelerations_arc_duration":
+                    UDP.empirical_accelerations_arc_duration = parameter_value
+                elif parameter_key == "tracking_arc_duration":
+                    UDP.tracking_arc_duration = parameter_value
+                elif parameter_key == "lander_to_include":
+                    UDP.lander_to_include = parameter_value
+                else:
+                    raise Exception("Unknown key for parameters to tune.")
+
+                UDP.save_problem_configuration(output_path)
+                UDP.perform_covariance_analysis(output_path)
 
 
 def single_case_analysis(time_stamp,
@@ -274,14 +276,14 @@ def main():
                                           save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = False
+    perform_tuning_parameters_analysis_flag = True
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = True
+    perform_single_case_analysis_flag = False
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
