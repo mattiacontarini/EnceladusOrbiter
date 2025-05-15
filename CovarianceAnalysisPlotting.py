@@ -66,13 +66,13 @@ def plot_tuning_parameters_analysis(input_path,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
         "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
         "tracking_arc_duration": tracking_arc_duration,
-        "lander_to_include": lander_to_include,
+        # "lander_to_include": lander_to_include,
     }
 
     colors_rsw_interval = ["blue", "green", "red"]
     markers_rsw_interval = ["o", "*", "X"]
 
-    parameters_to_tune_label = {
+    parameters_to_tune_axis_label = {
         "initial_state_index": "K- orbit index  [-]",
         "arc_duration": "Arc duration  [days]",
         "simulation_duration": "Simulation duration  [days]",
@@ -82,7 +82,20 @@ def plot_tuning_parameters_analysis(input_path,
         "include_lander_range_observable_flag": "Lander range observable inclusion flag  [-]",
         "empirical_accelerations_arc_duration": "Empirical acc. arc duration  [hours]",
         "tracking_arc_duration": "Tracking arc duration  [hours]",
-        "lander_to_include": "Number of landers  [-]",
+        "lander_to_include": "No. of landers  [-]",
+    }
+
+    parameters_to_tune_label = {
+        "initial_state_index": "K- orbit index",
+        "arc_duration": "Arc duration",
+        "simulation_duration": "Simulation duration",
+        "kaula_constraint_multiplier": "Kaula constraint multiplier",
+        "a_priori_empirical_acceleration": r"A priori $\sigma$ empirical accelerations",
+        "a_priori_lander_position": r"A priori $\sigma$ lander position",
+        "include_lander_range_observable_flag": "Lander range observable inclusion flag",
+        "empirical_accelerations_arc_duration": "Empirical accelerations arc duration",
+        "tracking_arc_duration": "Tracking arc duration",
+        "lander_to_include": "Number of landers",
     }
 
     rsw_interval_min_value_handle = mpatches.Patch(
@@ -94,7 +107,7 @@ def plot_tuning_parameters_analysis(input_path,
         label="median",
     )
     rsw_interval_max_value_handle = mpatches.Patch(
-        color=colors_rsw_interval[0],
+        color=colors_rsw_interval[2],
         label="max",
     )
     rsw_interval_radial_direction_handle = mlines.Line2D(
@@ -127,7 +140,7 @@ def plot_tuning_parameters_analysis(input_path,
         input_path_parameter = os.path.join(input_path, parameter_key)
 
         # Create plot of figures of merit for current considered parameter
-        fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
+        fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(10, 10))
         for parameter_value in parameters_to_tune[parameter_key]:
             parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
             input_path_configuration = os.path.join(input_path_parameter, f"configuration_{parameter_value_index}")
@@ -146,9 +159,9 @@ def plot_tuning_parameters_analysis(input_path,
             formal_error_empirical_accelerations_rsw_interval = np.loadtxt(
                 os.path.join(input_path_covariance_results, "formal_error_empirical_accelerations_rsw_interval.dat")
             )
-            nb_observations_ratio = np.loadtxt(
-                os.path.join(input_path_covariance_results, "nb_observations_ratio.dat")
-            )
+            # nb_observations_ratio = np.loadtxt(
+            #     os.path.join(input_path_covariance_results, "nb_observations_ratio.dat")
+            # )
 
             if parameter_key == "simulation_duration":
                 parameter_value = parameter_value / constants.JULIAN_DAY
@@ -162,8 +175,8 @@ def plot_tuning_parameters_analysis(input_path,
                 parameter_value = len(parameter_value)
 
             # Plot results
-            axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="blue")
-            axes[0, 1].scatter(parameter_value, max_estimatable_degree_gravity_field, color="blue")
+            axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="black", marker="^")
+            axes[0, 1].scatter(parameter_value, max_estimatable_degree_gravity_field, color="black", marker="^")
             for i in range(len(colors_rsw_interval)):
                 for j in range(len(markers_rsw_interval)):
                     axes[1, 0].scatter(parameter_value,
@@ -174,25 +187,44 @@ def plot_tuning_parameters_analysis(input_path,
                                        formal_error_empirical_accelerations_rsw_interval[i, j],
                                        color=colors_rsw_interval[i],
                                        marker=markers_rsw_interval[j])
-            axes[2, 0].scatter(parameter_value, nb_observations_ratio, color="blue")
+            # axes[2, 0].scatter(parameter_value, nb_observations_ratio, color="blue")
 
         axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
-        axes[0, 1].set_ylabel("Maximum estimatable degree gravity field [-]", fontsize=fontsize)
-        axes[1, 0].set_ylabel("Formal error initial position  [m]", fontsize=fontsize)
-        axes[1, 0].legend(handles=[rsw_interval_min_value_handle,
-                                   rsw_interval_median_value_handle,
-                                   rsw_interval_max_value_handle,
-                                   rsw_interval_radial_direction_handle,
-                                   rsw_interval_along_track_direction_handle,
-                                   rsw_interval_cross_track_direction_handle],
-                          fontsize=fontsize)
-        axes[1, 1].set_ylabel("Formal error empirical accelerations  [m/s$^{2}$]", fontsize=fontsize)
-        axes[1, 1].set_xlabel(parameters_to_tune_label[parameter_key], fontsize=fontsize)
+        axes[0, 0].set_yscale("log")
+        if parameter_key == "a_priori_empirical_acceleration":
+            axes[0, 0].set_ylim(bottom=1e28)
+        elif (parameter_key != "a_priori_lander_position" and parameter_key != "empirical_accelerations_arc_duration"
+              and parameter_key != "include_lander_range_observable_flag"):
+            axes[0, 0].set_ylim(bottom=1e29)
+        axes[0, 1].set_ylabel("Max. degree gravity field [-]", fontsize=fontsize)
+        axes[1, 0].set_ylabel(r"$\sigma$ initial position  [m]", fontsize=fontsize)
+        axes[1, 1].set_ylabel(r"$\sigma$ empirical accelerations  [m/s$^{2}$]", fontsize=fontsize)
+        axes[1, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
         axes[2, 0].set_ylabel("no. lander data / no. GS data  [-]", fontsize=fontsize)
-        axes[2, 0].set_xlabel(parameters_to_tune_label[parameter_key], fontsize=fontsize)
-        axes.grid(True, which="both")
-        axes.tick_params(labelsize=fontsize)
-        plt.delaxes(axes[2, 2])
+        axes[2, 0].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+        plt.delaxes(axes[2, 1])
+        for ax in axes.flat:
+            ax.tick_params(labelsize=fontsize)
+            ax.grid(True, which="both")
+        if parameter_key == "kaula_constraint_multiplier" or parameter_key == "a_priori_empirical_acceleration":
+            for ax in axes.flat:
+                ax.set_xscale("log")
+        elif parameter_key == "simulation_duration":
+            for ax in axes.flat:
+                ax.set_xlim(left=20)
+        elif parameter_key == "a_priori_lander_position":
+            for ax in axes.flat:
+                ax.set_xlim(left=0)
+
+        fig.legend(handles=[rsw_interval_min_value_handle,
+                            rsw_interval_median_value_handle,
+                            rsw_interval_max_value_handle,
+                            rsw_interval_radial_direction_handle,
+                            rsw_interval_along_track_direction_handle,
+                            rsw_interval_cross_track_direction_handle],
+                   fontsize=fontsize,
+                   bbox_to_anchor=(0.85, 0.3),)
+        fig.suptitle(f"Parameter: {parameters_to_tune_label[parameter_key]}", fontsize=fontsize)
         fig.savefig(os.path.join(input_path_parameter, "figures_of_merit.pdf"))
         plt.close(fig)
 
@@ -204,9 +236,13 @@ def plot_tuning_parameters_analysis(input_path,
 def main():
 
     # Analyse parameters of interest varying one at a time
-    plot_tuning_parameters_analysis_flag = False
+    plot_tuning_parameters_analysis_flag = True
     if plot_tuning_parameters_analysis_flag:
         input_directory = "output/covariance_analysis/tuning_parameters_analysis"
-        time_stamp_folder = "2025.05.12.08.39.55"
+        time_stamp_folder = "2025.05.12.13.40.24"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
+
+
+if __name__ == "__main__":
+    main()
