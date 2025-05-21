@@ -153,6 +153,9 @@ def main():
     # Gravitational parameter of Saturn
     saturn_gravitational_parameter = 3.793120749865224E+16  # From Iess et al., 2019
 
+    # Love number of Saturn
+    saturn_love_number = 0.02
+
     # Degree of the Love number to study
     degrees_to_consider = [2]
 
@@ -168,14 +171,6 @@ def main():
 
     # Retrieve epochs at which the dependent variables are saved
     epochs = list(saturn_spherical_coordinates_history.keys())
-
-    # Load SPICE kernels
-    spice.load_standard_kernels()
-    kernels_to_load = [
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
-    ]
-    spice.load_standard_kernels(kernels_to_load)
 
     # Retrieve average radius of Enceladus
     enceladus_average_radius = spice.get_average_radius("Enceladus")
@@ -225,13 +220,13 @@ def main():
             tidal_forcing[epoch] = []
 
             tidal_forcing[epoch] = []
-            tidal_forcing_cosine = (( 1 / (2 * degree + 1) ) *
+            tidal_forcing_cosine = (( saturn_love_number / (2 * degree + 1) ) *
                                     ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
                                     ( enceladus_average_radius / distance ) ** (degree + 1) *
                                     normalised_legendre_function  * np.cos(order * longitude))
             tidal_forcing[epoch].append( tidal_forcing_cosine )
 
-            tidal_forcing_sine = (( 1 / (2 * degree + 1) ) *
+            tidal_forcing_sine = (( saturn_love_number / (2 * degree + 1) ) *
                                     ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
                                     ( enceladus_average_radius / distance ) ** (degree + 1) *
                                     normalised_legendre_function * np.sin(order * longitude))
