@@ -73,10 +73,11 @@ for degree in degrees_to_consider:
                                               linewidth=3,
                                               label="Mean")
     ax.legend(handles=[mean_tidal_forcing_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, -0.001375, f"Mean:  {mean_tidal_forcing[0]}", fontsize=fontsize)
-    ax.set_ylim(top=-0.00137)
+    ax.text(0.0, -2.75e-5, f"Mean:  {mean_tidal_forcing[0]}", fontsize=fontsize)
+    ax.set_ylim(top=-2.74e-5)
     ax.grid(True, which="both")
     ax.tick_params(labelsize=fontsize, which="both")
+
     # Plot distance history
     ax = fig.add_subplot(5, 1, 2)
     ax.plot(distance_history[:, 0] / constants.JULIAN_DAY,
@@ -105,11 +106,11 @@ for degree in degrees_to_consider:
                                               linewidth=3,
                                               label="Mean")
     ax.set_ylabel(r"Saturn latitude  [deg]", fontsize=fontsize)
-    ax.set_ylim(top=0.0006)
+    ax.set_ylim(top=0.013)
     ax.grid(True, which="both")
     ax.tick_params(labelsize=fontsize, which="both")
     ax.legend(handles=[mean_latitude_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, 0.0005, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
+    ax.text(0.0, 0.0105, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
 
     # Plot Enceladus-fixed longitude of Saturn
     ax = fig.add_subplot(5, 1, 4)
@@ -129,11 +130,11 @@ for degree in degrees_to_consider:
                                          linewidth=3,
                                          label="Mean")
     ax.set_ylabel(r"Saturn longitude  [deg]", fontsize=fontsize)
-    ax.set_ylim(top=-5.15)
+    ax.set_ylim(top=0.8)
     ax.grid(True, which="both")
     ax.tick_params(labelsize=fontsize, which="both")
     ax.legend(handles=[mean_longitude_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, -5.33, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
+    ax.text(0.0, 0.67, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
 
     # Plot eccentricity history
     ax = fig.add_subplot(5, 1, 5)
