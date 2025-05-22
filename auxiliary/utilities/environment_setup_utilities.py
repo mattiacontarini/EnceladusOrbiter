@@ -206,6 +206,62 @@ def get_rotation_model_settings_enceladus_park(base_frame,
     return enceladus_rotation_model_settings
 
 
+def get_rotation_model_settings_enceladus_park_simplified(base_frame,
+                                                          target_frame):
+    JULIAN_CENTURY = 100 * constants.JULIAN_YEAR
+
+    ## Input parameters in [deg] and [deg/JC]from Park et al. (2024)
+    # Linear terms
+    RA0 = 40.59
+    RAdot = -0.0902111773
+    DE0 = 83.534180
+    DEdot = -0.0071054901
+    W0 = 1.0 + 1.4075923449758585 + 0.00701704368404985
+    Wdot = 262.7318870466
+
+    # Sinusoidal terms
+    W_amplitude_sinusoidal_terms = dict(
+        S18=-0.091295
+    )
+
+    # Phase (deg) [:, 0] and frequency (deg/JC) [:, 1] of sinusoidal terms
+    phase_frequency_sinusoidal_terms = dict(
+        S18=[10.9818392, 9583937.8056363]
+    )
+
+    # Conversion to SI units
+    RA0, DE0, W0 = np.deg2rad(RA0), np.deg2rad(DE0), np.deg2rad(W0)
+    RAdot, DEdot, Wdot = (np.deg2rad(RAdot) / JULIAN_CENTURY, np.deg2rad(DEdot) / JULIAN_CENTURY,
+                          np.deg2rad(Wdot) / constants.JULIAN_DAY)
+    for key in list(W_amplitude_sinusoidal_terms.keys()):
+        W_amplitude_sinusoidal_terms[key] = np.deg2rad(W_amplitude_sinusoidal_terms[key])
+        phase_frequency_sinusoidal_terms[key][0] = np.deg2rad(phase_frequency_sinusoidal_terms[key][0])
+        phase_frequency_sinusoidal_terms[key][1] = np.deg2rad(phase_frequency_sinusoidal_terms[key][1]) / JULIAN_CENTURY
+
+    # Format sinusoidal coefficients
+    pole_periodic_terms = {
+        0.0: (np.array([0.0, 0.0]), 0.0)
+    }
+    meridian_periodic_terms = dict()
+    for key in list(phase_frequency_sinusoidal_terms.keys()):
+        amp = W_amplitude_sinusoidal_terms[key]
+        phase = phase_frequency_sinusoidal_terms[key][0]
+        freq = phase_frequency_sinusoidal_terms[key][1]
+        meridian_periodic_terms[freq] = (amp, phase)
+
+    enceladus_rotation_model_settings = numerical_simulation.environment_setup.rotation_model.iau_rotation_model(
+        base_frame=base_frame,
+        target_frame=target_frame,
+        nominal_meridian=W0,
+        nominal_pole=np.array([RA0, DE0]),
+        rotation_rate=Wdot,
+        pole_precession=np.array([RAdot, DEdot]),
+        meridian_periodic_terms=meridian_periodic_terms,
+        pole_periodic_terms=pole_periodic_terms,
+    )
+    return enceladus_rotation_model_settings
+
+
 def atmospheric_density_function_enceladus(h, lon, lat, time):
     data_coordinates = np.array([
         [48.0e3, np.deg2rad(-20), np.deg2rad(360 - 135)],
