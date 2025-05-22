@@ -77,10 +77,16 @@ for degree in degrees_to_consider:
         axes[order, 1].set_ylabel(f"Tidal forcing ({degree}, {order}), sine  [-]",
                                   fontsize=fontsize)
 
-    # Attach labels
+    mean_value_handle = mlines.Line2D([], [],
+                                          color="black",
+                                          linestyle="--",
+                                          linewidth=3,
+                                          label="Mean")
     for ax in axes.flat:
         ax.tick_params(labelsize=fontsize)
         ax.grid(True)
+        ax.legend(handles=[mean_value_handle], fontsize=fontsize, loc="upper right")
+
 
     axes[order, 0].set_xlabel(r"$t - t_{0}$  [days]",
                               fontsize=fontsize)
