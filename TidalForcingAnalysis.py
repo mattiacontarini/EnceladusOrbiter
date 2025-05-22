@@ -12,7 +12,7 @@ from auxiliary import BenedikterInitialStates as Benedikter
 from tudatpy import constants
 from tudatpy.interface import spice
 from tudatpy.data import save2txt
-from tudatpy.astro.element_conversion import cartesian_to_keplerian
+from tudatpy.util import result2array
 from tudatpy import numerical_simulation
 
 # General import
@@ -54,10 +54,10 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
     kernels_to_load = [
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
         # "kernels/de440.bsp",
         # "kernels/sat441l.bsp"
     ]
@@ -68,7 +68,7 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
         CovAnalysisConfig.bodies_to_create,
         CovAnalysisConfig.global_frame_origin,
         CovAnalysisConfig.global_frame_orientation)
-    body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
+    body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
         base_frame=CovAnalysisConfig.global_frame_orientation,
         target_frame="IAU_Enceladus"
     )
@@ -114,6 +114,10 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
         numerical_simulation.propagation_setup.dependent_variable.central_body_fixed_spherical_position(
             "Saturn",
             "Enceladus"
+        ),
+        numerical_simulation.propagation_setup.dependent_variable.keplerian_state(
+            "Enceladus",
+            "Saturn"
         )
     ]
 
@@ -131,7 +135,13 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
     dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
     dependent_variable_history = dynamics_simulator.propagation_results.dependent_variable_history
 
-    return dependent_variable_history
+    saturn_spherical_coordinates_history = dict()
+    enceladus_keplerian_state_history = dict()
+    for epoch in list(dependent_variable_history.keys()):
+        saturn_spherical_coordinates_history[epoch] = dependent_variable_history[epoch][:3]
+        enceladus_keplerian_state_history[epoch] = dependent_variable_history[epoch][3:]
+
+    return saturn_spherical_coordinates_history, enceladus_keplerian_state_history
 
 
 def main():
@@ -139,13 +149,16 @@ def main():
     ### Input parameters ##################################################################################################
     #######################################################################################################################
 
+    enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
+    nb_orbits = 60
+
     arc_start = 0
-    arc_duration = 60 * constants.JULIAN_DAY
+    arc_duration = nb_orbits * enceladus_reference_orbital_period
     arc_end = arc_start + arc_duration
 
     # Retrieve Enceladus-fixed spherical coordinates of Saturn
-    saturn_spherical_coordinates_history = get_saturn_colatitude_and_longitude_history(arc_start,
-                                                                                          arc_end)
+    saturn_spherical_coordinates_history, enceladus_keplerian_state_history = get_saturn_colatitude_and_longitude_history(arc_start,
+                                                                                                                arc_end)
 
     # Gravitational parameter of Enceladus
     enceladus_gravitational_parameter = 7.210366688598896E+9  # From Park et al., 2024
@@ -153,17 +166,19 @@ def main():
     # Gravitational parameter of Saturn
     saturn_gravitational_parameter = 3.793120749865224E+16  # From Iess et al., 2019
 
-    # Love number of Saturn
-    saturn_love_number = 0.02
-
     # Degree of the Love number to study
     degrees_to_consider = [2]
 
-    # Order to consider
-    order = 0
-
     # Set output directory
     output_directory = "./output/tidal_forcing_analysis"
+
+    save2txt(saturn_spherical_coordinates_history,
+             "saturn_spherical_coordinates_history.dat",
+             output_directory)
+
+    save2txt(enceladus_keplerian_state_history,
+             "enceladus_keplerian_state_history.dat",
+             output_directory)
 
     ###################################################################################################################
     ### Compute tidal forcing history #################################################################################
@@ -179,69 +194,51 @@ def main():
     for degree in degrees_to_consider:
 
         # Create output directory
-        output_path = os.path.join(output_directory, f"degree_{degree}")
-        os.makedirs(output_path, exist_ok=True)
+        degree_output_path = os.path.join(output_directory, f"degree_{degree}")
+        os.makedirs(degree_output_path, exist_ok=True)
 
-        distance_history = dict()
-        kepler_elements_history = dict()
-        tidal_forcing = dict()
-        for epoch in epochs:
+        for order in range(degree + 1):
+            output_path = os.path.join(degree_output_path, f"order_{order}")
 
-            # Retrieve the Enceladus-fixed latitude and longitude of Saturn
-            latitude, longitude = saturn_spherical_coordinates_history[epoch][1], saturn_spherical_coordinates_history[epoch][2]
-            colatitude = np.pi/2 - latitude
+            tidal_forcing = dict()
+            for epoch in epochs:
 
-            # Retrieve Cartesian state of Enceladus wrt Saturn
-            enceladus_cartesian_state = spice.get_body_cartesian_state_at_epoch(
-                "Enceladus",
-                "Saturn",
-                "J2000",
-                "NONE",
-                epoch
-            )
+                # Retrieve the Enceladus-fixed latitude and longitude of Saturn
+                latitude, longitude = saturn_spherical_coordinates_history[epoch][1], saturn_spherical_coordinates_history[epoch][2]
+                colatitude = np.pi/2 - latitude
 
-            # Retrieve Cartesian position of Enceladus wrt Saturn
-            enceladus_cartesian_position = enceladus_cartesian_state[:3]
+                # Retrieve distance between Saturn and Enceladus
+                distance = saturn_spherical_coordinates_history[epoch][0]
 
-            # Compute distance between Saturn and Enceladus
-            distance = np.linalg.norm(enceladus_cartesian_position)
-            distance_history[epoch] = distance
+                # Compute normalised Legendre function
+                arg = np.cos(colatitude)
+                normalised_legendre_function = get_normalised_legendre_function(degree, order, arg)
 
-            # Convert Cartesian state to Keplerian elements
-            kepler_elements = cartesian_to_keplerian(enceladus_cartesian_state,
-                                                     saturn_gravitational_parameter)
-            kepler_elements_history[epoch] = kepler_elements
+                # Compute tidal forcing and tidal response at current epoch
+                tidal_forcing[epoch] = []
 
-            # Compute normalised Legendre function
-            arg = np.cos(colatitude)
-            normalised_legendre_function = get_normalised_legendre_function(degree, order, arg)
+                tidal_forcing[epoch] = []
+                tidal_forcing_cosine = (( 1 / (2 * degree + 1) ) *
+                                        ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
+                                        (( enceladus_average_radius / distance ) ** (degree + 1)) *
+                                        normalised_legendre_function * np.cos(order * longitude))
+                tidal_forcing[epoch].append( tidal_forcing_cosine )
 
-            # Compute tidal forcing at current epoch
-            tidal_forcing[epoch] = []
+                tidal_forcing_sine = (( 1 / (2 * degree + 1) ) *
+                                        ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
+                                        ( enceladus_average_radius / distance ) ** (degree + 1) *
+                                        normalised_legendre_function * np.sin(order * longitude))
+                tidal_forcing[epoch].append( tidal_forcing_sine )
 
-            tidal_forcing[epoch] = []
-            tidal_forcing_cosine = (( saturn_love_number / (2 * degree + 1) ) *
-                                    ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
-                                    ( enceladus_average_radius / distance ) ** (degree + 1) *
-                                    normalised_legendre_function  * np.cos(order * longitude))
-            tidal_forcing[epoch].append( tidal_forcing_cosine )
+            mean_tidal_forcing_cosine = np.mean(result2array(tidal_forcing)[:, 1])
+            mean_tidal_forcing_sine = np.mean(result2array(tidal_forcing)[:, 2])
 
-            tidal_forcing_sine = (( saturn_love_number / (2 * degree + 1) ) *
-                                    ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
-                                    ( enceladus_average_radius / distance ) ** (degree + 1) *
-                                    normalised_legendre_function * np.sin(order * longitude))
-            tidal_forcing[epoch].append( tidal_forcing_sine )
-
-        # Save tidal forcing and variables history to file
-        save2txt(tidal_forcing,
-                 "tidal_forcing_history.dat",
-                 output_path)
-        save2txt(kepler_elements_history,
-                 "kepler_elements_history.dat",
-                 output_path)
-        save2txt(saturn_spherical_coordinates_history,
-                 "saturn_spherical_coordinates_history.dat",
-                 output_path)
+            # Save tidal forcing and variables history to file
+            save2txt(tidal_forcing,
+                     "tidal_forcing_history.dat",
+                     output_path)
+            np.savetxt(os.path.join(output_path, "mean_tidal_forcing_cosine.txt"), [mean_tidal_forcing_cosine])
+            np.savetxt(os.path.join(output_path, "mean_tidal_forcing_sine.txt"), [mean_tidal_forcing_sine])
 
 
 

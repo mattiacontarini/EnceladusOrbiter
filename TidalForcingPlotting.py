@@ -23,128 +23,145 @@ output_directory = "./output/tidal_forcing_analysis"
 fontsize = 12
 
 for degree in degrees_to_consider:
-    output_path = os.path.join(output_directory, f"degree_{degree}")
+    degree_output_path = os.path.join(output_directory, f"degree_{degree}")
 
-    # Load tidal forcing history
-    tidal_forcing_history = np.loadtxt(os.path.join(output_path, "tidal_forcing_history.dat"))
-    tidal_forcing_history_cosine = tidal_forcing_history[:, 1]
-    tidal_forcing_history_sine = tidal_forcing_history[:, 2]
+    nb_orders = len(range(degree + 1))
+    fig, axes = plt.subplots(nb_orders, 2, constrained_layout=True, figsize=(12, 10))
+    for order in range(degree + 1):
 
-    # Load distance history
-    distance_history = np.loadtxt(os.path.join(output_path, "distance_history.dat"))
+        # Define input path
+        input_path = os.path.join(degree_output_path, f"order_{order}")
 
-    # Load kepler elements history
-    kepler_elements_history = np.loadtxt(os.path.join(output_path, "kepler_elements_history.dat"))
+        # Load tidal forcing history
+        tidal_forcing_history = np.loadtxt(os.path.join(input_path, "tidal_forcing_history.dat"))
+        tidal_forcing_history_cosine = tidal_forcing_history[:, 1]
+        tidal_forcing_history_sine = tidal_forcing_history[:, 2]
 
-    # Load Enceladus-fixed spherical coordinates of Saturn
-    saturn_spherical_coordinates_history = np.loadtxt(os.path.join(output_path, "saturn_spherical_coordinates_history.dat"))
+        # Load mean tidal forcing
+        mean_tidal_forcing_cosine = np.loadtxt(os.path.join(input_path, "mean_tidal_forcing_cosine.txt"))
+        mean_tidal_forcing_sine = np.loadtxt(os.path.join(input_path, "mean_tidal_forcing_sine.txt"))
 
-    # Compute mean value of tidal forcing
-    mean_tidal_forcing = [np.mean(tidal_forcing_history_cosine), np.mean(tidal_forcing_history_sine)]
-    np.savetxt(os.path.join(output_path, "mean_tidal_forcing.txt"), mean_tidal_forcing)
+        # Plot cosine component of tidal forcing history
+        axes[order, 0].plot(tidal_forcing_history[:, 0] / constants.JULIAN_DAY,
+                            tidal_forcing_history_cosine,
+                            color="tab:blue")
+        axes[order, 1].plot(tidal_forcing_history[:, 0] / constants.JULIAN_DAY,
+                            tidal_forcing_history_sine,
+                            color="tab:blue")
 
-    # Compute mean value of Enceladus-fixed latitude and longitude
-    mean_latitude = np.mean(saturn_spherical_coordinates_history[:, 2])
-    mean_longitude = np.mean(saturn_spherical_coordinates_history[:, 3])
+        # Add average line
+        axes[order, 0].hlines(mean_tidal_forcing_cosine,
+                              xmin=tidal_forcing_history[0, 0] / constants.JULIAN_DAY,
+                              xmax=tidal_forcing_history[-1, 0] / constants.JULIAN_DAY,
+                              linestyles="--",
+                              color="black",
+                              linewidth=3)
+        axes[order, 1].hlines(mean_tidal_forcing_sine,
+                              xmin=tidal_forcing_history[0, 0] / constants.JULIAN_DAY,
+                              xmax=tidal_forcing_history[-1, 0] / constants.JULIAN_DAY,
+                              linestyles="--",
+                              color="black",
+                              linewidth=3)
 
-    # Compute variation range of tidal forcing
-    variation_range_tidal_forcing = np.array([
-        [min(tidal_forcing_history_cosine), max(tidal_forcing_history_cosine)],
-        [min(tidal_forcing_history_sine), max(tidal_forcing_history_sine)],
-    ])
-    np.savetxt(os.path.join(output_path, "variation_range_tidal_forcing.txt"), variation_range_tidal_forcing)
+        # Print average value
+        axes[order, 0].set_title(f"Mean:  {mean_tidal_forcing_cosine}",
+                                 loc="right",
+                                 fontsize=fontsize)
+        axes[order, 1].set_title(f"Mean:  {mean_tidal_forcing_sine}",
+                                 loc="right",
+                                 fontsize=fontsize)
 
-    # Plot tidal forcing history, cosine component
-    fig = plt.figure(figsize=(10, 12), constrained_layout=True)
-    ax = fig.add_subplot(5, 1, 1)
-    ax.plot(tidal_forcing_history[:, 0] / constants.JULIAN_DAY,
-            tidal_forcing_history_cosine,
-            color="blue")
-    ax.hlines(mean_tidal_forcing[0],
-              xmin=tidal_forcing_history[0, 0] / constants.JULIAN_DAY,
-              xmax=tidal_forcing_history[-1, 0] / constants.JULIAN_DAY,
-              linestyles="--",
-              color="black",
-              linewidth=3)
-    ax.set_ylabel(r"$\Delta C_{2,0}$  [-]", fontsize=fontsize)
-    mean_tidal_forcing_handle = mlines.Line2D([], [],
-                                              color="black",
-                                              linestyle="--",
-                                              linewidth=3,
-                                              label="Mean")
-    ax.legend(handles=[mean_tidal_forcing_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, -2.75e-5, f"Mean:  {mean_tidal_forcing[0]}", fontsize=fontsize)
-    ax.set_ylim(top=-2.74e-5)
-    ax.grid(True, which="both")
-    ax.tick_params(labelsize=fontsize, which="both")
+        # Print axes labels
+        axes[order, 0].set_ylabel(f"Tidal forcing ({degree}, {order}), cosine  [-]",
+                                  fontsize=fontsize)
+        axes[order, 1].set_ylabel(f"Tidal forcing ({degree}, {order}), sine  [-]",
+                                  fontsize=fontsize)
 
-    # Plot distance history
-    ax = fig.add_subplot(5, 1, 2)
-    ax.plot(distance_history[:, 0] / constants.JULIAN_DAY,
-             distance_history[:, 1],
-             color="blue")
-    ax.set_ylabel("Distance [m]", fontsize=fontsize)
-    # ax.set_yscale("log")
-    ax.grid(True, which="both")
-    ax.tick_params(labelsize=fontsize, which="both")
+    # Attach labels
+    for ax in axes.flat:
+        ax.tick_params(labelsize=fontsize)
+        ax.grid(True)
 
-    # Plot Enceladus-fixed latitude of Saturn
-    ax = fig.add_subplot(5, 1, 3)
-    ax.plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
-            np.rad2deg(saturn_spherical_coordinates_history[:, 2]),
-            color="blue",
-            label="Latitude")
-    ax.hlines(np.rad2deg(mean_latitude),
-              xmin=tidal_forcing_history[0, 0] / constants.JULIAN_DAY,
-              xmax=tidal_forcing_history[-1, 0] / constants.JULIAN_DAY,
-              linestyles="--",
-              color="black",
-              linewidth=3)
-    mean_latitude_handle = mlines.Line2D([], [],
-                                              color="black",
-                                              linestyle="--",
-                                              linewidth=3,
-                                              label="Mean")
-    ax.set_ylabel(r"Saturn latitude  [deg]", fontsize=fontsize)
-    ax.set_ylim(top=0.013)
-    ax.grid(True, which="both")
-    ax.tick_params(labelsize=fontsize, which="both")
-    ax.legend(handles=[mean_latitude_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, 0.0105, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
+    axes[order, 0].set_xlabel(r"$t - t_{0}$  [days]",
+                              fontsize=fontsize)
+    axes[order, 1].set_xlabel(r"$t - t_{0}$  [days]",
+                              fontsize=fontsize)
 
-    # Plot Enceladus-fixed longitude of Saturn
-    ax = fig.add_subplot(5, 1, 4)
-    ax.plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
-            np.rad2deg(saturn_spherical_coordinates_history[:, 3]),
-            color="blue",
-            label="Longitude")
-    ax.hlines(np.rad2deg(mean_longitude),
-              xmin=tidal_forcing_history[0, 0] / constants.JULIAN_DAY,
-              xmax=tidal_forcing_history[-1, 0] / constants.JULIAN_DAY,
-              linestyles="--",
-              color="black",
-              linewidth=3)
-    mean_longitude_handle = mlines.Line2D([], [],
-                                         color="black",
-                                         linestyle="--",
-                                         linewidth=3,
-                                         label="Mean")
-    ax.set_ylabel(r"Saturn longitude  [deg]", fontsize=fontsize)
-    ax.set_ylim(top=0.8)
-    ax.grid(True, which="both")
-    ax.tick_params(labelsize=fontsize, which="both")
-    ax.legend(handles=[mean_longitude_handle], loc="upper right", fontsize=fontsize)
-    ax.text(0.0, 0.67, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
-
-    # Plot eccentricity history
-    ax = fig.add_subplot(5, 1, 5)
-    ax.plot(kepler_elements_history[:, 0] / constants.JULIAN_DAY,
-             kepler_elements_history[:, 2],
-             color="blue")
-    ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
-    ax.set_ylabel("Eccentricity  [-]", fontsize=fontsize)
-    ax.grid(True, which="both")
-    ax.tick_params(labelsize=fontsize, which="both")
-
-    fig.savefig(os.path.join(output_path, "tidal_forcing.pdf"))
+    plt.delaxes(axes[0, 1])
+    plt.savefig(os.path.join(degree_output_path, f"tidal_forcing_degree_{degree}.pdf"))
     plt.close(fig)
+
+
+# Load kepler elements history of Enceladus
+enceladus_keplerian_state_history = np.loadtxt(os.path.join(output_directory,
+                                                            "enceladus_keplerian_state_history.dat"))
+
+# Load Enceladus-fixed spherical coordinates of Saturn
+saturn_spherical_coordinates_history = np.loadtxt(os.path.join(output_directory,
+                                                               "saturn_spherical_coordinates_history.dat"))
+
+# Compute mean value of Enceladus-fixed latitude and longitude
+mean_latitude = np.mean(saturn_spherical_coordinates_history[:, 2])
+mean_longitude = np.mean(saturn_spherical_coordinates_history[:, 3])
+
+fig, axes = plt.subplots(2, 2, constrained_layout=True, figsize=(12, 10))
+# Plot distance history
+axes[0, 0].plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
+                saturn_spherical_coordinates_history[:, 1],
+                color="tab:blue")
+axes[0, 0].set_ylabel("Distance [m]", fontsize=fontsize)
+
+# Plot eccentricity history
+axes[0, 1].plot(enceladus_keplerian_state_history[:, 0] / constants.JULIAN_DAY,
+                enceladus_keplerian_state_history[:, 2],
+                color="tab:blue")
+axes[0, 1].set_ylabel("Eccentricity  [-]", fontsize=fontsize)
+
+# Plot Enceladus-fixed latitude of Saturn
+axes[1, 0].plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
+                np.rad2deg(saturn_spherical_coordinates_history[:, 2]),
+                color="tab:blue")
+axes[1, 0].hlines(np.rad2deg(mean_latitude),
+          xmin=saturn_spherical_coordinates_history[0, 0] / constants.JULIAN_DAY,
+          xmax=saturn_spherical_coordinates_history[-1, 0] / constants.JULIAN_DAY,
+          linestyles="--",
+          color="black",
+          linewidth=3)
+mean_latitude_handle = mlines.Line2D([], [],
+                                     color="black",
+                                     linestyle="--",
+                                     linewidth=3,
+                                     label="Mean")
+axes[1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+axes[1, 0].set_ylabel(r"Saturn latitude  [deg]", fontsize=fontsize)
+axes[1, 0].set_ylim(top=0.013)
+axes[1, 0].text(0.0, 0.011, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
+axes[1, 0].legend(handles=[mean_latitude_handle], loc="upper right", fontsize=fontsize)
+
+# Plot Enceladus-fixed longitude of Saturn
+axes[1, 1].plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
+                np.rad2deg(saturn_spherical_coordinates_history[:, 3]),
+                color="tab:blue")
+axes[1, 1].hlines(np.rad2deg(mean_longitude),
+                  xmin=saturn_spherical_coordinates_history[0, 0] / constants.JULIAN_DAY,
+                  xmax=saturn_spherical_coordinates_history[-1, 0] / constants.JULIAN_DAY,
+                  linestyles="--",
+                  color="black",
+                  linewidth=3)
+mean_longitude_handle = mlines.Line2D([], [],
+                                      color="black",
+                                      linestyle="--",
+                                      linewidth=3,
+                                      label="Mean")
+axes[1, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+axes[1, 1].set_ylabel(r"Saturn longitude  [deg]", fontsize=fontsize)
+axes[1, 1].set_ylim(top=0.8)
+axes[1, 1].text(0.0, 0.67, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
+axes[1, 1].legend(handles=[mean_longitude_handle], loc="upper right", fontsize=fontsize)
+
+for ax in axes.flat:
+    ax.grid(True, which="both")
+    ax.tick_params(labelsize=fontsize, which="both")
+
+plt.savefig(os.path.join(output_directory, "orbit_parameters_history.pdf"))
+plt.close(fig)
