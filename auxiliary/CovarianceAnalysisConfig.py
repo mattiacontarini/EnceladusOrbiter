@@ -165,6 +165,13 @@ a_priori_lander_position = 1e2
 # A priori constraint for tidal k2 love number - [Re, Im]
 a_priori_k2_love_number = [3.5e-4, 1.7e-4]
 
+# A priori constraint on the rotation pole position
+a_priori_rotation_pole_right_ascension = np.deg2rad(0.01)
+a_priori_rotation_pole_declination = np.deg2rad(0.01)
+
+# A priori constraint on the diurnal libration amplitude of Enceladus
+a_priori_libration_amplitude = np.deg2rad(0.003)  # From Park et al., (2024)
+
 # A priori constraint on range bias for Earth ground stations
 a_priori_range_bias_Earth_ground_station = 2.0
 
@@ -187,6 +194,10 @@ range_noise_lander = 1
 # Kaula constraint factor
 #kaula_constraint_multiplier = 40.0e-5  # From Genova et al., 2024
 kaula_constraint_multiplier = 1e-3  # From Zannoni et al., 2020
+
+# Longitudinal libration angular frequencies to consider for the estimation of the libration amplitudes
+JULIAN_CENTURY = 100 * constants.JULIAN_YEAR
+libration_angular_frequencies = [np.deg2rad(9583937.8056363) / JULIAN_CENTURY]
 
 #######################################################################################################################
 ### Accelerations #####################################################################################################
