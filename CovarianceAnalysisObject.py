@@ -5,6 +5,7 @@
 # Files and variables import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary import VehicleParameters as VehicleParam
+from auxiliary.CovarianceAnalysisConfig import a_priori_libration_amplitude
 from auxiliary.utilities import utilities as Util
 from auxiliary.utilities import plotting_utilities as PlottingUtil
 from auxiliary.utilities import environment_setup_utilities as EnvUtil
@@ -42,6 +43,8 @@ class CovarianceAnalysis:
                  a_priori_empirical_accelerations: float,
                  a_priori_lander_position: float,
                  a_priori_k2_love_number,
+                 a_priori_rotation_pole_position: list[float],
+                 a_priori_libration_amplitude: float,
                  lander_to_include: list[str],
                  include_lander_range_observable_flag: bool,
                  use_range_bias_consider_parameter_flag: bool,
@@ -59,6 +62,8 @@ class CovarianceAnalysis:
         self.a_priori_empirical_accelerations = a_priori_empirical_accelerations
         self.a_priori_lander_position = a_priori_lander_position
         self.a_priori_k2_love_number = a_priori_k2_love_number
+        self.a_priori_rotation_pole_position = a_priori_rotation_pole_position
+        self.a_priori_libration_amplitude = a_priori_libration_amplitude
         self.lander_to_include = lander_to_include
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
         self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
@@ -76,6 +81,9 @@ class CovarianceAnalysis:
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
         a_priori_k2_love_number = CovAnalysisConfig.a_priori_k2_love_number
+        a_priori_rotation_pole_position = [CovAnalysisConfig.a_priori_rotation_pole_right_ascension,
+                                           CovAnalysisConfig.a_priori_rotation_pole_right_ascension]
+        a_priori_libration_amplitude = CovAnalysisConfig.a_priori_libration_amplitude
         lander_to_include = CovAnalysisConfig.lander_names
         include_lander_range_observable_flag = False
         use_range_bias_consider_parameter_flag = False
@@ -91,6 +99,8 @@ class CovarianceAnalysis:
                    a_priori_empirical_accelerations,
                    a_priori_lander_position,
                    a_priori_k2_love_number,
+                   a_priori_rotation_pole_position,
+                   a_priori_libration_amplitude,
                    lander_to_include,
                    include_lander_range_observable_flag,
                    use_range_bias_consider_parameter_flag,
@@ -116,6 +126,8 @@ class CovarianceAnalysis:
             "a_priori_empirical_accelerations": self.a_priori_empirical_accelerations,
             "a_priori_lander_position": self.a_priori_lander_position,
             "a_priori_k2_love_number": complex(self.a_priori_k2_love_number[0], self.a_priori_k2_love_number[1]),
+            "a_priori_rotation_pole_position": f"{self.a_priori_rotation_pole_position[0]}, {self.a_priori_rotation_pole_position[1]}",
+            "a_priori_libration_amplitude": self.a_priori_libration_amplitude,
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
             "lander_to_include": lander_to_include,
@@ -143,7 +155,7 @@ class CovarianceAnalysis:
             CovAnalysisConfig.global_frame_orientation)
 
         # Set rotation model settings for Enceladus
-        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
+        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
             base_frame=CovAnalysisConfig.global_frame_orientation,
             target_frame="IAU_Enceladus"
         )
@@ -170,7 +182,7 @@ class CovarianceAnalysis:
 
         # Create aerodynamic coefficient interface settings
         aero_coefficient_settings = numerical_simulation.environment_setup.aerodynamic_coefficients.constant(
-            VehicleParam.drag_reference_area, [VehicleParam.drag_coefficient, 0.0, 0.0]
+            VehicleParam.drag_reference_area, np.array([VehicleParam.drag_coefficient, 0.0, 0.0])
         )
 
         # Add the aerodynamic interface to the environment
@@ -524,6 +536,29 @@ class CovarianceAnalysis:
                 True
             )
         )
+        """
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.order_varying_k_love_number(
+                "Enceladus",
+                2,
+                [0, 1, 2],
+                True
+            )
+        )
+        """
+        # Add pole position
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.iau_rotation_model_nominal_pole(
+                "Enceladus",
+            )
+        )
+        # Add libration amplitude
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.iau_rotation_model_longitudinal_libration(
+                "Enceladus",
+                CovAnalysisConfig.libration_angular_frequencies
+            )
+        )
 
         # Define consider parameters
         # Add arc-wise lander range biases as consider parameters
@@ -634,6 +669,22 @@ class CovarianceAnalysis:
         for i in range(indices_tidal_love_number[1]):
             inv_apriori[indices_tidal_love_number[0] + i, indices_tidal_love_number[0] + i] = (
                     self.a_priori_k2_love_number[i] ** -2)
+
+        # Set a priori constraint for pole position
+        indices_pole_position = parameters_to_estimate.indices_for_parameter_type(
+            (numerical_simulation.estimation_setup.parameter.nominal_rotation_pole_position_type,
+            ("Enceladus", "")))[0]
+        for i in range(indices_pole_position[1]):
+            inv_apriori[indices_pole_position[0] + i, indices_pole_position[0] + i] = (
+                    self.a_priori_rotation_pole_position[i] ** -2)
+
+        # Set a priori constraint for pole position
+        indices_libration_amplitude = parameters_to_estimate.indices_for_parameter_type(
+            (numerical_simulation.estimation_setup.parameter.rotation_longitudinal_libration_terms_type,
+            ("Enceladus", "")))[0]
+        for i in range(indices_libration_amplitude[1]):
+            inv_apriori[indices_libration_amplitude[0] + i, indices_libration_amplitude[0] + i] = (
+                    self.a_priori_libration_amplitude ** -2)
 
         # Retrieve full vector of a priori constraints
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
@@ -777,7 +828,6 @@ class CovarianceAnalysis:
         correlations = covariance_output.correlations
         covariance = covariance_output.covariance
         normalized_covariance = covariance_output.normalized_covariance
-        normalized_covariance_with_consider_parameters = covariance_output.normalized_covariance_with_consider_parameters
         formal_errors = covariance_output.formal_errors
         partials = covariance_output.weighted_design_matrix
 
@@ -785,6 +835,7 @@ class CovarianceAnalysis:
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             consider_covariance_contribution = covariance_output.consider_covariance_contribution
             covariance_with_consider_parameters = covariance_output.unnormalized_covariance_with_consider_parameters
+            normalized_covariance_with_consider_parameters = covariance_output.normalized_covariance_with_consider_parameters
             formal_errors_with_consider_parameters = np.sqrt(np.diag(covariance_with_consider_parameters))
             correlations_with_consider_parameters = covariance_with_consider_parameters
             for i in range(nb_parameters):
@@ -793,8 +844,10 @@ class CovarianceAnalysis:
 
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             covariance_to_use = covariance_with_consider_parameters
+            normalized_covariance_to_use = normalized_covariance_with_consider_parameters
         else:
             covariance_to_use = covariance
+            normalized_covariance_to_use = normalized_covariance
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -855,7 +908,7 @@ class CovarianceAnalysis:
         # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
 
         # Compute condition number of output covariance matrix
-        condition_number = np.linalg.cond(normalized_covariance)
+        condition_number = np.linalg.cond(normalized_covariance_to_use)
 
         # Retrieve formal error of SH zonal gravity coefficients
         formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
@@ -884,7 +937,7 @@ class CovarianceAnalysis:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
         # Compute ratio of lander data to ground station data
-        if lander_to_include is not None:
+        if lander_to_include != []:
             indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
                 ("Enceladus", lander_to_include[0])))[0]
@@ -1061,16 +1114,16 @@ class CovarianceAnalysis:
             ax = fig.add_subplot()
             for i in range(nb_arcs):
                 formal_error_empirical_accelerations_rsw_current_arc = formal_error_empirical_accelerations_rsw_list[i]
-                ax.plot(formal_error_empirical_accelerations_rsw_current_arc[:, 0],
+                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
                             formal_error_empirical_accelerations_rsw_current_arc[:, 1], color="orange")
-                ax.plot(formal_error_empirical_accelerations_rsw_current_arc[:, 0],
+                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
                             formal_error_empirical_accelerations_rsw_current_arc[:, 2], color="blue")
-                ax.plot(formal_error_empirical_accelerations_rsw_current_arc[:, 0],
+                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
                             formal_error_empirical_accelerations_rsw_current_arc[:, 3], color="red")
-            ax.set_xlabel(r"$t - t_{0}$  [s]")
+            ax.set_xlabel(r"$t - t_{0}$  [days]")
             ax.set_ylabel(r"$\sigma$  [m/s$^{2}$]")
             ax.set_title("Formal error empirical accelerations")
-            ax.set_yscale("symlog")
+            # ax.set_yscale("log")
             ax.grid(True)
             radial_handle = mlines.Line2D([], [], color="orange", label="Radial")
             along_track_handle = mlines.Line2D([], [], color="blue", label="Along-track")
@@ -1078,6 +1131,7 @@ class CovarianceAnalysis:
             ax.legend(handles=[radial_handle, along_track_handle, cross_track_handle])
             file_output_path = os.path.join(plots_output_path, "formal_error_empirical_accelerations_rsw.pdf")
             fig.savefig(file_output_path)
+            plt.close(fig)
 
             # Save ratio of number of lander observations to number of ground station observations
             nb_observations_ratio_filename = os.path.join(covariance_results_output_path, "nb_observations_ratio.dat")
