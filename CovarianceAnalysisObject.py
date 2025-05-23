@@ -936,6 +936,10 @@ class CovarianceAnalysis:
             else:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
+        # Retrieve formal error of Love number
+        formal_error_love_number = formal_errors[indices_tidal_love_number[0] :
+                                                 indices_tidal_love_number[0] + indices_tidal_love_number[1]]
+
         # Compute ratio of lander data to ground station data
         if lander_to_include != []:
             indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
@@ -964,26 +968,33 @@ class CovarianceAnalysis:
             covariance_filename = os.path.join(covariance_results_output_path, "covariance_matrix.dat")
             np.savetxt(covariance_filename, covariance)
 
+            # Save correlation matrix
             correlations_filename = os.path.join(covariance_results_output_path, "correlations_matrix.dat")
             np.savetxt(correlations_filename, correlations)
 
+            # Save formal errors
             formal_errors_filename = os.path.join(covariance_results_output_path, "formal_errors.dat")
             np.savetxt(formal_errors_filename, formal_errors)
 
+            # Save design matrix
             partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
             np.savetxt(partials_filename, partials)
 
+            # Save inverse a priori constraints matrix
             inv_apriori_constraints_filename = os.path.join(covariance_results_output_path,
                                                             "inv_a_priori_constraints.dat")
             np.savetxt(inv_apriori_constraints_filename, inv_apriori)
 
+            # Save a priori constraints
             apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
             np.savetxt(apriori_constraints_filename, apriori_constraints)
 
+            # Save condition number
             condition_number_filename = os.path.join(covariance_results_output_path,
                                                      "condition_number_covariance_matrix.dat")
             np.savetxt(condition_number_filename, [condition_number])
 
+            # Save maximum estimatable degree of the gravity field
             max_estimatable_degree_gravity_field_filename = os.path.join(covariance_results_output_path,
                                                                          "max_estimatable_degree_gravity_field.dat")
             np.savetxt(max_estimatable_degree_gravity_field_filename, [max_estimatable_degree_gravity_field])
@@ -1132,6 +1143,11 @@ class CovarianceAnalysis:
             file_output_path = os.path.join(plots_output_path, "formal_error_empirical_accelerations_rsw.pdf")
             fig.savefig(file_output_path)
             plt.close(fig)
+
+            # Save formal error of Love number
+            formal_error_love_number_filename = os.path.join(covariance_results_output_path,
+                                                             "formal_error_love_number.dat")
+            np.savetxt(formal_error_love_number_filename, formal_error_love_number)
 
             # Save ratio of number of lander observations to number of ground station observations
             nb_observations_ratio_filename = os.path.join(covariance_results_output_path, "nb_observations_ratio.dat")
