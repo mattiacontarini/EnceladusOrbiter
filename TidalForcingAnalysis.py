@@ -7,6 +7,7 @@
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary.utilities import environment_setup_utilities as EnvUtil
 from auxiliary import BenedikterInitialStates as Benedikter
+from auxiliary import VehicleParameters as VehicleParam
 
 # Tudat import
 from tudatpy import constants
@@ -145,11 +146,15 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
 
 
 def perform_tidal_forcing_analysis(arc_start,
-                                   nb_orbits):
+                                   nb_orbits,
+                                   output_directory):
 
     enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
     arc_duration = nb_orbits * enceladus_reference_orbital_period
     arc_end = arc_start + arc_duration
+
+    # Create output directory
+    os.makedirs(output_directory, exist_ok=True)
 
     # Retrieve Enceladus-fixed spherical coordinates of Saturn
     saturn_spherical_coordinates_history, enceladus_keplerian_state_history = get_saturn_colatitude_and_longitude_history(
@@ -164,9 +169,6 @@ def perform_tidal_forcing_analysis(arc_start,
 
     # Degree of the Love number to study
     degrees_to_consider = [2]
-
-    # Set output directory
-    output_directory = "./output/tidal_forcing_analysis"
 
     save2txt(saturn_spherical_coordinates_history,
              "saturn_spherical_coordinates_history.dat",
@@ -238,10 +240,15 @@ def perform_tidal_forcing_analysis(arc_start,
 
 
 def verify_tidal_correction(arc_start,
-                            nb_orbits):
+                            nb_orbits,
+                            output_directory,):
+
     enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
     arc_duration = nb_orbits * enceladus_reference_orbital_period
     arc_end = arc_start + arc_duration
+
+    # Create output directory
+    os.makedirs(output_directory, exist_ok=True)
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -260,16 +267,37 @@ def verify_tidal_correction(arc_start,
         CovAnalysisConfig.bodies_to_create,
         CovAnalysisConfig.global_frame_origin,
         CovAnalysisConfig.global_frame_orientation)
+    # Set rotation model settings for Enceladus
     body_settings.get(
         "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
         base_frame=CovAnalysisConfig.global_frame_orientation,
         target_frame="IAU_Enceladus"
     )
+    # Set gravity field settings for Enceladus
     body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
-            CovAnalysisConfig.maximum_degree_gravity_enceladus)
+        CovAnalysisConfig.maximum_degree_gravity_enceladus)
+    body_settings.get(
+        "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
+    gravity_field_variation_list_Enceladus = EnvUtil.get_gravity_field_variation_list_enceladus()
+    body_settings.get("Enceladus").gravity_field_variation_settings = gravity_field_variation_list_Enceladus
+
+    # Set gravity field settings for Saturn
+    body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
+    body_settings.get(
+        "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
     # Add vehicle
     body_settings.add_empty_settings("Vehicle")
+    body_settings.get("Vehicle").constant_mass = VehicleParam.mass
+
+    # Create radiation pressure settings
+    radiation_pressure_settings = numerical_simulation.environment_setup.radiation_pressure.cannonball_radiation_target(
+        VehicleParam.radiation_pressure_reference_area, VehicleParam.radiation_pressure_coefficient,
+        CovAnalysisConfig.occulting_bodies
+    )
+
+    # Add the radiation pressure interface to the environment
+    body_settings.get("Vehicle").radiation_pressure_target_settings = radiation_pressure_settings
 
     # Create system of bodies
     bodies = numerical_simulation.environment_setup.create_system_of_bodies(body_settings)
@@ -280,13 +308,8 @@ def verify_tidal_correction(arc_start,
     # Define central bodies of propagation
     central_bodies = ["Enceladus"]
 
-    # Acceleration settings
-    acceleration_settings_on_vehicle = dict(
-        Enceladus = [numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(
-            CovAnalysisConfig.maximum_degree_gravity_enceladus, CovAnalysisConfig.maximum_degree_gravity_enceladus
-        )]
-    )
-    acceleration_settings = {"Vehicle": acceleration_settings_on_vehicle}
+    # Define acceleration settings
+    acceleration_settings = {"Vehicle": CovAnalysisConfig.acceleration_settings_on_vehicle}
 
     # Create acceleration models
     acceleration_models = numerical_simulation.propagation_setup.create_acceleration_models(
@@ -308,12 +331,20 @@ def verify_tidal_correction(arc_start,
     )
 
     dependent_variables_to_save = [
-        numerical_simulation.propagation_setup.dependent_variable.single_per_term_gravity_field_variation_acceleration(
-            "Vehicle",
+        numerical_simulation.propagation_setup.dependent_variable.total_spherical_harmonic_cosine_coefficien_variations(
             "Enceladus",
-            [(2, 0), (2, 1), (2, 2)],
-            numerical_simulation.environment_setup.gravity_field_variation.BodyDeformationTypes.basic_solid_body,
-        )
+            2,
+            2,
+            0,
+            2,
+        ),
+        numerical_simulation.propagation_setup.dependent_variable.total_spherical_harmonic_sine_coefficien_variations(
+            "Enceladus",
+            2,
+            2,
+            0,
+            2,
+        ),
     ]
 
     propagator_settings = numerical_simulation.propagation_setup.propagator.translational(
@@ -330,20 +361,41 @@ def verify_tidal_correction(arc_start,
     dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
     dependent_variable_history = dynamics_simulator.propagation_results.dependent_variable_history
 
-    return dependent_variable_history
+    cosine_coefficient_variation = dict()
+    sine_coefficient_variation = dict()
+    for epoch in list(dependent_variable_history.keys()):
+        cosine_coefficient_variation[epoch] = dependent_variable_history[epoch][:3]
+        sine_coefficient_variation[epoch] = dependent_variable_history[epoch][3:]
+
+    save2txt(cosine_coefficient_variation,
+             "enceladus_cosine_coefficient_variation.dat",
+             output_directory)
+
+    save2txt(sine_coefficient_variation,
+             "enceladus_sine_coefficient_variation.dat",
+             output_directory)
 
 
 def main():
+
+    # Set start epoch of simulation
     arc_start = 0
+
+    # Set number of orbits
     nb_orbits = 60
 
-    perform_tidal_analysis_flag = False
-    if perform_tidal_analysis_flag:
-        perform_tidal_forcing_analysis(arc_start, nb_orbits)
+    # Set output directory
+    output_directory = "./output/tidal_forcing_analysis"
+
+    perform_tidal_forcing_analysis_flag = False
+    if perform_tidal_forcing_analysis_flag:
+        output_directory_analysis = os.path.join(output_directory, "tidal_forcing_computation")
+        perform_tidal_forcing_analysis(arc_start, nb_orbits, output_directory_analysis)
 
     verify_tidal_correction_flag = True
     if verify_tidal_correction_flag:
-        gravity_field_variation_history = verify_tidal_correction(arc_start, nb_orbits)
+        output_directory_correction = os.path.join(output_directory, "tidal_forcing_correction")
+        verify_tidal_correction(arc_start, nb_orbits, output_directory_correction)
 
 
 if __name__ == "__main__":
