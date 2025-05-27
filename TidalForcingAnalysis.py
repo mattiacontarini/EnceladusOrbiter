@@ -54,10 +54,10 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
     kernels_to_load = [
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
-        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
         # "kernels/de440.bsp",
         # "kernels/sat441l.bsp"
     ]
@@ -144,21 +144,17 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
     return saturn_spherical_coordinates_history, enceladus_keplerian_state_history
 
 
-def main():
-    #######################################################################################################################
-    ### Input parameters ##################################################################################################
-    #######################################################################################################################
+def perform_tidal_forcing_analysis(arc_start,
+                                   nb_orbits):
 
     enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
-    nb_orbits = 60
-
-    arc_start = 0
     arc_duration = nb_orbits * enceladus_reference_orbital_period
     arc_end = arc_start + arc_duration
 
     # Retrieve Enceladus-fixed spherical coordinates of Saturn
-    saturn_spherical_coordinates_history, enceladus_keplerian_state_history = get_saturn_colatitude_and_longitude_history(arc_start,
-                                                                                                                arc_end)
+    saturn_spherical_coordinates_history, enceladus_keplerian_state_history = get_saturn_colatitude_and_longitude_history(
+        arc_start,
+        arc_end)
 
     # Gravitational parameter of Enceladus
     enceladus_gravitational_parameter = 7.210366688598896E+9  # From Park et al., 2024
@@ -202,10 +198,10 @@ def main():
 
             tidal_forcing = dict()
             for epoch in epochs:
-
                 # Retrieve the Enceladus-fixed latitude and longitude of Saturn
-                latitude, longitude = saturn_spherical_coordinates_history[epoch][1], saturn_spherical_coordinates_history[epoch][2]
-                colatitude = np.pi/2 - latitude
+                latitude, longitude = saturn_spherical_coordinates_history[epoch][1], \
+                saturn_spherical_coordinates_history[epoch][2]
+                colatitude = np.pi / 2 - latitude
 
                 # Retrieve distance between Saturn and Enceladus
                 distance = saturn_spherical_coordinates_history[epoch][0]
@@ -218,17 +214,17 @@ def main():
                 tidal_forcing[epoch] = []
 
                 tidal_forcing[epoch] = []
-                tidal_forcing_cosine = (( 1 / (2 * degree + 1) ) *
-                                        ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
-                                        (( enceladus_average_radius / distance ) ** (degree + 1)) *
+                tidal_forcing_cosine = ((1 / (2 * degree + 1)) *
+                                        (saturn_gravitational_parameter / enceladus_gravitational_parameter) *
+                                        ((enceladus_average_radius / distance) ** (degree + 1)) *
                                         normalised_legendre_function * np.cos(order * longitude))
-                tidal_forcing[epoch].append( tidal_forcing_cosine )
+                tidal_forcing[epoch].append(tidal_forcing_cosine)
 
-                tidal_forcing_sine = (( 1 / (2 * degree + 1) ) *
-                                        ( saturn_gravitational_parameter / enceladus_gravitational_parameter ) *
-                                        ( enceladus_average_radius / distance ) ** (degree + 1) *
-                                        normalised_legendre_function * np.sin(order * longitude))
-                tidal_forcing[epoch].append( tidal_forcing_sine )
+                tidal_forcing_sine = ((1 / (2 * degree + 1)) *
+                                      (saturn_gravitational_parameter / enceladus_gravitational_parameter) *
+                                      (enceladus_average_radius / distance) ** (degree + 1) *
+                                      normalised_legendre_function * np.sin(order * longitude))
+                tidal_forcing[epoch].append(tidal_forcing_sine)
 
             mean_tidal_forcing_cosine = np.mean(result2array(tidal_forcing)[:, 1])
             mean_tidal_forcing_sine = np.mean(result2array(tidal_forcing)[:, 2])
@@ -240,6 +236,114 @@ def main():
             np.savetxt(os.path.join(output_path, "mean_tidal_forcing_cosine.txt"), [mean_tidal_forcing_cosine])
             np.savetxt(os.path.join(output_path, "mean_tidal_forcing_sine.txt"), [mean_tidal_forcing_sine])
 
+
+def verify_tidal_correction(arc_start,
+                            nb_orbits):
+    enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
+    arc_duration = nb_orbits * enceladus_reference_orbital_period
+    arc_end = arc_start + arc_duration
+
+    # Load SPICE kernels for simulation
+    spice.load_standard_kernels()
+    kernels_to_load = [
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
+    ]
+    spice.load_standard_kernels(kernels_to_load)
+
+    # Retrieve default body settings
+    body_settings = numerical_simulation.environment_setup.get_default_body_settings(
+        CovAnalysisConfig.bodies_to_create,
+        CovAnalysisConfig.global_frame_origin,
+        CovAnalysisConfig.global_frame_orientation)
+    body_settings.get(
+        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
+        base_frame=CovAnalysisConfig.global_frame_orientation,
+        target_frame="IAU_Enceladus"
+    )
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+            CovAnalysisConfig.maximum_degree_gravity_enceladus)
+
+    # Add vehicle
+    body_settings.add_empty_settings("Vehicle")
+
+    # Create system of bodies
+    bodies = numerical_simulation.environment_setup.create_system_of_bodies(body_settings)
+
+    # Define bodies that are propagated
+    bodies_to_propagate = ["Vehicle"]
+
+    # Define central bodies of propagation
+    central_bodies = ["Enceladus"]
+
+    # Acceleration settings
+    acceleration_settings_on_vehicle = dict(
+        Enceladus = [numerical_simulation.propagation_setup.acceleration.spherical_harmonic_gravity(
+            CovAnalysisConfig.maximum_degree_gravity_enceladus, CovAnalysisConfig.maximum_degree_gravity_enceladus
+        )]
+    )
+    acceleration_settings = {"Vehicle": acceleration_settings_on_vehicle}
+
+    # Create acceleration models
+    acceleration_models = numerical_simulation.propagation_setup.create_acceleration_models(
+        bodies,
+        acceleration_settings,
+        bodies_to_propagate,
+        central_bodies
+    )
+
+    # Create termination settings
+    termination_settings = numerical_simulation.propagation_setup.propagator.time_termination(arc_end)
+
+    # Create numerical integrator settings
+    fixed_step_size = 15
+    integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
+        fixed_step_size,
+        numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56,
+        order_to_use=numerical_simulation.propagation_setup.integrator.OrderToIntegrate.higher
+    )
+
+    dependent_variables_to_save = [
+        numerical_simulation.propagation_setup.dependent_variable.single_per_term_gravity_field_variation_acceleration(
+            "Vehicle",
+            "Enceladus",
+            [(2, 0), (2, 1), (2, 2)],
+            numerical_simulation.environment_setup.gravity_field_variation.BodyDeformationTypes.basic_solid_body,
+        )
+    ]
+
+    propagator_settings = numerical_simulation.propagation_setup.propagator.translational(
+        central_bodies,
+        acceleration_models,
+        bodies_to_propagate,
+        Benedikter.K1_initial_cartesian_state,
+        arc_start,
+        integrator_settings,
+        termination_settings,
+        output_variables=dependent_variables_to_save,
+    )
+
+    dynamics_simulator = numerical_simulation.create_dynamics_simulator(bodies, propagator_settings)
+    dependent_variable_history = dynamics_simulator.propagation_results.dependent_variable_history
+
+    return dependent_variable_history
+
+
+def main():
+    arc_start = 0
+    nb_orbits = 60
+
+    perform_tidal_analysis_flag = False
+    if perform_tidal_analysis_flag:
+        perform_tidal_forcing_analysis(arc_start, nb_orbits)
+
+    verify_tidal_correction_flag = True
+    if verify_tidal_correction_flag:
+        gravity_field_variation_history = verify_tidal_correction(arc_start, nb_orbits)
 
 
 if __name__ == "__main__":
