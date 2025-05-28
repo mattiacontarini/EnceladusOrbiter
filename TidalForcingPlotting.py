@@ -19,8 +19,6 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
     ### Generate figures of merit #########################################################################################
     #######################################################################################################################
 
-    degrees_to_consider = [2]
-
     for degree in degrees_to_consider:
         degree_output_path = os.path.join(output_directory, f"degree_{degree}")
 
@@ -139,8 +137,8 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
                                          label="Mean")
     axes[1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[1, 0].set_ylabel(r"Saturn latitude  [deg]", fontsize=fontsize)
-    axes[1, 0].set_ylim(top=0.013)
-    axes[1, 0].text(0.0, 0.011, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
+    axes[1, 0].set_ylim(top=0.0006)
+    axes[1, 0].text(0.0, 0.00055, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
     axes[1, 0].legend(handles=[mean_latitude_handle], loc="upper right", fontsize=fontsize)
 
     # Plot Enceladus-fixed longitude of Saturn
@@ -161,7 +159,7 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
     axes[1, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[1, 1].set_ylabel(r"Saturn longitude  [deg]", fontsize=fontsize)
     axes[1, 1].set_ylim(top=0.8)
-    axes[1, 1].text(0.0, 0.67, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
+    axes[1, 1].text(0.0, 0.73, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
     axes[1, 1].legend(handles=[mean_longitude_handle], loc="upper right", fontsize=fontsize)
 
     for ax in axes.flat:
@@ -187,7 +185,13 @@ def perform_tidal_correction_verification_plotting(output_directory,
     # Plot cosine and sine coefficient variation
     average_cosine_coefficient_variation_list = []
     average_sine_coefficient_variation_list = []
-    fig, axes = plt.subplots(len(degree_order), 2, constrained_layout=True, figsize=(8, 12))
+    mean_value_handle = mlines.Line2D([], [],
+                                      color="black",
+                                      linestyle="--",
+                                      linewidth=3,
+                                      label="Mean")
+
+    fig, axes = plt.subplots(len(degree_order), 2, constrained_layout=True, figsize=(12, 10))
     for i in range(len(degree_order)):
         axes[i, 0].plot(cosine_coefficient_variation[:, 0] / constants.JULIAN_DAY,
                               cosine_coefficient_variation[:, i + 1])
@@ -212,6 +216,11 @@ def perform_tidal_correction_verification_plotting(output_directory,
                           linestyles="--",
                           color="black",
                           linewidth=3)
+        axes[i, 0].set_title(f"Mean: {average_cosine_coefficient_variation}", fontsize=fontsize, loc="right")
+        axes[i, 1].set_title(f"Mean: {average_sine_coefficient_variation}", fontsize=fontsize, loc="right")
+
+        axes[i, 0].legend(handles=[mean_value_handle], loc="upper right", fontsize=fontsize)
+        axes[i, 1].legend(handles=[mean_value_handle], loc="upper right", fontsize=fontsize)
 
         degree = degree_order[i][0]
         order = degree_order[i][1]
@@ -220,13 +229,6 @@ def perform_tidal_correction_verification_plotting(output_directory,
 
     axes[-1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[-1, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
-
-    mean_value_handle = mlines.Line2D([], [],
-                                         color="black",
-                                         linestyle="--",
-                                         linewidth=3,
-                                         label="Mean")
-    axes[0, 0].legend(handles=[mean_value_handle], loc="upper right", fontsize=fontsize)
 
     for ax in axes.flat:
         ax.grid(True, which="both")
@@ -249,13 +251,13 @@ def main():
 
     perform_tidal_forcing_analysis_flag = False
     if perform_tidal_forcing_analysis_flag:
-        output_directory_analysis = os.path.join(output_directory, "tidal_forcing_computation")
+        output_directory_analysis = os.path.join(output_directory, "2025.05.28.10.59.48/tidal_forcing_computation")
         perform_tidal_forcing_analysis_plotting(output_directory_analysis,
                                                 [2])
 
     perform_tidal_correction_verification_flag = True
     if perform_tidal_correction_verification_flag:
-        output_directory_correction = os.path.join(output_directory, "tidal_forcing_correction")
+        output_directory_correction = os.path.join(output_directory, "2025.05.28.11.45.48/tidal_forcing_correction")
         perform_tidal_correction_verification_plotting(output_directory_correction,
                                                        [(2, 0), (2, 1), (2, 2)])
 
