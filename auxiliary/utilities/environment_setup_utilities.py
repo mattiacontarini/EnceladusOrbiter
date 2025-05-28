@@ -83,7 +83,7 @@ def get_rotation_model_settings_enceladus_park(base_frame,
     RAdot = -0.0902111773
     DE0 = 83.534180
     DEdot = -0.0071054901
-    W0 = 8.325383
+    W0 = 8.325383 - 6.019951804413526
     Wdot = 262.7318870466
 
     # Sinusoidal terms
@@ -210,7 +210,7 @@ def get_rotation_model_settings_enceladus_park_simplified(base_frame,
                                                           target_frame):
     JULIAN_CENTURY = 100 * constants.JULIAN_YEAR
 
-    ## Input parameters in [deg] and [deg/JC]from Park et al. (2024)
+    ## Input parameters in [deg] and [deg/JC] from Park et al. (2024)
     # Linear terms
     RA0 = 40.59
     RAdot = -0.0902111773
