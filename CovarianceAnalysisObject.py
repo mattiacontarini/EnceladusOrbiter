@@ -45,6 +45,8 @@ class CovarianceAnalysis:
                  a_priori_k2_love_number,
                  a_priori_rotation_pole_position: list[float],
                  a_priori_libration_amplitude: float,
+                 a_priori_rotation_pole_rate: list[float],
+                 a_priori_radiation_pressure_coefficient: float,
                  lander_to_include: list[str],
                  include_lander_range_observable_flag: bool,
                  use_range_bias_consider_parameter_flag: bool,
@@ -64,6 +66,8 @@ class CovarianceAnalysis:
         self.a_priori_k2_love_number = a_priori_k2_love_number
         self.a_priori_rotation_pole_position = a_priori_rotation_pole_position
         self.a_priori_libration_amplitude = a_priori_libration_amplitude
+        self.a_priori_rotation_pole_rate = a_priori_rotation_pole_rate
+        self.a_priori_radiation_pressure_coefficient = a_priori_radiation_pressure_coefficient
         self.lander_to_include = lander_to_include
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
         self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
@@ -81,9 +85,10 @@ class CovarianceAnalysis:
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
         a_priori_k2_love_number = CovAnalysisConfig.a_priori_k2_love_number
-        a_priori_rotation_pole_position = [CovAnalysisConfig.a_priori_rotation_pole_right_ascension,
-                                           CovAnalysisConfig.a_priori_rotation_pole_right_ascension]
+        a_priori_rotation_pole_position = CovAnalysisConfig.a_priori_rotation_pole_position
         a_priori_libration_amplitude = CovAnalysisConfig.a_priori_libration_amplitude
+        a_priori_rotation_pole_rate = CovAnalysisConfig.a_priori_rotation_pole_rate
+        a_priori_radiation_pressure_coefficient = CovAnalysisConfig.a_priori_radiation_pressure_coefficient
         lander_to_include = CovAnalysisConfig.lander_names
         include_lander_range_observable_flag = False
         use_range_bias_consider_parameter_flag = False
@@ -101,6 +106,8 @@ class CovarianceAnalysis:
                    a_priori_k2_love_number,
                    a_priori_rotation_pole_position,
                    a_priori_libration_amplitude,
+                   a_priori_rotation_pole_rate,
+                   a_priori_radiation_pressure_coefficient,
                    lander_to_include,
                    include_lander_range_observable_flag,
                    use_range_bias_consider_parameter_flag,
@@ -128,6 +135,8 @@ class CovarianceAnalysis:
             "a_priori_k2_love_number": complex(self.a_priori_k2_love_number[0], self.a_priori_k2_love_number[1]),
             "a_priori_rotation_pole_position": f"{self.a_priori_rotation_pole_position[0]}, {self.a_priori_rotation_pole_position[1]}",
             "a_priori_libration_amplitude": self.a_priori_libration_amplitude,
+            "a_priori_rotation_pole_rate": f"{self.a_priori_rotation_pole_rate}, {self.a_priori_rotation_pole_rate[1]}",
+            "a_priori_radiation_pressure_coefficient": self.a_priori_radiation_pressure_coefficient,
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
             "lander_to_include": lander_to_include,
@@ -500,6 +509,10 @@ class CovarianceAnalysis:
                                                                                             arc_start_times)
         # Add gravitational parameter of Enceladus
         parameter_settings.append(numerical_simulation.estimation_setup.parameter.gravitational_parameter("Enceladus"))
+        # Add radiation pressure coefficient
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.radiation_pressure_coefficient("Vehicle")
+        )
         # Add spherical harmonic coefficients of Enceladus
         parameter_settings.append(
             numerical_simulation.estimation_setup.parameter.spherical_harmonics_c_coefficients("Enceladus",
@@ -536,16 +549,6 @@ class CovarianceAnalysis:
                 True
             )
         )
-        """
-        parameter_settings.append(
-            numerical_simulation.estimation_setup.parameter.order_varying_k_love_number(
-                "Enceladus",
-                2,
-                [0, 1, 2],
-                True
-            )
-        )
-        """
         # Add pole position
         parameter_settings.append(
             numerical_simulation.estimation_setup.parameter.iau_rotation_model_nominal_pole(
@@ -558,6 +561,11 @@ class CovarianceAnalysis:
                 "Enceladus",
                 CovAnalysisConfig.libration_angular_frequencies
             )
+        )
+        # Add pole rate
+        parameter_settings.append(
+            numerical_simulation.estimation_setup.parameter.iau_rotation_model_pole_rate(
+                "Enceladus")
         )
 
         # Define consider parameters
@@ -606,9 +614,13 @@ class CovarianceAnalysis:
         # Define a priori covariance matrix
         inv_apriori = np.zeros((nb_parameters, nb_parameters))
 
+        # Initialise empty storage for indices of estimation parameters
+        indices_estimation_parameters = []
+
         # Set a priori constraints for vehicle states
         indices_states = parameters_to_estimate.indices_for_parameter_type((
             numerical_simulation.estimation_setup.parameter.arc_wise_initial_body_state_type, ("Vehicle", "")))[0]
+        indices_estimation_parameters.append(indices_states)
         for i in range(indices_states[1] // 6):
             for j in range(3):
                 inv_apriori[indices_states[0] + i * 6 + j, indices_states[
@@ -619,18 +631,30 @@ class CovarianceAnalysis:
         # Set a priori constraint for Enceladus' gravitational parameter
         indices_mu = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.gravitational_parameter_type, ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_mu)
         for i in range(indices_mu[1]):
             inv_apriori[
-                indices_mu[0] + i, indices_mu[
-                    0] + i] = CovAnalysisConfig.a_priori_gravitational_parameter_enceladus ** -2
+                indices_mu[0] + i, indices_mu[0] + i
+            ] = CovAnalysisConfig.a_priori_gravitational_parameter_enceladus ** -2
+
+        # Set a priori constraint for radiation pressure coefficient
+        indices_radiation_pressure_coefficient = parameters_to_estimate.indices_for_parameter_type(
+            (numerical_simulation.estimation_setup.parameter.radiation_pressure_coefficient_type, ("Vehicle", "")))[0]
+        indices_estimation_parameters.append(indices_radiation_pressure_coefficient)
+        for i in range(indices_radiation_pressure_coefficient[1]):
+            inv_apriori[
+                indices_radiation_pressure_coefficient[0] + i, indices_radiation_pressure_coefficient[0] + i
+            ] = self.a_priori_radiation_pressure_coefficient ** -2
 
         # Set a priori constraint for Enceladus' gravity field coefficients
         indices_cosine_coef = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.spherical_harmonics_cosine_coefficient_block_type,
              ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_cosine_coef)
         indices_sine_coef = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.spherical_harmonics_sine_coefficient_block_type,
              ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_sine_coef)
         # Apply Kaula's constraint to Enceladus' gravity field
         inv_apriori = CovUtil.apply_kaula_constraint_a_priori(self.kaula_constraint_multiplier,
                                                               CovAnalysisConfig.maximum_degree_gravity_enceladus,
@@ -649,6 +673,7 @@ class CovarianceAnalysis:
         indices_empirical_acceleration_components = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.arc_wise_empirical_acceleration_coefficients_type,
              ("Vehicle", "Enceladus")))[0]
+        indices_estimation_parameters.append(indices_empirical_acceleration_components)
         for i in range(indices_empirical_acceleration_components[1]):
             inv_apriori[indices_empirical_acceleration_components[0] + i, indices_empirical_acceleration_components[
                 0] + i] = self.a_priori_empirical_accelerations ** -2
@@ -658,6 +683,7 @@ class CovarianceAnalysis:
             indices_lander_position = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
                  ("Enceladus", lander_name)))[0]
+            indices_estimation_parameters.append(indices_lander_position)
             for i in range(indices_lander_position[1]):
                 inv_apriori[indices_lander_position[0] + i, indices_lander_position[
                     0] + i] = self.a_priori_lander_position ** -2
@@ -666,6 +692,7 @@ class CovarianceAnalysis:
         indices_tidal_love_number = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.full_degree_tidal_love_number_type,
             ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_tidal_love_number)
         for i in range(indices_tidal_love_number[1]):
             inv_apriori[indices_tidal_love_number[0] + i, indices_tidal_love_number[0] + i] = (
                     self.a_priori_k2_love_number[i] ** -2)
@@ -674,17 +701,26 @@ class CovarianceAnalysis:
         indices_pole_position = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.nominal_rotation_pole_position_type,
             ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_pole_position)
         for i in range(indices_pole_position[1]):
             inv_apriori[indices_pole_position[0] + i, indices_pole_position[0] + i] = (
                     self.a_priori_rotation_pole_position[i] ** -2)
 
-        # Set a priori constraint for pole position
+        # Set a priori constraint for libration amplitude
         indices_libration_amplitude = parameters_to_estimate.indices_for_parameter_type(
             (numerical_simulation.estimation_setup.parameter.rotation_longitudinal_libration_terms_type,
             ("Enceladus", "")))[0]
+        indices_estimation_parameters.append(indices_libration_amplitude)
         for i in range(indices_libration_amplitude[1]):
             inv_apriori[indices_libration_amplitude[0] + i, indices_libration_amplitude[0] + i] = (
                     self.a_priori_libration_amplitude ** -2)
+
+        # Set a priori constraint for pole rate
+        indices_pole_rate = parameters_to_estimate.indices_for_parameter_type(
+            (numerical_simulation.estimation_setup.parameter.rotation_pole_position_rate_type, ("Enceladus", "")))[0]
+        for i in range(indices_pole_rate[1]):
+            inv_apriori[indices_pole_rate[0] + i, indices_pole_rate[0] + i] = (
+                    self.a_priori_rotation_pole_rate[i] ** -2)
 
         # Retrieve full vector of a priori constraints
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
@@ -703,11 +739,11 @@ class CovarianceAnalysis:
                 indices_range_bias_Earth_ground_station = (0, nb_arcs*len(ground_station_names))
                 for i in range(indices_range_bias_Earth_ground_station[1]):
                     consider_parameter_covariance[indices_range_bias_Earth_ground_station[0] + i, indices_range_bias_Earth_ground_station[0] + i] = (
-                            CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** -2)
+                            CovAnalysisConfig.a_priori_range_bias_Earth_ground_station ** 2)
                 indices_range_bias_lander = (nb_arcs*len(ground_station_names), nb_arcs * len(self.lander_to_include) )
                 for i in range(indices_range_bias_lander[1]):
                     consider_parameter_covariance[indices_range_bias_lander[0] + i, indices_range_bias_lander[0] + i] = (
-                            CovAnalysisConfig.a_priori_range_bias_lander ** -2)
+                            CovAnalysisConfig.a_priori_range_bias_lander ** 2)
 
             # Set consider covariance for ground station and lander position
             if self.use_station_position_consider_parameter_flag:
@@ -719,7 +755,7 @@ class CovarianceAnalysis:
                     indices_station_position_Earth_ground_station = (0, 3 * len(ground_station_names))
                 for i in range(indices_station_position_Earth_ground_station[1]):
                     consider_parameter_covariance[indices_station_position_Earth_ground_station[0] + i, indices_station_position_Earth_ground_station[0] + i] = (
-                        CovAnalysisConfig.a_priori_station_position_Earth_ground_station ** -2
+                        CovAnalysisConfig.a_priori_station_position_Earth_ground_station ** 2
                     )
 
             # Create input object for covariance analysis
@@ -845,9 +881,11 @@ class CovarianceAnalysis:
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             covariance_to_use = covariance_with_consider_parameters
             normalized_covariance_to_use = normalized_covariance_with_consider_parameters
+            correlations_to_use = correlations_with_consider_parameters
         else:
             covariance_to_use = covariance
             normalized_covariance_to_use = normalized_covariance
+            correlations_to_use = correlations
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -904,11 +942,11 @@ class CovarianceAnalysis:
             formal_error_empirical_accelerations_rsw_list.append(formal_error_empirical_accelerations_rsw_current_arc)
 
         # # Propagate formal errors
-        # output_times = np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0)
-        # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors_rsw_split_output(covariance_output, estimator, output_times)
+        # output_times = list(np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0))
+        # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors(covariance_to_use, estimator.state_transition_interface, output_times)
 
         # Compute condition number of output covariance matrix
-        condition_number = np.linalg.cond(normalized_covariance_to_use)
+        condition_number = np.linalg.cond(covariance_to_use)
 
         # Retrieve formal error of SH zonal gravity coefficients
         formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
@@ -940,6 +978,23 @@ class CovarianceAnalysis:
         formal_error_love_number = formal_errors[indices_tidal_love_number[0] :
                                                  indices_tidal_love_number[0] + indices_tidal_love_number[1]]
 
+        # Retrieve formal error of libration amplitudes
+        formal_error_libration_amplitude = formal_errors[indices_libration_amplitude[0] :
+                                                         indices_libration_amplitude[0] + indices_libration_amplitude[1]]
+
+        # Retrieve formal error of radiation pressure coefficient
+        formal_error_radiation_pressure_coefficient = formal_errors[
+                                                      indices_radiation_pressure_coefficient[0] :
+                                                      indices_radiation_pressure_coefficient[0] + indices_radiation_pressure_coefficient[1]]
+
+        # Retrieve formal error of pole position
+        formal_error_pole_position = formal_errors[indices_pole_position[0] :
+                                                   indices_pole_position[0] + indices_pole_position[1]]
+
+        # Retrieve formal error of pole rate
+        formal_error_pole_rate = formal_errors[indices_pole_rate[0] :
+                                               indices_pole_rate[0] + indices_pole_rate[1]]
+
         # Compute ratio of lander data to ground station data
         if lander_to_include != []:
             indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
@@ -970,11 +1025,15 @@ class CovarianceAnalysis:
 
             # Save correlation matrix
             correlations_filename = os.path.join(covariance_results_output_path, "correlations_matrix.dat")
-            np.savetxt(correlations_filename, correlations)
+            np.savetxt(correlations_filename, correlations_to_use)
 
             # Save formal errors
             formal_errors_filename = os.path.join(covariance_results_output_path, "formal_errors.dat")
             np.savetxt(formal_errors_filename, formal_errors)
+
+            # # Save propagated formal errors
+            # propagated_formal_errors_filename = os.path.join(covariance_results_output_path, "propagated_formal_errors.dat")
+            # np.savetxt(propagated_formal_errors_filename, propagated_formal_errors)
 
             # Save design matrix
             partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
@@ -1016,13 +1075,13 @@ class CovarianceAnalysis:
 
             # Plot formal errors with contribution from consider parameters
             if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
-                PlottingUtil.plot_formal_errors(formal_errors,
+                PlottingUtil.plot_formal_errors(None,
                                                 formal_errors_with_consider_parameters,
                                                 plots_output_path,
                                                 "formal_errors.pdf")
             else:
                 PlottingUtil.plot_formal_errors(formal_errors,
-                                                [],
+                                                None,
                                                 plots_output_path,
                                                 "formal_errors.pdf")
 
@@ -1149,9 +1208,33 @@ class CovarianceAnalysis:
                                                              "formal_error_love_number.dat")
             np.savetxt(formal_error_love_number_filename, formal_error_love_number)
 
+            # Save formal error of libration amplitude
+            formal_error_libration_amplitude_filename = os.path.join(covariance_results_output_path,
+                                                            "formal_error_libration_amplitude.dat")
+            np.savetxt(formal_error_libration_amplitude_filename, [formal_error_libration_amplitude])
+
+            # Save formal error of radiation pressure coefficient
+            formal_error_radiation_pressure_coefficient_filename = os.path.join(covariance_results_output_path,
+                                                                                "formal_error_radiation_pressure_coefficient.dat")
+            np.savetxt(formal_error_radiation_pressure_coefficient_filename, [formal_error_radiation_pressure_coefficient])
+
+            # Save formal error of pole position
+            formal_error_pole_position_filename = os.path.join(covariance_results_output_path,
+                                                               "formal_error_pole_position.dat")
+            np.savetxt(formal_error_pole_position_filename,[formal_error_pole_position])
+
+            # Save formal error of pole rate
+            formal_error_pole_rate_filename = os.path.join(covariance_results_output_path,
+                                                               "formal_error_pole_rate.dat")
+            np.savetxt(formal_error_pole_rate_filename,[formal_error_pole_rate])
+
             # Save ratio of number of lander observations to number of ground station observations
             nb_observations_ratio_filename = os.path.join(covariance_results_output_path, "nb_observations_ratio.dat")
             np.savetxt(nb_observations_ratio_filename, [nb_observations_ratio])
+
+            # Save indices of estimation parameters
+            indices_estimation_parameters_filename = os.path.join(covariance_results_output_path, "indices_estimation_parameters.dat")
+            np.savetxt(indices_estimation_parameters_filename, indices_estimation_parameters)
 
         if self.save_simulation_results_flag:
 

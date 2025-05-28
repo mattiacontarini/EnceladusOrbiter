@@ -12,6 +12,7 @@ from tudatpy import constants
 # Packages import
 import datetime
 import os
+import numpy as np
 
 def full_parameters_spectrum_analysis(time_stamp,
                                       save_simulation_results_flag,
@@ -47,8 +48,7 @@ def full_parameters_spectrum_analysis(time_stamp,
     # Set list of simulation durations to consider
     simulation_durations = [28.0 * constants.JULIAN_DAY,
                             60.0 * constants.JULIAN_DAY,
-                            180.0 * constants.JULIAN_DAY,
-                            1.0 * constants.JULIAN_YEAR]
+                            90.0 * constants.JULIAN_DAY]
 
     # Set list of arc durations to consider
     arc_durations = [1.0 * constants.JULIAN_DAY,
@@ -100,8 +100,8 @@ def perform_tuning_parameters_analysis(time_stamp,
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
     kernels_to_load = [
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
         # "kernels/de440.bsp",
@@ -120,9 +120,7 @@ def perform_tuning_parameters_analysis(time_stamp,
     # Set list of simulation durations to consider
     simulation_durations = [28.0 * constants.JULIAN_DAY,
                             60.0 * constants.JULIAN_DAY,
-                            #180.0 * constants.JULIAN_DAY,
-                            #1.0 * constants.JULIAN_YEAR
-                            ]
+                            90.0 * constants.JULIAN_DAY]
 
     # Set list of arc durations to consider
     arc_durations = [1.0 * constants.JULIAN_DAY,
@@ -133,7 +131,7 @@ def perform_tuning_parameters_analysis(time_stamp,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
 
     # Set list of values for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
@@ -153,6 +151,14 @@ def perform_tuning_parameters_analysis(time_stamp,
                           ["L1", "L2"],
                           ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
+    # Set list of values for the a priori constraint on the rotation pole position
+    a_priori_rotation_pole_position = np.deg2rad([[np.infty, np.infty], [0.1, 0.1], [1e-2, 1e-2]])
+
+    # Set list of values for the a priori constraint on the rotation pole rate
+    a_priori_rotation_pole_rate = np.deg2rad([[np.infty, np.infty], [0.1, 0.1], [1e-2, 1e-2]])
+
+    # Set list of values for the a priori constraint on the radiation pressure coefficient
+    a_priori_radiation_pressure_coefficient  = [np.infty, 0.1, 1e-10]
 
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
@@ -164,7 +170,9 @@ def perform_tuning_parameters_analysis(time_stamp,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
         "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
         "tracking_arc_duration": tracking_arc_duration,
-        # "lander_to_include": lander_to_include,
+        "a_priori_rotation_pole_position": a_priori_rotation_pole_position,
+        "a_priori_rotation_pole_rate": a_priori_rotation_pole_rate,
+        "a_priori_radiation_pressure_coefficient": a_priori_radiation_pressure_coefficient
     }
 
     # Perform analysis of tuning parameters,
@@ -217,6 +225,12 @@ def perform_tuning_parameters_analysis(time_stamp,
                     UDP.tracking_arc_duration = parameter_value
                 elif parameter_key == "lander_to_include":
                     UDP.lander_to_include = parameter_value
+                elif parameter_key == "a_priori_rotation_pole_position":
+                    UDP.a_priori_rotation_pole_position = parameter_value
+                elif parameter_key == "a_priori_rotation_pole_rate":
+                    UDP.a_priori_rotation_pole_rate = parameter_value
+                elif parameter_key == "a_priori_radiation_pressure_coefficient":
+                    UDP.a_priori_radiation_pressure_coefficient = parameter_value
                 else:
                     raise Exception("Unknown key for parameters to tune.")
 
@@ -230,8 +244,8 @@ def single_case_analysis(time_stamp,
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
     kernels_to_load = [
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-        #    "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
         "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
         # "kernels/de440.bsp",
