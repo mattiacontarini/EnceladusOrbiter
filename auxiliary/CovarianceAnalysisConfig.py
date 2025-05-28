@@ -163,20 +163,19 @@ a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
 a_priori_lander_position = 1e2
 
 # A priori constraint for tidal k2 love number - [Re, Im]
-a_priori_k2_love_number = [0.0, 0.0] # [3.5e-4, 1.7e-4]
+a_priori_k2_love_number = [0.01, 0.01] # From Bagheri et al., 2025
 
 # A priori constraint on the rotation pole position
-a_priori_rotation_pole_right_ascension = np.deg2rad(0.01)
-a_priori_rotation_pole_declination = np.deg2rad(0.01)
+a_priori_rotation_pole_position = np.deg2rad([np.infty, np.infty])
 
 # A priori constraint on the diurnal libration amplitude of Enceladus
-a_priori_libration_amplitude = np.deg2rad(0.003)  # From Park et al., (2024)
+a_priori_libration_amplitude = np.deg2rad(0.003)  # From Park et al., 2024
 
 # A priori constraint on the pole rate
-a_priori_pole_rate = np.deg2rad(0.01)
+a_priori_rotation_pole_rate = [np.deg2rad(np.infty), np.deg2rad(np.infty)]
 
 # A priori constraint on the radiation pressure coefficients
-a_priori_radiation_pressure_coefficient = np.infty
+a_priori_radiation_pressure_coefficient = 1e-10
 
 # A priori constraint on range bias for Earth ground stations
 a_priori_range_bias_Earth_ground_station = 2.0
