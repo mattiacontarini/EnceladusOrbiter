@@ -21,7 +21,7 @@ import numpy as np
 import math
 import sympy as sym
 import os
-
+import datetime
 
 def kronecker_delta(order):
      if order == 0:
@@ -69,10 +69,25 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
         CovAnalysisConfig.bodies_to_create,
         CovAnalysisConfig.global_frame_origin,
         CovAnalysisConfig.global_frame_orientation)
-    body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
+
+    # Set rotation model settings for Enceladus
+    body_settings.get(
+        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
         base_frame=CovAnalysisConfig.global_frame_orientation,
         target_frame="IAU_Enceladus"
     )
+    # Set gravity field settings for Enceladus
+    body_settings.get("Enceladus").gravity_field_settings = EnvUtil.get_gravity_field_settings_enceladus_park(
+        CovAnalysisConfig.maximum_degree_gravity_enceladus)
+    body_settings.get(
+        "Enceladus").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Enceladus_scaled_mean_moment_of_inertia
+    gravity_field_variation_list_Enceladus = EnvUtil.get_gravity_field_variation_list_enceladus()
+    body_settings.get("Enceladus").gravity_field_variation_settings = gravity_field_variation_list_Enceladus
+
+    # Set gravity field settings for Saturn
+    body_settings.get("Saturn").gravity_field_settings = EnvUtil.get_gravity_field_settings_saturn_iess()
+    body_settings.get(
+        "Saturn").gravity_field_settings.scaled_mean_moment_of_inertia = CovAnalysisConfig.Saturn_scaled_mean_moment_of_inertia
 
     # Add vehicle
     body_settings.add_empty_settings("Vehicle")
@@ -186,7 +201,7 @@ def perform_tidal_forcing_analysis(arc_start,
     epochs = list(saturn_spherical_coordinates_history.keys())
 
     # Retrieve average radius of Enceladus
-    enceladus_average_radius = spice.get_average_radius("Enceladus")
+    enceladus_reference_radius = 256600.0
 
     # Compute history of tidal forcing for every degree
     for degree in degrees_to_consider:
@@ -218,13 +233,13 @@ def perform_tidal_forcing_analysis(arc_start,
                 tidal_forcing[epoch] = []
                 tidal_forcing_cosine = ((1 / (2 * degree + 1)) *
                                         (saturn_gravitational_parameter / enceladus_gravitational_parameter) *
-                                        ((enceladus_average_radius / distance) ** (degree + 1)) *
+                                        ((enceladus_reference_radius / distance) ** (degree + 1)) *
                                         normalised_legendre_function * np.cos(order * longitude))
                 tidal_forcing[epoch].append(tidal_forcing_cosine)
 
                 tidal_forcing_sine = ((1 / (2 * degree + 1)) *
                                       (saturn_gravitational_parameter / enceladus_gravitational_parameter) *
-                                      (enceladus_average_radius / distance) ** (degree + 1) *
+                                      (enceladus_reference_radius / distance) ** (degree + 1) *
                                       normalised_legendre_function * np.sin(order * longitude))
                 tidal_forcing[epoch].append(tidal_forcing_sine)
 
@@ -267,9 +282,10 @@ def verify_tidal_correction(arc_start,
         CovAnalysisConfig.bodies_to_create,
         CovAnalysisConfig.global_frame_origin,
         CovAnalysisConfig.global_frame_orientation)
+
     # Set rotation model settings for Enceladus
     body_settings.get(
-        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
+        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
         base_frame=CovAnalysisConfig.global_frame_orientation,
         target_frame="IAU_Enceladus"
     )
@@ -386,6 +402,10 @@ def main():
 
     # Set output directory
     output_directory = "./output/tidal_forcing_analysis"
+
+    time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+    output_directory = os.path.join(output_directory, time_stamp)
 
     perform_tidal_forcing_analysis_flag = False
     if perform_tidal_forcing_analysis_flag:
