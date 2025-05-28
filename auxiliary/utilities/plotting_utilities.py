@@ -124,8 +124,6 @@ def plot_observation_times(arc_ID,
 
 def plot_formal_errors(formal_errors,
                        formal_errors_with_consider_parameters,
-                       indices_estimation_parameters,
-                       labels_estimation_parameters,
                        output_path,
                        filename):
 
