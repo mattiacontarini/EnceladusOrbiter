@@ -12,7 +12,7 @@ from auxiliary import utilities as Util
 from tudatpy import numerical_simulation
 from tudatpy.numerical_simulation import environment_setup
 from tudatpy.numerical_simulation import propagation_setup
-from tudatpy.kernel.interface import spice_interface
+from tudatpy.kernel.interface import spice
 
 
 class OrbitPropagator:
@@ -74,7 +74,7 @@ class OrbitPropagator:
         if self.Jupiter_barycenter_flag:
             body_settings.add_empty_settings("Jupiter_barycenter")
             body_settings.get("Jupiter_barycenter").gravity_field_settings = environment_setup.gravity_field.central(
-                spice_interface.get_body_gravitational_parameter("5")
+                spice.get_body_gravitational_parameter("5")
             )
             body_settings.get("Jupiter_barycenter").ephemeris_settings = environment_setup.ephemeris.direct_spice(
                 body_name_to_use="5"
