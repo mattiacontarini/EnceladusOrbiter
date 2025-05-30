@@ -17,8 +17,7 @@ output_folder = "./nominal_orbits"
 
 simulation_durations = [28.0 * constants.JULIAN_DAY,
                         60.0 * constants.JULIAN_DAY,
-                        180.0 * constants.JULIAN_DAY,
-                        1.0 * constants.JULIAN_YEAR]
+                        90.0 * constants.JULIAN_DAY]
 
 # Set up orbit propagator object with nominal settings
 UDP = OrbitPropagator.from_config()

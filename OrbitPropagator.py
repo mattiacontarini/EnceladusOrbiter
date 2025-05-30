@@ -13,9 +13,7 @@ from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from tudatpy import numerical_simulation
 from tudatpy.numerical_simulation import environment_setup
 from tudatpy.numerical_simulation import propagation_setup
-from tudatpy.astro import element_conversion
-from tudatpy.kernel.interface import spice_interface, spice
-from tudatpy import constants
+from tudatpy.kernel.interface import spice
 
 
 class OrbitPropagator:
@@ -94,7 +92,7 @@ class OrbitPropagator:
 
             body_settings.add_empty_settings(barycenter)
             body_settings.get(barycenter).gravity_field_settings = environment_setup.gravity_field.central(
-                spice_interface.get_body_gravitational_parameter(NAIF_ID)
+                spice.get_body_gravitational_parameter(NAIF_ID)
             )
             body_settings.get(barycenter).ephemeris_settings = environment_setup.ephemeris.direct_spice(
                 frame_origin=global_frame_origin,
