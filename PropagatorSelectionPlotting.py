@@ -10,7 +10,7 @@ import os
 
 
 def main():
-    flag_perform_integrator_selection = True
+    flag_perform_integrator_selection = False
     if flag_perform_integrator_selection:
 
         # Select input folder
@@ -264,62 +264,86 @@ def main():
         plt.savefig(input_folder + "/integrator_refinement.pdf")
         plt.close()
 
-    flag_check_integrator_performance = False
+    flag_check_integrator_performance = True
     if flag_check_integrator_performance:
 
         # Select input folder
-        input_folder = "./output/propagator_selection/2025.04.16.11.02.45/check_integrator_performance"
+        input_folder = "./output/propagator_selection/2025.05.30.09.58.59/check_integrator_performance"
 
         # Select time steps for fixed step size integrator
-        fixed_step_size = 15
+        # Select time steps for fixed step size integrator
+        fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
 
         # Names of coefficient sets
-        fixed_step_integrator_coefficient_name = "RKF5(6)"
+        fixed_step_integrator_coefficient_names = ["RKF5(6)"]
 
         # Initial states names and indices
         initial_cartesian_state_indices = [1, 2, 3]
         initial_cartesian_state_names = ["K1", "K2", "K3"]
 
-        # Colors for initial state
-        colors_initial_states = ["red", "blue", "orange"]
+        # Colors for fixed time steps
+        colors_step_sizes = ["red",
+                             "blue",
+                             "green",
+                             "orange",
+                             "purple",
+                             "cyan",
+                             "lime",
+                             "fuchsia"]
 
-        # Linestyle for initial state
-        linestyles_initial_state = ["-", "--", "-."]
+        fontsize = 12
 
-        # Make handles for initial states
-        initial_state_legend_handles = []
-        for i in range(len(linestyles_initial_state)):
+        step_sizes_legend_handles = []
+        for i in range(len(colors_step_sizes)):
             handle = mlines.Line2D([],
                                    [],
-                                   linestyle=linestyles_initial_state[i],
-                                   color=colors_initial_states[i],
-                                   label=initial_cartesian_state_names[i])
-            initial_state_legend_handles.append(handle)
+                                   linestyle="-",
+                                   color=colors_step_sizes[i],
+                                   label=r"$\Delta t = $" + str(fixed_step_sizes[i]) + " s")
+
+            step_sizes_legend_handles.append(handle)
 
 
-        fig, ax = plt.subplots(1, 1,)
-        for i in initial_cartesian_state_indices:
-            linestyle = linestyles_initial_state[i-1]
-            color = colors_initial_states[i-1]
+        for coefficient_set_label in fixed_step_integrator_coefficient_names:
+            fig, axes = plt.subplots(2, 2, constrained_layout=True, figsize=(8, 6))
 
-            input_directory = os.path.join(input_folder, f"initial_state_{i}")
+            for fixed_step_size in fixed_step_sizes:
 
-            file_path = (input_directory + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
-                             "_coefficient_set_" + fixed_step_integrator_coefficient_name + '_integration_error.dat')
+                integration_error_list = []
+                for i in initial_cartesian_state_indices:
+                    input_folder_initial_state = os.path.join(input_folder, f"initial_state_{i}")
+                    file_path = (input_folder_initial_state + "/" + "benchmark_fixed_step_" + str(fixed_step_size) +
+                                    "_coefficient_set_" + coefficient_set_label + '_integration_error.dat')
 
-            first_benchmark_integration_error_array = np.loadtxt(file_path)
+                    first_benchmark_integration_error_array = np.loadtxt(file_path)
+                    integration_error_list.append(first_benchmark_integration_error_array)
 
-            ax.plot(first_benchmark_integration_error_array[1:, 0] / constants.JULIAN_DAY,
-                        first_benchmark_integration_error_array[1:, 1], linestyle=linestyle, color=color)
-        ax.grid(True)
-        ax.set_yscale("log")
-        ax.set_title(fixed_step_integrator_coefficient_name + fr"; $\Delta t = {fixed_step_size}$ s")
-        ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$ [m]")
-        ax.set_xlabel(r"$t - t_{0}$  [days]")
+                color = colors_step_sizes[fixed_step_sizes.index(fixed_step_size)]
 
-        ax.legend(handles=initial_state_legend_handles, loc="lower right", ncol=2)
-        plt.savefig(input_folder + "/integration_performance.pdf")
-        plt.close()
+                axes[0, 0].plot(integration_error_list[0][:, 0] / constants.JULIAN_DAY,
+                            integration_error_list[0][:, 1], color=color)
+                axes[0, 1].plot(integration_error_list[1][:, 0] / constants.JULIAN_DAY,
+                            integration_error_list[1][:, 1], color=color)
+                axes[1, 0].plot(integration_error_list[2][:, 0] / constants.JULIAN_DAY,
+                            integration_error_list[2][:, 1], color=color)
+
+                axes[0, 0].set_title(f"{initial_cartesian_state_names[0]} orbit; {coefficient_set_label}", fontsize=fontsize)
+                axes[0, 1].set_title(f"{initial_cartesian_state_names[1]} orbit; {coefficient_set_label}", fontsize=fontsize)
+                axes[1, 0].set_title(f"{initial_cartesian_state_names[2]} orbit; {coefficient_set_label}", fontsize=fontsize)
+                axes[0, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+                axes[1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+
+            for ax in axes.flat:
+                ax.grid(True)
+                ax.set_yscale("log")
+                ax.set_ylabel(r"$\epsilon_{\mathbf{r}}$  [m]", fontsize=fontsize)
+                ax.tick_params(labelsize=fontsize)
+
+            plt.delaxes(axes[1, 1])
+
+            fig.legend(handles=step_sizes_legend_handles, bbox_to_anchor=(0.95, 0.4), ncols=2, fontsize=fontsize)
+            plt.savefig(os.path.join(input_folder, f"integrator_performance_{coefficient_set_label}.pdf"))
+            plt.close(fig)
 
 
 
