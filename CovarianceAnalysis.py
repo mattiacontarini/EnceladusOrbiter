@@ -186,7 +186,9 @@ def perform_tuning_parameters_analysis(time_stamp,
             output_path_parameter = os.path.join(output_path_lander, parameter_key)
             os.makedirs(output_path_parameter, exist_ok=True)
 
-            for parameter_value in parameters_to_tune[parameter_key]:
+            for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
+
+                parameter_value = parameters_to_tune[parameter_key][parameter_value_index]
 
                 print(" ")
                 print(f"Analysing parameter {parameter_key} with value = {parameter_value} of {lander} lander case.")
@@ -202,7 +204,6 @@ def perform_tuning_parameters_analysis(time_stamp,
                 # Set landers to include in the simulation
                 UDP.lander_to_include = lander
 
-                parameter_value_index = parameters_to_tune[parameter_key].index(parameter_value)
                 output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
                 os.makedirs(output_path, exist_ok=True)
                 if parameter_key == "initial_state_index":
@@ -280,7 +281,7 @@ def main():
 
     # Set whether the results of the covariance analysis should be saved
     save_simulation_results_flag = False
-    save_covariance_results_flag = True
+    save_covariance_results_flag = False
 
     # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
