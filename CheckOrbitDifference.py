@@ -8,7 +8,6 @@ from auxiliary import utilities as Util
 from tudatpy.data import save2txt
 from tudatpy.interface import spice
 from tudatpy import constants
-from tudatpy.util import result2array
 
 # Packages import
 import os
@@ -70,16 +69,28 @@ def compute_orbit_difference(simulation_duration,
 
         state_history_1_array = np.loadtxt(os.path.join(output_folder, f"kernels_case_0/nominal_state_history_{i + 1}.dat"))
         state_history_2_array = np.loadtxt(os.path.join(output_folder, f"kernels_case_1/nominal_state_history_{i + 1}.dat"))
+        dependent_variable_history_1_array = np.loadtxt(
+            os.path.join(output_folder, f"kernels_case_0/nominal_dependent_variable_history_{i + 1}.dat"))
+        dependent_variable_history_2_array = np.loadtxt(
+            os.path.join(output_folder, f"kernels_case_1/nominal_dependent_variable_history_{i + 1}.dat"))
+
 
         state_history_1 = Util.array2dict(state_history_1_array)
         state_history_2 = Util.array2dict(state_history_2_array)
+        dependent_variable_history_1 = Util.array2dict(dependent_variable_history_1_array)
+        dependent_variable_history_2 = Util.array2dict(dependent_variable_history_2_array)
 
         state_history_difference = dict()
+        dependent_variable_history_difference = dict()
         for epoch in list(state_history_1.keys()):
             state_history_difference[epoch] = state_history_2[epoch] - state_history_1[epoch]
+            dependent_variable_history_difference[epoch] = dependent_variable_history_2[epoch] - dependent_variable_history_1[epoch]
 
         save2txt(state_history_difference,
                  f"state_history_difference_{i + 1}.dat",
+                 output_folder)
+        save2txt(dependent_variable_history_difference,
+                 f"dependent_variable_history_difference_{i + 1}.dat",
                  output_folder)
 
 
@@ -114,6 +125,38 @@ def plot_orbit_difference(output_folder,
     ax.grid(True)
     ax.set_yscale("log")
     fig.savefig(os.path.join(output_folder, "state_history_difference.pdf"))
+    plt.close(fig)
+
+    # Plot altitude history difference
+    fig = plt.figure()
+    ax = plt.subplot(111)
+    dependent_variable_history_difference_1 = np.loadtxt(
+        os.path.join(output_folder, "dependent_variable_history_difference_1.dat"))
+    dependent_variable_history_difference_2 = np.loadtxt(
+        os.path.join(output_folder, "dependent_variable_history_difference_2.dat"))
+    dependent_variable_history_difference_3 = np.loadtxt(
+        os.path.join(output_folder, "dependent_variable_history_difference_3.dat"))
+    ax.plot(dependent_variable_history_difference_2[:, 0] / constants.JULIAN_DAY,
+                 dependent_variable_history_difference_2[:, 2],
+                 color="red",
+                 label="K2",
+                 linestyle="-")
+    ax.plot(dependent_variable_history_difference_3[:, 0] / constants.JULIAN_DAY,
+                 dependent_variable_history_difference_3[:, 2],
+                 color="lime",
+                 label="K3",
+                 linestyle="-")
+    ax.plot(dependent_variable_history_difference_1[:, 0] / constants.JULIAN_DAY,
+                 dependent_variable_history_difference_1[:, 2],
+                 color="blue",
+                 label="K1",
+                 linestyle="-")
+    ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax.set_ylabel(r"$\Delta h(t)$  [m]", fontsize=fontsize)
+    ax.legend(fontsize=fontsize)
+    ax.tick_params(labelsize=fontsize)
+    ax.grid(True)
+    fig.savefig(os.path.join(output_folder, "altitude_history_difference.pdf"))
     plt.close(fig)
 
 
