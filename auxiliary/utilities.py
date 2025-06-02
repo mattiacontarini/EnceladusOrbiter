@@ -351,3 +351,14 @@ def compute_integration_error(state_history_difference,
              output_path)
 
     return integration_error
+
+
+def array2dict(array_input):
+
+    keys = list(array_input[:, 0])
+    dictionary_output = dict()
+    for i in range(len(keys)):
+        key = keys[i]
+        dictionary_output[key] = array_input[i, 1:]
+
+    return dictionary_output
