@@ -281,7 +281,7 @@ def main():
 
     # Set whether the results of the covariance analysis should be saved
     save_simulation_results_flag = False
-    save_covariance_results_flag = False
+    save_covariance_results_flag = True
 
     # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
