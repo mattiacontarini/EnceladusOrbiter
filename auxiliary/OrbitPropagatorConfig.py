@@ -57,9 +57,9 @@ acceleration_settings_on_vehicle = dict(
 )
 
 # Create numerical integrator settings
-fixed_step_size = 10
+fixed_step_size = 15
 integrator_settings = numerical_simulation.propagation_setup.integrator.runge_kutta_fixed_step(
     fixed_step_size,
-    numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_78,
+    numerical_simulation.propagation_setup.integrator.CoefficientSets.rkf_56,
     order_to_use=numerical_simulation.propagation_setup.integrator.OrderToIntegrate.higher
 )
