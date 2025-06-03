@@ -268,9 +268,8 @@ def main():
     if flag_check_integrator_performance:
 
         # Select input folder
-        input_folder = "./output/propagator_selection/2025.05.30.09.58.59/check_integrator_performance"
+        input_folder = "./output/propagator_selection/2025.06.03.11.48.02/check_integrator_performance"
 
-        # Select time steps for fixed step size integrator
         # Select time steps for fixed step size integrator
         fixed_step_sizes = [2.5, 5, 10, 15, 20, 25, 30, 40]
 

@@ -212,8 +212,12 @@ def main():
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
-    kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
-                       "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"]
+    kernels_to_load = [
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"
+    ]
     spice.load_standard_kernels(kernels_to_load)
 
     flag_perform_single_propagation_example = False
