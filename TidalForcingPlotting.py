@@ -23,7 +23,7 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
         degree_output_path = os.path.join(output_directory, f"degree_{degree}")
 
         nb_orders = len(range(degree + 1))
-        fig, axes = plt.subplots(nb_orders, 2, constrained_layout=True, figsize=(12, 10))
+        fig, axes = plt.subplots(nb_orders, 2, constrained_layout=True, figsize=(10, 10))
         for order in range(degree + 1):
 
             # Define input path
@@ -107,7 +107,7 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
     mean_latitude = np.mean(saturn_spherical_coordinates_history[:, 2])
     mean_longitude = np.mean(saturn_spherical_coordinates_history[:, 3])
 
-    fig, axes = plt.subplots(2, 2, constrained_layout=True, figsize=(12, 10))
+    fig, axes = plt.subplots(2, 2, constrained_layout=True, figsize=(10, 6.5))
     # Plot distance history
     axes[0, 0].plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
                     saturn_spherical_coordinates_history[:, 1],
@@ -118,7 +118,20 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
     axes[0, 1].plot(enceladus_keplerian_state_history[:, 0] / constants.JULIAN_DAY,
                     enceladus_keplerian_state_history[:, 2],
                     color="tab:blue")
+    axes[0, 1].hlines(np.mean(enceladus_keplerian_state_history[:, 2]),
+                      xmin = enceladus_keplerian_state_history[0, 0] / constants.JULIAN_DAY,
+                      xmax = enceladus_keplerian_state_history[-1, 0] / constants.JULIAN_DAY,
+                      linestyles="--",
+                      color="black",
+                      linewidth=3)
     axes[0, 1].set_ylabel("Eccentricity  [-]", fontsize=fontsize)
+    axes[0, 1].set_title(f"Mean:  {np.mean(enceladus_keplerian_state_history[:, 2])}", fontsize=fontsize)
+    mean_eccentricity_handle = mlines.Line2D([], [],
+                                             color="black",
+                                             linestyle="--",
+                                             linewidth=3,
+                                             label="Mean")
+    axes[0, 1].legend(handles=[mean_eccentricity_handle], fontsize=fontsize, loc="upper right")
 
     # Plot Enceladus-fixed latitude of Saturn
     axes[1, 0].plot(saturn_spherical_coordinates_history[:, 0] / constants.JULIAN_DAY,
@@ -137,8 +150,7 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
                                          label="Mean")
     axes[1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[1, 0].set_ylabel(r"Saturn latitude  [deg]", fontsize=fontsize)
-    axes[1, 0].set_ylim(top=0.0006)
-    axes[1, 0].text(0.0, 0.00055, f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
+    axes[1, 0].set_title(f"Mean: {np.rad2deg(mean_latitude)} deg", fontsize=fontsize)
     axes[1, 0].legend(handles=[mean_latitude_handle], loc="upper right", fontsize=fontsize)
 
     # Plot Enceladus-fixed longitude of Saturn
@@ -158,8 +170,7 @@ def perform_tidal_forcing_analysis_plotting(output_directory,
                                           label="Mean")
     axes[1, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[1, 1].set_ylabel(r"Saturn longitude  [deg]", fontsize=fontsize)
-    axes[1, 1].set_ylim(top=0.8)
-    axes[1, 1].text(0.0, 0.73, f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
+    axes[1, 1].set_title(f"Mean: {np.rad2deg(mean_longitude)} deg", fontsize=fontsize)
     axes[1, 1].legend(handles=[mean_longitude_handle], loc="upper right", fontsize=fontsize)
 
     for ax in axes.flat:
@@ -191,7 +202,7 @@ def perform_tidal_correction_verification_plotting(output_directory,
                                       linewidth=3,
                                       label="Mean")
 
-    fig, axes = plt.subplots(len(degree_order), 2, constrained_layout=True, figsize=(12, 10))
+    fig, axes = plt.subplots(len(degree_order), 2, constrained_layout=True, figsize=(9, 9))
     for i in range(len(degree_order)):
         axes[i, 0].plot(cosine_coefficient_variation[:, 0] / constants.JULIAN_DAY,
                               cosine_coefficient_variation[:, i + 1])
@@ -224,8 +235,8 @@ def perform_tidal_correction_verification_plotting(output_directory,
 
         degree = degree_order[i][0]
         order = degree_order[i][1]
-        axes[i, 0].set_ylabel(fr"$\Delta C$  ({degree},{order})  [-]", fontsize=fontsize)
-        axes[i, 1].set_ylabel(fr"$\Delta S$  ({degree},{order})  [-]", fontsize=fontsize)
+        axes[i, 0].set_ylabel(r"$\Delta \bar{C}$" + f"  ({degree},{order})  [-]", fontsize=fontsize)
+        axes[i, 1].set_ylabel(r"$\Delta \bar{S}$" + f"  ({degree},{order})  [-]", fontsize=fontsize)
 
     axes[-1, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[-1, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
@@ -251,9 +262,10 @@ def main():
 
     perform_tidal_forcing_analysis_flag = False
     if perform_tidal_forcing_analysis_flag:
-        output_directory_analysis = os.path.join(output_directory, "2025.05.28.10.59.48/tidal_forcing_computation")
+        output_directory_analysis = os.path.join(output_directory, "2025.06.03.16.31.28/tidal_forcing_computation")
         perform_tidal_forcing_analysis_plotting(output_directory_analysis,
-                                                [2])
+                                                [2],
+                                                14)
 
     perform_tidal_correction_verification_flag = True
     if perform_tidal_correction_verification_flag:
