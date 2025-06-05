@@ -29,8 +29,8 @@ initial_states = [Benedikter.K1_initial_cartesian_state,
 
 # Load SPICE kernels
 spice.load_standard_kernels()
-kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
-                   "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp"]
+kernels_to_load = ["/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+                   "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp"]
 spice.load_standard_kernels(kernels_to_load)
 
 for simulation_duration in simulation_durations:
