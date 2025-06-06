@@ -2,6 +2,8 @@
 ### Import statements #################################################################################################
 #######################################################################################################################
 # Files and variables import
+from tudatpy.data import save2txt
+
 from CovarianceAnalysisObject import CovarianceAnalysis
 from auxiliary.utilities import plotting_utilities as PlotUtil
 
@@ -174,6 +176,13 @@ def perform_tuning_parameters_analysis(time_stamp,
         "a_priori_rotation_pole_rate": a_priori_rotation_pole_rate,
         "a_priori_radiation_pressure_coefficient": a_priori_radiation_pressure_coefficient
     }
+
+    save_parameters_to_tune = dict()
+    save_parameters_to_tune["lander_to_include"] = str(lander_to_include)
+    for parameter in list(parameters_to_tune.keys()):
+        save_parameters_to_tune[parameter] = str(parameters_to_tune[parameter])
+
+    save2txt(save_parameters_to_tune, "tuning_parameters_setup.txt", output_folder)
 
     # Perform analysis of tuning parameters,
     for lander in lander_to_include:
