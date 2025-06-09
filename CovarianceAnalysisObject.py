@@ -909,37 +909,14 @@ class CovarianceAnalysis:
                 covariance_initial_position_inertial, initial_rsw_to_inertial_rotation_matrix))
             formal_error_initial_position_rsw[i, :] = np.sqrt(np.diag(covariance_initial_position_rsw))
 
-        # Rotate formal errors of empirical accelerations to RSW frame (considering that the empirical accelerations
-        # only have the constant term)
-        nb_empirical_accelerations_arc = len(empirical_accelerations_arc_start_times)
+        # Retrieve formal error of empirical accelerations
         formal_error_empirical_accelerations_rsw_list = []
-        for i in range(nb_arcs):
-            simulation_results_current_arc = simulation_results[i]
-            dependent_variable_history_current_arc = simulation_results_current_arc.dependent_variable_history
-            dependent_variable_history_current_arc_array = result2array(dependent_variable_history_current_arc)
-            epochs_current_arc = list(dependent_variable_history_current_arc.keys())
-            formal_error_empirical_accelerations_rsw_current_arc = np.zeros((len(epochs_current_arc), 4))
-            for epoch in epochs_current_arc:
-                epoch_index = epochs_current_arc.index(epoch)
-                rsw_to_inertial_rotation_matrix = dependent_variable_history_current_arc_array[epoch_index,
-                                                  CovAnalysisConfig.indices_dependent_variables[
-                                                          "rsw_to_inertial_rotation_matrix"][0]:
-                                                      CovAnalysisConfig.indices_dependent_variables[
-                                                          "rsw_to_inertial_rotation_matrix"][1]].reshape(3, 3)
-                inertial_to_rsw_rotation_matrix = rsw_to_inertial_rotation_matrix.T
-                for j in range(nb_empirical_accelerations_arc):
-                    if empirical_accelerations_arc_start_times[j] <= epoch <= empirical_accelerations_arc_end_times[j]:
-                        covariance_empirical_accelerations_inertial = covariance_to_use[
-                            indices_empirical_acceleration_components[0] + 3 * j:indices_empirical_acceleration_components[0] + 3 * j + 3,
-                            indices_empirical_acceleration_components[0] + 3 * j:indices_empirical_acceleration_components[0] + 3 * j + 3
-                        ]
-                        break
-                covariance_empirical_accelerations_rsw = np.dot(
-                    inertial_to_rsw_rotation_matrix, np.dot(covariance_empirical_accelerations_inertial, rsw_to_inertial_rotation_matrix)
-                )
-                formal_error_empirical_accelerations_rsw_current_arc[epoch_index, 0] = epoch
-                formal_error_empirical_accelerations_rsw_current_arc[epoch_index, 1:] = np.sqrt(np.diag(covariance_empirical_accelerations_rsw))
-            formal_error_empirical_accelerations_rsw_list.append(formal_error_empirical_accelerations_rsw_current_arc)
+        nb_empirical_accelerations_arcs = len(empirical_accelerations_arc_start_times)
+        for i in range(nb_empirical_accelerations_arcs):
+            formal_error_empirical_accelerations_rsw = formal_errors[
+                indices_empirical_acceleration_components[0] + 3*i:
+                indices_empirical_acceleration_components[0] + 3*i + 3]
+            formal_error_empirical_accelerations_rsw_list.append(formal_error_empirical_accelerations_rsw)
 
         # # Propagate formal errors
         # output_times = list(np.arange(CovAnalysisConfig.simulation_start_epoch, simulation_end_epoch, 3600.0))
@@ -1142,19 +1119,33 @@ class CovarianceAnalysis:
             )
             np.savetxt(formal_error_initial_position_interval_rsw_filename, formal_error_initial_position_rsw_interval)
 
-            # Save formal error interval for empirical accelerations components
+            # Filter formal error of empirical accelerations
+            formal_error_empirical_accelerations_rsw_filtered_list = []
+            for i in range(nb_empirical_accelerations_arcs):
+                if (self.a_priori_empirical_accelerations - 1e-10 <=
+                    formal_error_empirical_accelerations_rsw_list[i][0] < self.a_priori_empirical_accelerations + 1e-10
+                    and self.a_priori_empirical_accelerations - 1e-10 <=
+                    formal_error_empirical_accelerations_rsw_list[i][1] < self.a_priori_empirical_accelerations + 1e-10
+                    and self.a_priori_empirical_accelerations - 1e-10 <=
+                    formal_error_empirical_accelerations_rsw_list[i][2] < self.a_priori_empirical_accelerations + 1e-10):
+                    continue
+                else:
+                    formal_error_empirical_accelerations_rsw_filtered_list.append(
+                        formal_error_empirical_accelerations_rsw_list[i])
+
+
+            # Save formal error interval for filtered empirical acceleration components
             formal_error_empirical_accelerations_radial_direction = []
             formal_error_empirical_accelerations_along_track_direction = []
             formal_error_empirical_accelerations_cross_track_direction = []
-            for i in range(nb_arcs):
-                formal_error_empirical_accelerations_rsw_current_arc = formal_error_empirical_accelerations_rsw_list[i]
-                for j in range(formal_error_empirical_accelerations_rsw_current_arc.shape[0]):
-                    formal_error_empirical_accelerations_radial_direction.append(
-                        formal_error_empirical_accelerations_rsw_current_arc[j, 1])
-                    formal_error_empirical_accelerations_along_track_direction.append(
-                        formal_error_empirical_accelerations_rsw_current_arc[j, 2])
-                    formal_error_empirical_accelerations_cross_track_direction.append(
-                        formal_error_empirical_accelerations_rsw_current_arc[j, 3])
+            for i in range(len((formal_error_empirical_accelerations_rsw_filtered_list))):
+                formal_error_empirical_accelerations_rsw_current_arc = formal_error_empirical_accelerations_rsw_filtered_list[i]
+                formal_error_empirical_accelerations_radial_direction.append(
+                    formal_error_empirical_accelerations_rsw_current_arc[0])
+                formal_error_empirical_accelerations_along_track_direction.append(
+                    formal_error_empirical_accelerations_rsw_current_arc[1])
+                formal_error_empirical_accelerations_cross_track_direction.append(
+                    formal_error_empirical_accelerations_rsw_current_arc[2])
             formal_error_empirical_accelerations_rsw_interval = np.array([
                 [
                     min(formal_error_empirical_accelerations_radial_direction),
@@ -1184,16 +1175,13 @@ class CovarianceAnalysis:
             ax = fig.add_subplot()
             for i in range(nb_arcs):
                 formal_error_empirical_accelerations_rsw_current_arc = formal_error_empirical_accelerations_rsw_list[i]
-                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
-                            formal_error_empirical_accelerations_rsw_current_arc[:, 1], color="orange")
-                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
-                            formal_error_empirical_accelerations_rsw_current_arc[:, 2], color="blue")
-                ax.scatter(formal_error_empirical_accelerations_rsw_current_arc[:, 0]/constants.JULIAN_DAY,
-                            formal_error_empirical_accelerations_rsw_current_arc[:, 3], color="red")
+                ax.scatter(i, formal_error_empirical_accelerations_rsw_current_arc[0], color="orange")
+                ax.scatter(i, formal_error_empirical_accelerations_rsw_current_arc[1], color="blue")
+                ax.scatter(i, formal_error_empirical_accelerations_rsw_current_arc[2], color="red")
             ax.set_xlabel(r"$t - t_{0}$  [days]")
             ax.set_ylabel(r"$\sigma$  [m/s$^{2}$]")
             ax.set_title("Formal error empirical accelerations")
-            # ax.set_yscale("log")
+            ax.set_yscale("log")
             ax.grid(True)
             radial_handle = mlines.Line2D([], [], color="orange", label="Radial")
             along_track_handle = mlines.Line2D([], [], color="blue", label="Along-track")
