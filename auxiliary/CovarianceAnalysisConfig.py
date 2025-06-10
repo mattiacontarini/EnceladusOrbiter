@@ -162,8 +162,11 @@ a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
 # A priori constraint on position of landers on Enceladus
 a_priori_lander_position = 1e2
 
-# A priori constraint for tidal k2 love number - [Re, Im]
+# A priori constraint for tidal k2 Love number - [Re, Im]
 a_priori_k2_love_number = [0.01, 0.01] # From Bagheri et al., 2025
+
+# A priori constraint for h2 Love number
+a_priori_h2_love_number = np.infty
 
 # A priori constraint on the rotation pole position
 a_priori_rotation_pole_position = np.deg2rad([np.infty, np.infty])
