@@ -18,6 +18,8 @@ from tudatpy.util import result2array
 from tudatpy.math import interpolators
 from tudatpy.numerical_simulation.estimation_setup import observation
 from tudatpy import constants
+from tudatpy import astro
+from tudatpy.interface import spice
 
 # Packages import
 import numpy as np
@@ -52,6 +54,8 @@ class CovarianceAnalysis:
                  use_range_bias_consider_parameter_flag: bool,
                  use_station_position_consider_parameter_flag: bool,
                  empirical_accelerations_arc_duration: float,
+                 estimate_h2_love_number_flag: bool,
+                 a_priori_h2_love_number: float,
                  ):
         self.initial_state_index = initial_state_index
         self.save_simulation_results_flag = save_simulation_results_flag
@@ -72,6 +76,8 @@ class CovarianceAnalysis:
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
         self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
         self.use_station_position_consider_parameter_flag = use_station_position_consider_parameter_flag
+        self.estimate_h2_love_number_flag = estimate_h2_love_number_flag
+        self.a_priori_h2_love_number = a_priori_h2_love_number
 
     @classmethod
     def from_config(cls):
@@ -94,6 +100,8 @@ class CovarianceAnalysis:
         use_range_bias_consider_parameter_flag = False
         use_station_position_consider_parameter_flag = True
         empirical_accelerations_arc_duration = CovAnalysisConfig.empirical_accelerations_arc_duration
+        estimate_h2_love_number_flag = False
+        a_priori_h2_love_number = CovAnalysisConfig.a_priori_h2_love_number
         return cls(initial_state_index,
                    save_simulation_results_flag,
                    save_covariance_results_flag,
@@ -112,7 +120,9 @@ class CovarianceAnalysis:
                    include_lander_range_observable_flag,
                    use_range_bias_consider_parameter_flag,
                    use_station_position_consider_parameter_flag,
-                   empirical_accelerations_arc_duration)
+                   empirical_accelerations_arc_duration,
+                   estimate_h2_love_number_flag,
+                   a_priori_h2_love_number,)
 
     def save_problem_configuration(self,
                                    output_directory: str):
@@ -149,6 +159,10 @@ class CovarianceAnalysis:
 
     def perform_covariance_analysis(self,
                                     output_path: str):
+
+        # Perform a feasibility check of problem setup
+        if self.estimate_h2_love_number_flag is True and self.lander_to_include == []:
+            raise ValueError("lander_to_include cannot be empty if you want to estimate h2 Love number.")
 
         # Determine final epoch of simulation
         simulation_end_epoch = CovAnalysisConfig.simulation_start_epoch + self.simulation_duration
@@ -607,6 +621,9 @@ class CovarianceAnalysis:
             bodies
         )
 
+        # Print content of observation collection
+        simulated_observations.print_observation_sets_start_and_size()
+
         ###############################################################################################################
         ### Covariance analysis #######################################################################################
         ###############################################################################################################
@@ -726,7 +743,7 @@ class CovarianceAnalysis:
         apriori_constraints = np.reciprocal(np.sqrt(np.diagonal(inv_apriori)))
 
         # Define consider parameters covariance
-        if self.use_range_bias_consider_parameter_flag or self.use_range_bias_consider_parameter_flag:
+        if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             nb_consider_parameters = 0
             if self.use_range_bias_consider_parameter_flag:
                 nb_consider_parameters += nb_arcs * (len(ground_station_names) + len(self.lander_to_include))
@@ -865,7 +882,14 @@ class CovarianceAnalysis:
         covariance = covariance_output.covariance
         normalized_covariance = covariance_output.normalized_covariance
         formal_errors = covariance_output.formal_errors
-        partials = covariance_output.weighted_design_matrix
+        partials = covariance_output.design_matrix
+        weight_matrix_diagonal = covariance_input.weight_matrix_diagonal
+        consider_normalization_terms = covariance_output.consider_normalization_factors
+
+        # Build weight matrix out of the main diagonal
+        weight_matrix = np.zeros((len(weight_matrix_diagonal), len(weight_matrix_diagonal)))
+        for i in range(len(weight_matrix_diagonal)):
+            weight_matrix[i, i] = weight_matrix_diagonal[i]
 
         # Retrieve results with consider parameters
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
@@ -877,6 +901,58 @@ class CovarianceAnalysis:
             for i in range(nb_parameters):
                 for j in range(nb_parameters):
                     correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
+
+        # Add h2 Love number to parameters to estimate and retrieve covariance matrix
+        if self.estimate_h2_love_number_flag:
+            print("Adding radial displacement Love number at full degree of Enceladus due to Saturn for degree 2.")
+            nb_parameters_extended = nb_parameters + 1
+            inv_apriori_extended = np.zeros((nb_parameters_extended, nb_parameters_extended))
+            inv_apriori_extended[:nb_parameters, :nb_parameters] = inv_apriori
+            inv_apriori_extended[nb_parameters_extended - 1, nb_parameters_extended - 1] = self.a_priori_h2_love_number ** -2
+
+            indices_lander = (indices_lander_position[0], 3)
+
+            gravitational_parameter_ratio = bodies.get("Saturn").gravitational_parameter / bodies.get("Enceladus").gravitational_parameter
+
+            Enceladus_radius = spice.get_average_radius("Enceladus")
+            station_state_spherical = np.zeros((6,))
+            station_state_spherical[0] = Enceladus_radius + CovAnalysisConfig.lander_coordinates[lander_to_include[0]][0]
+            station_state_spherical[1] = CovAnalysisConfig.lander_coordinates[lander_to_include[0]][1]
+            station_state_spherical[2] = CovAnalysisConfig.lander_coordinates[lander_to_include[0]][2]
+            station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
+
+            sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
+            partials_extended = CovUtil.extend_design_matrix_to_h2_love_number(partials,
+                                                                               indices_lander,
+                                                                               gravitational_parameter_ratio,
+                                                                               station_position_cartesian,
+                                                                               Enceladus_radius,
+                                                                               sorted_observation_epochs)
+            normalization_terms_extended = CovUtil.get_normalization_terms(partials_extended)
+            normalized_partials_extended = CovUtil.normalize_design_matrix(partials_extended, normalization_terms_extended)
+            normalized_inv_apriori_extended = CovUtil.normalize_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
+
+
+            normalized_covariance_extended = np.linalg.inv(np.dot(normalized_partials_extended.T,
+                                                       np.dot(weight_matrix, normalized_partials_extended)) + normalized_inv_apriori_extended)
+            covariance_extended = CovUtil.unnormalize_covariance_matrix(normalized_covariance_extended, normalization_terms_extended)
+
+            if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
+                normalized_design_matrix_consider_parameters = covariance_output.normalized_design_matrix_consider_parameters
+                clean_normalized_covariance = np.linalg.inv(np.dot(normalized_partials_extended.T,
+                                                       np.dot(weight_matrix, normalized_partials_extended)))
+                term_1 = (np.dot(clean_normalized_covariance, np.dot(normalized_partials_extended.T, weight_matrix)))
+
+                normalized_consider_covariance = CovUtil.normalize_covariance_matrix(consider_parameter_covariance, consider_normalization_terms)
+                term_2 = np.dot(normalized_design_matrix_consider_parameters,
+                                np.dot(normalized_consider_covariance, normalized_design_matrix_consider_parameters.T))
+                term_3 = term_1.T
+                clean_normalized_covariance_with_consider_parameters_extended = (normalized_covariance_extended +
+                                                                np.dot(term_1, np.dot(term_2, term_3)))
+                normalized_covariance_with_consider_parameters_extended = np.linalg.inv(np.linalg.inv(normalized_inv_apriori_extended) +
+                                                                                        np.linalg.inv(clean_normalized_covariance_with_consider_parameters_extended))
+                covariance_with_consider_parameters_extended = CovUtil.unnormalize_covariance_matrix(normalized_covariance_with_consider_parameters_extended, normalization_terms_extended)
+
 
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             covariance_to_use = covariance_with_consider_parameters
