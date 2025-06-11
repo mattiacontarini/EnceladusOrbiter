@@ -963,19 +963,23 @@ class CovarianceAnalysis:
                 covariance_to_use = covariance_with_consider_parameters_extended
                 normalized_covariance_to_use = normalized_covariance_with_consider_parameters_extended
                 correlations_to_use = correlations_with_consider_parameters_extended
+                formal_errors_to_use = formal_errors_with_consider_parameters_extended
             else:
                 covariance_to_use = covariance_with_consider_parameters
                 normalized_covariance_to_use = normalized_covariance_with_consider_parameters
                 correlations_to_use = correlations_with_consider_parameters
+                formal_errors_to_use = formal_errors_with_consider_parameters
         else:
             if self.estimate_h2_love_number_flag:
                 covariance_to_use = covariance_extended
                 normalized_covariance_to_use = normalized_covariance_extended
                 correlations_to_use = correlations_extended
+                formal_errors_to_use = formal_errors_extended
             else:
                 covariance_to_use = covariance
                 normalized_covariance_to_use = normalized_covariance
                 correlations_to_use = correlations
+                formal_errors_to_use = formal_errors
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -1016,7 +1020,7 @@ class CovarianceAnalysis:
         condition_number = np.linalg.cond(covariance_to_use)
 
         # Retrieve formal error of SH zonal gravity coefficients
-        formal_error_cosine_coef = formal_errors[indices_cosine_coef[0]:
+        formal_error_cosine_coef = formal_errors_to_use[indices_cosine_coef[0]:
                                                  indices_cosine_coef[0] + indices_cosine_coef[1]]
         a_priori_constraints_cosine_coef = apriori_constraints[indices_cosine_coef[0]:
                                                                indices_cosine_coef[0] + indices_cosine_coef[1]]
@@ -1042,29 +1046,29 @@ class CovarianceAnalysis:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
         # Retrieve formal error of gravitational Love number
-        formal_error_love_number = formal_errors[indices_tidal_love_number[0] :
+        formal_error_love_number = formal_errors_to_use[indices_tidal_love_number[0] :
                                                  indices_tidal_love_number[0] + indices_tidal_love_number[1]]
 
         # Retrieve formal error of radial Love number
         if self.estimate_h2_love_number_flag:
-            formal_error_radial_love_number = formal_errors[indices_radial_love_number[0] :
+            formal_error_radial_love_number = formal_errors_to_use[indices_radial_love_number[0] :
                                                             indices_radial_love_number[0] + indices_radial_love_number[1]]
 
         # Retrieve formal error of libration amplitudes
-        formal_error_libration_amplitude = formal_errors[indices_libration_amplitude[0] :
+        formal_error_libration_amplitude = formal_errors_to_use[indices_libration_amplitude[0] :
                                                          indices_libration_amplitude[0] + indices_libration_amplitude[1]]
 
         # Retrieve formal error of radiation pressure coefficient
-        formal_error_radiation_pressure_coefficient = formal_errors[
+        formal_error_radiation_pressure_coefficient = formal_errors_to_use[
                                                       indices_radiation_pressure_coefficient[0] :
                                                       indices_radiation_pressure_coefficient[0] + indices_radiation_pressure_coefficient[1]]
 
         # Retrieve formal error of pole position
-        formal_error_pole_position = formal_errors[indices_pole_position[0] :
+        formal_error_pole_position = formal_errors_to_use[indices_pole_position[0] :
                                                    indices_pole_position[0] + indices_pole_position[1]]
 
         # Retrieve formal error of pole rate
-        formal_error_pole_rate = formal_errors[indices_pole_rate[0] :
+        formal_error_pole_rate = formal_errors_to_use[indices_pole_rate[0] :
                                                indices_pole_rate[0] + indices_pole_rate[1]]
 
         # Compute ratio of lander data to ground station data
@@ -1101,7 +1105,7 @@ class CovarianceAnalysis:
 
             # Save formal errors
             formal_errors_filename = os.path.join(covariance_results_output_path, "formal_errors.dat")
-            np.savetxt(formal_errors_filename, formal_errors)
+            np.savetxt(formal_errors_filename, formal_errors_to_use)
 
             # # Save propagated formal errors
             # propagated_formal_errors_filename = os.path.join(covariance_results_output_path, "propagated_formal_errors.dat")
@@ -1145,17 +1149,10 @@ class CovarianceAnalysis:
                                                plots_output_path,
                                                "correlations_with_consider_parameters.pdf")
 
-            # Plot formal errors with contribution from consider parameters
-            if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
-                PlottingUtil.plot_formal_errors(None,
-                                                formal_errors_with_consider_parameters,
-                                                plots_output_path,
-                                                "formal_errors.pdf")
-            else:
-                PlottingUtil.plot_formal_errors(formal_errors,
-                                                None,
-                                                plots_output_path,
-                                                "formal_errors.pdf")
+            # Plot formal errors
+            PlottingUtil.plot_formal_errors(formal_errors_to_use,
+                                            plots_output_path,
+                                            "formal_errors.pdf")
 
             # Plot formal error of SH gravity coefficients and a priori constraint
             fig = plt.figure()
