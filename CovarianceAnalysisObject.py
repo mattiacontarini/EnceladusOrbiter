@@ -905,7 +905,11 @@ class CovarianceAnalysis:
         # Add h2 Love number to parameters to estimate and retrieve covariance matrix
         if self.estimate_h2_love_number_flag:
             print("Adding radial displacement Love number at full degree of Enceladus due to Saturn for degree 2.")
+
             nb_parameters_extended = nb_parameters + 1
+
+            indices_radial_love_number = (nb_parameters_extended - 1, 1)
+
             inv_apriori_extended = np.zeros((nb_parameters_extended, nb_parameters_extended))
             inv_apriori_extended[:nb_parameters, :nb_parameters] = inv_apriori
             inv_apriori_extended[nb_parameters_extended - 1, nb_parameters_extended - 1] = self.a_priori_h2_love_number ** -2
@@ -1037,9 +1041,14 @@ class CovarianceAnalysis:
             else:
                 max_estimatable_degree_gravity_field = degrees[-1]
 
-        # Retrieve formal error of Love number
+        # Retrieve formal error of gravitational Love number
         formal_error_love_number = formal_errors[indices_tidal_love_number[0] :
                                                  indices_tidal_love_number[0] + indices_tidal_love_number[1]]
+
+        # Retrieve formal error of radial Love number
+        if self.estimate_h2_love_number_flag:
+            formal_error_radial_love_number = formal_errors[indices_radial_love_number[0] :
+                                                            indices_radial_love_number[0] + indices_radial_love_number[1]]
 
         # Retrieve formal error of libration amplitudes
         formal_error_libration_amplitude = formal_errors[indices_libration_amplitude[0] :
@@ -1277,10 +1286,16 @@ class CovarianceAnalysis:
             fig.savefig(file_output_path)
             plt.close(fig)
 
-            # Save formal error of Love number
+            # Save formal error of gravitational Love number
             formal_error_love_number_filename = os.path.join(covariance_results_output_path,
                                                              "formal_error_love_number.dat")
             np.savetxt(formal_error_love_number_filename, formal_error_love_number)
+
+            # Save formal error of radial displacement Love number
+            if self.estimate_h2_love_number_flag:
+                formal_error_radial_love_number_filename = os.path.join(covariance_results_output_path,
+                                                                        "formal_error_radial_love_number.dat")
+                np.savetxt(formal_error_radial_love_number_filename, formal_error_radial_love_number)
 
             # Save formal error of libration amplitude
             formal_error_libration_amplitude_filename = os.path.join(covariance_results_output_path,
