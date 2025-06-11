@@ -930,38 +930,48 @@ class CovarianceAnalysis:
                                                                                sorted_observation_epochs)
             normalization_terms_extended = CovUtil.get_normalization_terms(partials_extended)
             normalized_partials_extended = CovUtil.normalize_design_matrix(partials_extended, normalization_terms_extended)
-            normalized_inv_apriori_extended = CovUtil.normalize_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
+            normalized_inv_apriori_extended = CovUtil.normalize_inv_apriori_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
 
 
             normalized_covariance_extended = np.linalg.inv(np.dot(normalized_partials_extended.T,
                                                        np.dot(weight_matrix, normalized_partials_extended)) + normalized_inv_apriori_extended)
             covariance_extended = CovUtil.unnormalize_covariance_matrix(normalized_covariance_extended, normalization_terms_extended)
+            formal_errors_extended = CovUtil.get_formal_errors(covariance_extended)
+            correlations_extended = CovUtil.get_correlation_matrix(covariance_extended, formal_errors_extended)
 
             if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
                 normalized_design_matrix_consider_parameters = covariance_output.normalized_design_matrix_consider_parameters
-                clean_normalized_covariance = np.linalg.inv(np.dot(normalized_partials_extended.T,
-                                                       np.dot(weight_matrix, normalized_partials_extended)))
-                term_1 = (np.dot(clean_normalized_covariance, np.dot(normalized_partials_extended.T, weight_matrix)))
-
+                term_1 = (np.dot(normalized_covariance_extended, np.dot(normalized_partials_extended.T, weight_matrix)))
                 normalized_consider_covariance = CovUtil.normalize_covariance_matrix(consider_parameter_covariance, consider_normalization_terms)
                 term_2 = np.dot(normalized_design_matrix_consider_parameters,
                                 np.dot(normalized_consider_covariance, normalized_design_matrix_consider_parameters.T))
                 term_3 = term_1.T
-                clean_normalized_covariance_with_consider_parameters_extended = (normalized_covariance_extended +
+                normalized_covariance_with_consider_parameters_extended = (normalized_covariance_extended +
                                                                 np.dot(term_1, np.dot(term_2, term_3)))
-                normalized_covariance_with_consider_parameters_extended = np.linalg.inv(np.linalg.inv(normalized_inv_apriori_extended) +
-                                                                                        np.linalg.inv(clean_normalized_covariance_with_consider_parameters_extended))
                 covariance_with_consider_parameters_extended = CovUtil.unnormalize_covariance_matrix(normalized_covariance_with_consider_parameters_extended, normalization_terms_extended)
+                formal_errors_with_consider_parameters_extended = CovUtil.get_formal_errors(covariance_with_consider_parameters_extended)
+                correlations_with_consider_parameters_extended = CovUtil.get_correlation_matrix(covariance_with_consider_parameters_extended, formal_errors_with_consider_parameters_extended)
 
+        print("Covariance analysis performed successfully!")
 
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
-            covariance_to_use = covariance_with_consider_parameters
-            normalized_covariance_to_use = normalized_covariance_with_consider_parameters
-            correlations_to_use = correlations_with_consider_parameters
+            if self.estimate_h2_love_number_flag:
+                covariance_to_use = covariance_with_consider_parameters_extended
+                normalized_covariance_to_use = normalized_covariance_with_consider_parameters_extended
+                correlations_to_use = correlations_with_consider_parameters_extended
+            else:
+                covariance_to_use = covariance_with_consider_parameters
+                normalized_covariance_to_use = normalized_covariance_with_consider_parameters
+                correlations_to_use = correlations_with_consider_parameters
         else:
-            covariance_to_use = covariance
-            normalized_covariance_to_use = normalized_covariance
-            correlations_to_use = correlations
+            if self.estimate_h2_love_number_flag:
+                covariance_to_use = covariance_extended
+                normalized_covariance_to_use = normalized_covariance_extended
+                correlations_to_use = correlations_extended
+            else:
+                covariance_to_use = covariance
+                normalized_covariance_to_use = normalized_covariance
+                correlations_to_use = correlations
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -1300,6 +1310,8 @@ class CovarianceAnalysis:
             indices_estimation_parameters_filename = os.path.join(covariance_results_output_path, "indices_estimation_parameters.dat")
             np.savetxt(indices_estimation_parameters_filename, indices_estimation_parameters)
 
+            print("Covariance results saved.")
+
         if self.save_simulation_results_flag:
 
             simulation_results_output_path = os.path.join(output_path, "simulation_results")
@@ -1377,5 +1389,7 @@ class CovarianceAnalysis:
                                                     doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
                                                     doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
 
+                print("Simulation results saved.")
 
-        print("Covariance analysis performed successfully!")
+
+        print("Run terminated successfully!")
