@@ -123,16 +123,11 @@ def plot_observation_times(arc_ID,
 
 
 def plot_formal_errors(formal_errors,
-                       formal_errors_with_consider_parameters,
                        output_path,
                        filename):
 
-    if formal_errors is not None:
-        plt.plot(np.arange(1, len(formal_errors) + 1, 1), formal_errors)
-        plt.title("Formal errors")
-    elif formal_errors_with_consider_parameters is not None:
-        plt.plot(np.arange(1, len(formal_errors_with_consider_parameters) + 1, 1), formal_errors_with_consider_parameters)
-        plt.title("Formal errors")
+    plt.plot(np.arange(1, len(formal_errors) + 1, 1), formal_errors)
+    plt.title("Formal errors")
     plt.xlabel("Index - Estimated Parameter  [-]")
     plt.ylabel("Formal error  [respective IS unit]")
     plt.yscale("log")
