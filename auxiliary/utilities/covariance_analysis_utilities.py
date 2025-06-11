@@ -76,16 +76,16 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
     for i in range(nb_observations):
         epoch = sorted_observation_epochs[i]
         relative_body_position = spice.get_body_cartesian_position_at_epoch("Saturn",
-                                                                         "Enceladus",
-                                                                         CovAnalysisConfig.global_frame_orientation,
-                                                                         "NONE",
-                                                                         epoch)
+                                                                            "Enceladus",
+                                                                            CovAnalysisConfig.global_frame_orientation,
+                                                                            "NONE",
+                                                                            epoch)
         drL_dh2_i = astro.gravitation.calculate_degree_two_basic_tidal_displacement(gravitational_parameter_ratio,
-                                                                                        station_position_unit_vector,
-                                                                                        relative_body_position,
-                                                                                        body_equatorial_radius,
-                                                                                        1.0,
-                                                                                        0.0)
+                                                                                    station_position_unit_vector,
+                                                                                    relative_body_position,
+                                                                                    body_equatorial_radius,
+                                                                                    1.0,
+                                                                                    0.0)
         dh_dh2[i] = np.dot(dh_drL[i, :], drL_dh2_i)
     design_matrix_extended[:, nb_parameters_extended - 1] = dh_dh2
     return design_matrix_extended
@@ -111,34 +111,66 @@ def retrieve_sorted_observation_epochs(simulated_observations,):
 
 
 def get_normalization_terms(partials_matrix):
-    normalization_terms = []
+    normalization_terms = np.zeros((partials_matrix.shape[1],))
     for i in range(partials_matrix.shape[1]):
-        normalization_terms.append(max(np.abs(partials_matrix[:, i])))
+        maximum_value = max(partials_matrix[:, i])
+        minimum_value = min(partials_matrix[:, i])
+        if np.abs(minimum_value) > maximum_value:
+            normalization_terms[i] = minimum_value
+        else:
+            normalization_terms[i] = maximum_value
+        if normalization_terms[i] == 0.0:
+            normalization_terms[i] = 1.0
 
     return normalization_terms
+
 
 def normalize_design_matrix(design_matrix, normalization_terms):
     normalized_design_matrix = np.zeros(design_matrix.shape)
     for j in range(design_matrix.shape[1]):
-        if normalization_terms[j] != 0.0:
-            normalized_design_matrix[:, j] = design_matrix[:, j] / normalization_terms[j]
-        else:
-            normalized_design_matrix[:, j] = design_matrix[:, j]
+        normalized_design_matrix[:, j] = design_matrix[:, j] / normalization_terms[j]
 
     return normalized_design_matrix
+
+
+def normalize_inv_apriori_covariance_matrix(inv_apriori_covariance_matrix, normalization_terms):
+    normalized_inv_apriori_covariance_matrix = np.zeros(inv_apriori_covariance_matrix.shape)
+    for i in range(inv_apriori_covariance_matrix.shape[0]):
+        for j in range(inv_apriori_covariance_matrix.shape[1]):
+            normalized_inv_apriori_covariance_matrix[i, j] = inv_apriori_covariance_matrix[i, j] / (normalization_terms[i] * normalization_terms[j])
+
+    return normalized_inv_apriori_covariance_matrix
+
 
 def normalize_covariance_matrix(matrix, normalization_terms):
     normalized_matrix = np.zeros(matrix.shape)
     for i in range(matrix.shape[0]):
         for j in range(matrix.shape[1]):
-            normalized_matrix[i, j] = matrix[i, j] / (normalization_terms[i] * normalization_terms[j])
+            normalized_matrix[i, j] = matrix[i, j] * (normalization_terms[i] * normalization_terms[j])
 
     return normalized_matrix
+
 
 def unnormalize_covariance_matrix(normalized_matrix, normalization_terms):
     unnormalized_matrix = np.zeros(normalized_matrix.shape)
     for i in range(normalized_matrix.shape[0]):
         for j in range(normalized_matrix.shape[1]):
-            unnormalized_matrix[i, j] = normalized_matrix[i, j] * normalization_terms[i] * normalization_terms[j]
+            unnormalized_matrix[i, j] = normalized_matrix[i, j] / (normalization_terms[i] * normalization_terms[j])
 
     return unnormalized_matrix
+
+
+def get_formal_errors(covariance_matrix):
+    covariance_diagonal = np.diag(covariance_matrix)
+    formal_errors = np.sqrt(covariance_diagonal)
+
+    return formal_errors
+
+
+def get_correlation_matrix(covariance_matrix, formal_errors):
+    correlation_matrix = np.zeros(covariance_matrix.shape)
+    for i in range(covariance_matrix.shape[0]):
+        for j in range(covariance_matrix.shape[1]):
+            correlation_matrix[i, j] = covariance_matrix[i, j] / (formal_errors[i] * formal_errors[j])
+
+    return correlation_matrix
