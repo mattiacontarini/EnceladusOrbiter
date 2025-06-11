@@ -234,6 +234,9 @@ def plot_tuning_parameters_analysis(input_path,
                 formal_error_love_number = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
                 )
+                formal_error_radial_love_number = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
+                )
                 formal_error_libration_amplitude = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
                 )
@@ -285,6 +288,7 @@ def plot_tuning_parameters_analysis(input_path,
                 axes[3, 1].scatter(parameter_value, np.rad2deg(formal_error_pole_position[1]), color="midnightblue", marker="P")
                 axes[4, 0].scatter(parameter_value, np.rad2deg(formal_error_pole_rate[0]), color="orange", marker="P")
                 axes[4, 0].scatter(parameter_value, formal_error_pole_rate[1], color="midnightblue", marker="P")
+                axes[4, 1].scatter(parameter_value, formal_error_radial_love_number, color="black", marker="P")
 
             axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
             axes[0, 0].set_yscale("log")
@@ -292,15 +296,16 @@ def plot_tuning_parameters_analysis(input_path,
             axes[1, 0].set_ylabel(r"$\sigma$ initial position  [m]", fontsize=fontsize)
             axes[1, 1].set_ylabel(r"$\sigma$ empirical acc.  [m/s$^{2}$]", fontsize=fontsize)
             axes[2, 0].set_ylabel("no. lander data / no. GS data  [-]", fontsize=fontsize)
-            axes[2, 1].set_ylabel(r"$\sigma$ k2 Love number  [-]", fontsize=fontsize)
+            axes[2, 1].set_ylabel(r"$\sigma$ $k_2$ Love number  [-]", fontsize=fontsize)
             axes[2, 1].legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
             axes[3, 0].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
-            axes[3, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
             axes[3, 1].set_ylabel(f"$\sigma$ pole position  [deg]", fontsize=fontsize)
             axes[3, 1].legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
             axes[4, 0].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
             axes[4, 0].set_ylabel(f"$\sigma$ pole rate  [deg/s]", fontsize=fontsize)
             axes[4, 0].legend(handles=[RA_rate_handle, DE_rate_handle], fontsize=fontsize)
+            axes[4, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+            axes[4, 1].set_ylabel(f"$\sigma$ $h_2$ Love number  [-]", fontsize=fontsize)
 
 
             for ax in axes.flat:
@@ -316,7 +321,6 @@ def plot_tuning_parameters_analysis(input_path,
                 for ax in axes.flat:
                     ax.set_xlim(left=0)
 
-            plt.delaxes(axes[4, 1])
             fig.legend(handles=[rsw_interval_min_value_handle,
                                 rsw_interval_median_value_handle,
                                 rsw_interval_max_value_handle,
