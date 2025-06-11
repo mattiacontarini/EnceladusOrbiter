@@ -1021,31 +1021,61 @@ class CovarianceAnalysis:
         # Compute condition number of output covariance matrix
         condition_number = np.linalg.cond(covariance_to_use)
 
-        # Retrieve formal error of SH zonal gravity coefficients
+        # Retrieve rms of formal error of SH gravity coefficients
         formal_error_cosine_coef = formal_errors_to_use[indices_cosine_coef[0]:
-                                                 indices_cosine_coef[0] + indices_cosine_coef[1]]
+                                                        indices_cosine_coef[0] + indices_cosine_coef[1]]
+        formal_error_sine_coef = formal_errors_to_use[indices_sine_coef[0]:
+                                                      indices_sine_coef[0] + indices_sine_coef[1]]
         a_priori_constraints_cosine_coef = apriori_constraints[indices_cosine_coef[0]:
                                                                indices_cosine_coef[0] + indices_cosine_coef[1]]
-        formal_error_zonal_cosine_coef = []
-        a_priori_constraints_zonal_cosine_coef = []
+        a_priori_constraints_sine_coef = apriori_constraints[indices_sine_coef[0]:
+                                                             indices_sine_coef[0] + indices_sine_coef[1]]
+        formal_error_cosine_coef_per_deg = []
+        formal_error_sine_coef_per_deg = []
+        a_priori_constraints_cosine_coef_per_deg = []
+        a_priori_constraints_sine_coef_per_deg = []
         degrees = np.arange(CovAnalysisConfig.minimum_degree_c_enceladus,
-                            CovAnalysisConfig.maximum_degree_gravity_enceladus, 1)
-        i = 0
-        for degree in degrees:
-            a_priori_constraint = a_priori_constraints_cosine_coef[i]
-            formal_error = formal_error_cosine_coef[i]
-            formal_error_zonal_cosine_coef.append(formal_error)
-            a_priori_constraints_zonal_cosine_coef.append(a_priori_constraint)
-            i = i + degree + 1
+                            CovAnalysisConfig.maximum_degree_gravity_enceladus + 1, 1)
+
+        start_index_cosine_deg = 0
+        start_index_sine_deg = 0
+        for deg in range(CovAnalysisConfig.minimum_degree_c_enceladus, CovAnalysisConfig.maximum_degree_gravity_enceladus + 1):
+
+            # Cosine coefficients
+            rms_apriori = 0
+            rms_error = 0
+            for j in range(deg + 1):
+                rms_apriori += a_priori_constraints_cosine_coef[start_index_cosine_deg + j] ** 2
+                rms_error += formal_error_cosine_coef[start_index_cosine_deg + j] ** 2
+            start_index_cosine_deg += deg + 1
+
+            a_priori_constraints_cosine_coef_per_deg.append(np.sqrt(rms_apriori / (deg + 1)))
+            formal_error_cosine_coef_per_deg.append(np.sqrt(rms_error / (deg + 1)))
+
+            # Sine coefficients
+            rms_apriori = 0
+            rms_error = 0
+            for j in range(deg):
+                rms_apriori += a_priori_constraints_sine_coef[start_index_sine_deg + j] ** 2
+                rms_error += formal_error_sine_coef[start_index_sine_deg + j] ** 2
+            start_index_sine_deg += deg
+
+            a_priori_constraints_sine_coef_per_deg.append(np.sqrt(rms_apriori / deg))
+            formal_error_sine_coef_per_deg.append(np.sqrt(rms_error / deg))
+
         # Determine when formal error of SH gravity coeffs converges to a priori constraint
         for i in range(len(degrees)):
-            delta = (np.absolute(formal_error_zonal_cosine_coef[i] - a_priori_constraints_zonal_cosine_coef[i]) /
-                     a_priori_constraints_zonal_cosine_coef[i]) * 100
+            delta = (np.absolute(formal_error_cosine_coef_per_deg[i] - a_priori_constraints_cosine_coef_per_deg[i]) /
+                     a_priori_constraints_cosine_coef_per_deg[i]) * 100
             if delta <= 10:
                 max_estimatable_degree_gravity_field = degrees[i] - 1
                 break
             else:
                 max_estimatable_degree_gravity_field = degrees[-1]
+
+        # Retrieve rms of formal error of degree 2 cosine coefficients
+        rms_formal_error_degree_2_cosine_coef = formal_error_cosine_coef_per_deg[0]
+        rms_formal_error_degree_2_sine_coef = formal_error_sine_coef_per_deg[0]
 
         # Retrieve formal error of gravitational Love number
         formal_error_love_number = formal_errors_to_use[indices_tidal_love_number[0] :
@@ -1131,6 +1161,12 @@ class CovarianceAnalysis:
                                                      "condition_number_covariance_matrix.dat")
             np.savetxt(condition_number_filename, [condition_number])
 
+            # Save rms of formal error of degree 2 cosine and sine coefficients
+            rms_formal_error_degree_2_filename = os.path.join(covariance_results_output_path,
+                                                              "rms_formal_error_degree_2.dat")
+            np.savetxt(rms_formal_error_degree_2_filename,
+                       [rms_formal_error_degree_2_cosine_coef, rms_formal_error_degree_2_sine_coef])
+
             # Save maximum estimatable degree of the gravity field
             max_estimatable_degree_gravity_field_filename = os.path.join(covariance_results_output_path,
                                                                          "max_estimatable_degree_gravity_field.dat")
@@ -1159,15 +1195,15 @@ class CovarianceAnalysis:
             # Plot formal error of SH gravity coefficients and a priori constraint
             fig = plt.figure()
             ax = fig.add_subplot()
-            ax.plot(degrees, formal_error_zonal_cosine_coef, label="Formal error", color="blue")
-            ax.plot(degrees, a_priori_constraints_zonal_cosine_coef, label="A priori constraint", color="orange")
-            ax.set_xlabel("Degree zonal cosine coefficient  [-]")
+            ax.plot(degrees, formal_error_cosine_coef_per_deg, label="Formal error", color="blue")
+            ax.plot(degrees, a_priori_constraints_cosine_coef_per_deg, label="A priori constraint", color="orange")
+            ax.set_xlabel("Per degree RMS of cosine coefficients  [-]")
             ax.set_ylabel(r"$\sigma$  [-]")
             ax.set_yscale("log")
             ax.grid(True)
             ax.set_title("Formal error zonal cosine coefficients")
             ax.legend(loc="lower right")
-            file_output_path = os.path.join(plots_output_path, "formal_error_zonal_cosine_coefficients.pdf")
+            file_output_path = os.path.join(plots_output_path, "rms_formal_error_cosine_coefficients.pdf")
             plt.savefig(file_output_path)
             plt.close(fig)
 
