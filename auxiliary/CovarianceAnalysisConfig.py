@@ -124,7 +124,7 @@ tracking_arc_duration = 8.0 * 3600.0
 tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
 
 # Length of the arc over which the empirical accelerations are estimated
-empirical_accelerations_arc_duration = 0.5 * constants.JULIAN_DAY
+empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
 
 # Define observation simulation times for both Doppler and range observarbles
 doppler_cadence = 60
@@ -157,7 +157,8 @@ a_priori_s21 = 9.19e-6
 a_priori_s22 = 10.87e-6
 
 # A priori constraints on empirical accelerations
-a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
+# a_priori_empirical_accelerations = 4.0e-7  # From Durante et al., 2020
+a_priori_empirical_accelerations = 1.0e-9
 
 # A priori constraint on position of landers on Enceladus
 a_priori_lander_position = 1e2

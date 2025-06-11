@@ -16,9 +16,9 @@ import datetime
 import os
 import numpy as np
 
-def full_parameters_spectrum_analysis(time_stamp,
-                                      save_simulation_results_flag,
-                                      save_covariance_results_flag):
+def tuning_parameter_refinement_analysis(time_stamp,
+                                         save_simulation_results_flag,
+                                         save_covariance_results_flag):
 
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
@@ -33,7 +33,7 @@ def full_parameters_spectrum_analysis(time_stamp,
     spice.load_standard_kernels(kernels_to_load)
 
     # Set output path
-    output_directory = "./output/covariance_analysis/parameters_spectrum_analysis"
+    output_directory = "./output/covariance_analysis/tuning_parameters_refinement_analysis"
     output_directory = os.path.join(output_directory, time_stamp)
     os.makedirs(output_directory, exist_ok=True)
 
@@ -44,13 +44,15 @@ def full_parameters_spectrum_analysis(time_stamp,
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
 
+    # Set flag for estimating the radial displacement Love number
+    UDP.estimate_h2_love_number_flag = True
+
     # Set initial states to consider
     initial_state_indices = [1, 2, 3]
 
     # Set list of simulation durations to consider
-    simulation_durations = [28.0 * constants.JULIAN_DAY,
-                            60.0 * constants.JULIAN_DAY,
-                            90.0 * constants.JULIAN_DAY]
+    simulation_duration = 90.0 * constants.JULIAN_DAY
+    UDP.simulation_duration = simulation_duration
 
     # Set list of arc durations to consider
     arc_durations = [1.0 * constants.JULIAN_DAY,
@@ -60,38 +62,26 @@ def full_parameters_spectrum_analysis(time_stamp,
     # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
 
-    # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-8, 1e-7, 1e-6]
-
-    # Set list of value for the a priori constraint on the landers position
-    a_priori_lander_position = [1e2, 1e3]
-
     configuration_index = 0
 
     # Perform covariance analysis with all parameters
     for initial_state_index in initial_state_indices:
         UDP.initial_state_index = initial_state_index
-        for simulation_duration in simulation_durations:
-            UDP.simulation_duration = simulation_duration
-            for arc_duration in arc_durations:
-                UDP.arc_duration = arc_duration
-                for kaula_constraint_multiplier in kaula_constraint_multipliers:
-                    UDP.kaula_constraint_multiplier = kaula_constraint_multiplier
-                    for a_priori_empirical_accelerations_current in a_priori_empirical_accelerations:
-                        UDP.a_priori_empirical_accelerations = a_priori_empirical_accelerations_current
-                        for a_priori_lander_position_current in a_priori_lander_position:
-                            UDP.a_priori_lander_position = a_priori_lander_position_current
+        for arc_duration in arc_durations:
+            UDP.arc_duration = arc_duration
+            for kaula_constraint_multiplier in kaula_constraint_multipliers:
+                UDP.kaula_constraint_multiplier = kaula_constraint_multiplier
 
-                            # Create output path for results of current problem configuration
-                            output_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
-                            os.makedirs(output_path, exist_ok=True)
+                # Create output path for results of current problem configuration
+                output_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
+                os.makedirs(output_path, exist_ok=True)
 
-                            # Perform covariance analysis
-                            UDP.save_problem_configuration(output_path)
-                            UDP.perform_covariance_analysis(output_path)
+                # Perform covariance analysis
+                UDP.save_problem_configuration(output_path)
+                UDP.perform_covariance_analysis(output_path)
 
-                            # Update configuration index
-                            configuration_index += 1
+                # Update configuration index
+                configuration_index += 1
 
 
 
@@ -279,6 +269,8 @@ def single_case_analysis(time_stamp,
     UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
     UDP.use_station_position_consider_parameter_flag = True
 
+    UDP.estimate_h2_love_number_flag = True
+
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
     UDP.perform_covariance_analysis(output_path)
@@ -293,14 +285,14 @@ def main():
     save_covariance_results_flag = True
 
     # Analyse every combination of parameters of interest
-    perform_full_parameters_spectrum_analysis_flag = False
+    perform_full_parameters_spectrum_analysis_flag = True
     if perform_full_parameters_spectrum_analysis_flag:
-        full_parameters_spectrum_analysis(time_stamp,
-                                          save_simulation_results_flag,
-                                          save_covariance_results_flag)
+        tuning_parameter_refinement_analysis(time_stamp,
+                                             save_simulation_results_flag,
+                                             save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = True
+    perform_tuning_parameters_analysis_flag = False
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
