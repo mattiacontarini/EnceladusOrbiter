@@ -1173,19 +1173,13 @@ class CovarianceAnalysis:
             np.savetxt(max_estimatable_degree_gravity_field_filename, [max_estimatable_degree_gravity_field])
 
             # Plot nominal correlations
-            PlottingUtil.plot_correlations(correlations,
+            PlottingUtil.plot_correlations(correlations_to_use,
                                            plots_output_path,
                                            "correlations.svg")
 
-            PlottingUtil.plot_correlations(correlations,
+            PlottingUtil.plot_correlations(correlations_to_use,
                                            plots_output_path,
                                            "correlations.pdf")
-
-            # Plot correlations with consider parameters
-            if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
-                PlottingUtil.plot_correlations(correlations_with_consider_parameters,
-                                               plots_output_path,
-                                               "correlations_with_consider_parameters.pdf")
 
             # Plot formal errors
             PlottingUtil.plot_formal_errors(formal_errors_to_use,
@@ -1195,13 +1189,13 @@ class CovarianceAnalysis:
             # Plot formal error of SH gravity coefficients and a priori constraint
             fig = plt.figure()
             ax = fig.add_subplot()
-            ax.plot(degrees, formal_error_cosine_coef_per_deg, label="Formal error", color="blue")
+            ax.plot(degrees, formal_error_cosine_coef_per_deg, label="RMS of formal error", color="blue")
             ax.plot(degrees, a_priori_constraints_cosine_coef_per_deg, label="A priori constraint", color="orange")
-            ax.set_xlabel("Per degree RMS of cosine coefficients  [-]")
+            ax.set_xlabel("Degree  [-]")
             ax.set_ylabel(r"$\sigma$  [-]")
             ax.set_yscale("log")
             ax.grid(True)
-            ax.set_title("Formal error zonal cosine coefficients")
+            ax.set_title("RMS of formal error of SH gravity cosine coefficients per degree")
             ax.legend(loc="lower right")
             file_output_path = os.path.join(plots_output_path, "rms_formal_error_cosine_coefficients.pdf")
             plt.savefig(file_output_path)
