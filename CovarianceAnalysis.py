@@ -16,8 +16,7 @@ import datetime
 import os
 import numpy as np
 
-def tuning_parameter_refinement_analysis(time_stamp,
-                                         save_simulation_results_flag,
+def tuning_parameter_refinement_analysis(save_simulation_results_flag,
                                          save_covariance_results_flag):
 
     # Load SPICE kernels for simulation
@@ -34,7 +33,6 @@ def tuning_parameter_refinement_analysis(time_stamp,
 
     # Set output path
     output_directory = "./output/covariance_analysis/tuning_parameters_refinement_analysis"
-    output_directory = os.path.join(output_directory, time_stamp)
     os.makedirs(output_directory, exist_ok=True)
 
     # Initialize covariance analysis object
@@ -47,41 +45,34 @@ def tuning_parameter_refinement_analysis(time_stamp,
     # Set flag for estimating the radial displacement Love number
     UDP.estimate_h2_love_number_flag = True
 
-    # Set initial states to consider
-    initial_state_indices = [1, 2, 3]
+    # Set configuration index
+    configuration_index = 0
 
-    # Set list of simulation durations to consider
+    # Set tuning parameters to consider
+    initial_state_indices = [1, 2, 3]
+    initial_state_index = initial_state_indices[0]
+    UDP.initial_state_index = initial_state_index
+
     simulation_duration = 90.0 * constants.JULIAN_DAY
     UDP.simulation_duration = simulation_duration
 
-    # Set list of arc durations to consider
     arc_durations = [1.0 * constants.JULIAN_DAY,
                      2.0 * constants.JULIAN_DAY,
                      7.0 * constants.JULIAN_DAY]
+    arc_duration = arc_durations[0]
+    UDP.arc_duration = arc_duration
 
-    # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
+    kaula_constraint_multiplier = kaula_constraint_multipliers[0]
+    UDP.kaula_constraint_multiplier = kaula_constraint_multiplier
 
-    configuration_index = 0
+    # Create output path for results of current problem configuration
+    output_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
+    os.makedirs(output_path, exist_ok=True)
 
-    # Perform covariance analysis with all parameters
-    for initial_state_index in initial_state_indices:
-        UDP.initial_state_index = initial_state_index
-        for arc_duration in arc_durations:
-            UDP.arc_duration = arc_duration
-            for kaula_constraint_multiplier in kaula_constraint_multipliers:
-                UDP.kaula_constraint_multiplier = kaula_constraint_multiplier
-
-                # Create output path for results of current problem configuration
-                output_path = os.path.join(output_directory, f"configuration_no_{configuration_index}")
-                os.makedirs(output_path, exist_ok=True)
-
-                # Perform covariance analysis
-                UDP.save_problem_configuration(output_path)
-                UDP.perform_covariance_analysis(output_path)
-
-                # Update configuration index
-                configuration_index += 1
+    # Perform covariance analysis
+    UDP.save_problem_configuration(output_path)
+    UDP.perform_covariance_analysis(output_path)
 
 
 
