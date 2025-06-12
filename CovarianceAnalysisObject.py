@@ -38,6 +38,9 @@ class CovarianceAnalysis:
                  initial_state_index: int,
                  save_simulation_results_flag: bool,
                  save_covariance_results_flag: bool,
+                 save_correlation_matrix_flag: bool,
+                 save_design_matrix_flag: bool,
+                 save_inv_apriori_matrix_flag: bool,
                  simulation_duration: float,
                  arc_duration: float,
                  tracking_arc_duration: float,
@@ -60,6 +63,9 @@ class CovarianceAnalysis:
         self.initial_state_index = initial_state_index
         self.save_simulation_results_flag = save_simulation_results_flag
         self.save_covariance_results_flag = save_covariance_results_flag
+        self.save_correlation_matrix_flag = save_correlation_matrix_flag
+        self.save_design_matrix_flag = save_design_matrix_flag
+        self.save_inv_apriori_matrix_flag = save_inv_apriori_matrix_flag
         self.simulation_duration = simulation_duration
         self.arc_duration = arc_duration
         self.tracking_arc_duration = tracking_arc_duration
@@ -84,6 +90,9 @@ class CovarianceAnalysis:
         initial_state_index = CovAnalysisConfig.initial_state_index
         save_simulation_results_flag = False
         save_covariance_results_flag = False
+        save_correlation_matrix_flag = False
+        save_design_matrix_flag = False
+        save_inv_apriori_matrix_flag = False
         simulation_duration = CovAnalysisConfig.simulation_duration
         arc_duration = CovAnalysisConfig.arc_duration
         tracking_arc_duration = CovAnalysisConfig.tracking_arc_duration
@@ -105,6 +114,9 @@ class CovarianceAnalysis:
         return cls(initial_state_index,
                    save_simulation_results_flag,
                    save_covariance_results_flag,
+                   save_correlation_matrix_flag,
+                   save_design_matrix_flag,
+                   save_inv_apriori_matrix_flag,
                    simulation_duration,
                    arc_duration,
                    tracking_arc_duration,
@@ -966,22 +978,30 @@ class CovarianceAnalysis:
                 normalized_covariance_to_use = normalized_covariance_with_consider_parameters_extended
                 correlations_to_use = correlations_with_consider_parameters_extended
                 formal_errors_to_use = formal_errors_with_consider_parameters_extended
+                partials_to_use = partials_extended
+                inv_apriori_to_use = inv_apriori_extended
             else:
                 covariance_to_use = covariance_with_consider_parameters
                 normalized_covariance_to_use = normalized_covariance_with_consider_parameters
                 correlations_to_use = correlations_with_consider_parameters
                 formal_errors_to_use = formal_errors_with_consider_parameters
+                partials_to_use = partials_extended
+                inv_apriori_to_use = inv_apriori_extended
         else:
             if self.estimate_h2_love_number_flag:
                 covariance_to_use = covariance_extended
                 normalized_covariance_to_use = normalized_covariance_extended
                 correlations_to_use = correlations_extended
                 formal_errors_to_use = formal_errors_extended
+                partials_to_use = partials
+                inv_apriori_to_use = inv_apriori
             else:
                 covariance_to_use = covariance
                 normalized_covariance_to_use = normalized_covariance
                 correlations_to_use = correlations
                 formal_errors_to_use = formal_errors
+                partials_to_use = partials
+                inv_apriori_to_use = inv_apriori
 
         # Rotate formal errors of initial state components to RSW frame
         formal_error_initial_position_rsw = np.zeros((nb_arcs, 3))
@@ -1111,10 +1131,10 @@ class CovarianceAnalysis:
             nb_landers = len(lander_to_include)
             indices_lander_position = [indices_lander_position_first_lander[0], 3 * nb_landers]
 
-            nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials,
+            nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
                                                                                       "lander",
                                                                                       indices_lander_position)
-            nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials,
+            nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
                                                                                               "ground_station",
                                                                                               indices_lander_position)
             nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
@@ -1132,8 +1152,9 @@ class CovarianceAnalysis:
             np.savetxt(covariance_filename, covariance)
 
             # Save correlation matrix
-            correlations_filename = os.path.join(covariance_results_output_path, "correlations_matrix.dat")
-            np.savetxt(correlations_filename, correlations_to_use)
+            if self.save_correlation_matrix_flag:
+                correlations_filename = os.path.join(covariance_results_output_path, "correlations_matrix.dat")
+                np.savetxt(correlations_filename, correlations_to_use)
 
             # Save formal errors
             formal_errors_filename = os.path.join(covariance_results_output_path, "formal_errors.dat")
@@ -1144,13 +1165,15 @@ class CovarianceAnalysis:
             # np.savetxt(propagated_formal_errors_filename, propagated_formal_errors)
 
             # Save design matrix
-            partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
-            np.savetxt(partials_filename, partials)
+            if self.save_design_matrix_flag:
+                partials_filename = os.path.join(covariance_results_output_path, "partials_matrix.dat")
+                np.savetxt(partials_filename, partials_to_use)
 
             # Save inverse a priori constraints matrix
-            inv_apriori_constraints_filename = os.path.join(covariance_results_output_path,
+            if self.save_inv_apriori_matrix_flag:
+                inv_apriori_constraints_filename = os.path.join(covariance_results_output_path,
                                                             "inv_a_priori_constraints.dat")
-            np.savetxt(inv_apriori_constraints_filename, inv_apriori)
+                np.savetxt(inv_apriori_constraints_filename, inv_apriori_to_use)
 
             # Save a priori constraints
             apriori_constraints_filename = os.path.join(covariance_results_output_path, "a_priori_constraints.dat")
