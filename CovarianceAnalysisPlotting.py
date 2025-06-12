@@ -452,6 +452,42 @@ def summarise_tuning_parameters_analysis(input_path,
     nb_parameters_of_interest = len(parameters_of_interest.keys())
     configurations = np.arange(1, configurations_counter + 1, 1, dtype=int)
 
+    RA_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="RA"
+    )
+
+    DE_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="DE"
+    )
+
+    real_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="Re()"
+    )
+
+    imaginary_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="Im()"
+    )
+
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
         ax = fig.add_subplot(1, 1, 1)
@@ -464,6 +500,10 @@ def summarise_tuning_parameters_analysis(input_path,
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
             #ax.scatter(parameters_of_interest[parameter_key], configurations_list)
+        if parameter_key == "formal_error_pole_position":
+            ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
+        elif parameter_key == "formal_error_love_number":
+            ax.legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
         ax.set_xlabel("Configuration  [-]", fontsize=fontsize)
         ax.set_ylabel(parameters_of_interest_axis_labels[parameter_key], fontsize=fontsize)
         ax.tick_params(axis="x", labelsize=10, rotation=90)
@@ -472,6 +512,7 @@ def summarise_tuning_parameters_analysis(input_path,
         fig.tight_layout()
         if parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_love_number":
             ax.set_yscale("log")
+        fig.tight_layout()
         fig.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
         plt.close(fig)
 
