@@ -335,7 +335,7 @@ def plot_tuning_parameters_analysis(input_path,
 
 
 def summarise_tuning_parameters_analysis(input_path,
-                                              fontsize=12):
+                                        fontsize=12):
 
     # Set initial states to consider
     initial_state_indices = [1, 2, 3]
@@ -399,6 +399,7 @@ def summarise_tuning_parameters_analysis(input_path,
     }
 
     configurations_list = []
+    configurations_lander_position_list = []
     configurations_counter = 0
 
     parameters_of_interest = dict(
@@ -406,12 +407,16 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_love_number = [],
         formal_error_libration_amplitude = [],
         formal_error_pole_position = [],
+        formal_error_pole_rate = [],
+        rms_formal_error_lander_position = []
     )
     parameters_of_interest_axis_labels = dict(
         max_estimatable_degree_gravity_field="Max. degree gravity field  [-]",
         formal_error_love_number = r"$\sigma$ $k_2$ Love number  [-]",
         formal_error_libration_amplitude = r"$\sigma$ libration amplitude  [deg]",
         formal_error_pole_position = r"$\sigma$ pole position  [deg]",
+        formal_error_pole_rate = r"$\sigma$ pole rate  [deg s$^{-1}$]",
+        rms_formal_error_lander_position = "RMS formal error lander position  [m]",
     )
 
     for lander_index in range(len(lander_to_include)):
@@ -440,17 +445,63 @@ def summarise_tuning_parameters_analysis(input_path,
                 formal_error_pole_position = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_pole_position.dat")
                 )
+                formal_error_pole_rate = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_pole_rate.dat")
+                )
+                indices_estimation_parameters = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "indices_estimation_parameters.dat")
+                )
+
+                # Retrieve formal error of lander position
+                if lander_index != 0:
+                    formal_errors = np.loadtxt(
+                        os.path.join(input_path_covariance_results, "formal_errors.dat")
+                    )
+
+                    formal_error_lander_position = []
+
+                    for k in range(indices_estimation_parameters.shape[0]):
+                        if indices_estimation_parameters[k, 1] == 3.0:
+                            index_start_lander_position = int(indices_estimation_parameters[k, 0])
+                            break
+
+                    length_lander_position = 3
+                    if lander_index == 1:
+                        nb_landers = 1
+                    elif lander_index == 2:
+                        nb_landers = 2
+                    elif lander_index == 3:
+                        nb_landers = 9
+
+                    for l in range(nb_landers):
+                        formal_error_lander_position.append(
+                            list(formal_errors[index_start_lander_position + length_lander_position * l:
+                                               index_start_lander_position + length_lander_position * l + length_lander_position]))
+
+                    rms_position = np.zeros((3,))
+                    for l in range(nb_landers):
+                        rms_position[0] += formal_error_lander_position[l][0] ** 2
+                        rms_position[1] += formal_error_lander_position[l][1] ** 2
+                        rms_position[2] += formal_error_lander_position[l][2] ** 2
+                    rms_position[0] = np.sqrt(rms_position[0] / nb_landers)
+                    rms_position[1] = np.sqrt(rms_position[1] / nb_landers)
+                    rms_position[2] = np.sqrt(rms_position[2] / nb_landers)
+
+                    parameters_of_interest["rms_formal_error_lander_position"].append(rms_position)
+                    configurations_lander_position_list.append(
+                        f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
+
 
                 parameters_of_interest["max_estimatable_degree_gravity_field"].append(max_estimatable_degree_gravity_field)
                 parameters_of_interest["formal_error_love_number"].append(formal_error_love_number)
                 parameters_of_interest["formal_error_libration_amplitude"].append(np.rad2deg(formal_error_libration_amplitude))
                 parameters_of_interest["formal_error_pole_position"].append(np.rad2deg(formal_error_pole_position))
+                parameters_of_interest["formal_error_pole_rate"].append(np.rad2deg(formal_error_pole_rate))
 
                 configurations_list.append(f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
                 configurations_counter += 1
 
     nb_parameters_of_interest = len(parameters_of_interest.keys())
-    configurations = np.arange(1, configurations_counter + 1, 1, dtype=int)
 
     RA_handle = mlines.Line2D(
         [],
@@ -488,19 +539,175 @@ def summarise_tuning_parameters_analysis(input_path,
         label="Im()"
     )
 
+    position_x_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="x"
+    )
+
+    position_y_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="y"
+    )
+
+    position_z_handle = mlines.Line2D(
+        [],
+        [],
+        color="green",
+        marker="o",
+        linestyle="None",
+        label="z"
+    )
+
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
         ax = fig.add_subplot(1, 1, 1)
         parameter_key = list(parameters_of_interest.keys())[i]
-        if parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position":
+        if parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
             for j in range(len(configurations_list)):
                 ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][0], color="blue")
                 ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][1], color="red")
-                #ax.scatter(parameters_of_interest[parameter_key][i][0], configurations_list[i])
+
+        elif parameter_key == "rms_formal_error_lander_position":
+            for j in range(len(configurations_lander_position_list)):
+                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][0],
+                           color="blue")
+                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][1],
+                           color="red")
+                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][2],
+                           color="green")
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
-            #ax.scatter(parameters_of_interest[parameter_key], configurations_list)
-        if parameter_key == "formal_error_pole_position":
+
+        if parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
+            ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
+        elif parameter_key == "formal_error_love_number":
+            ax.legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
+        elif parameter_key == "rms_formal_error_lander_position":
+            ax.legend(handles=[position_x_handle, position_y_handle, position_z_handle], fontsize=fontsize)
+        ax.set_xlabel("Configuration  [-]", fontsize=fontsize)
+        ax.set_ylabel(parameters_of_interest_axis_labels[parameter_key], fontsize=fontsize)
+        ax.tick_params(axis="x", labelsize=10, rotation=90)
+        ax.tick_params(axis="y", labelsize=fontsize)
+        ax.grid(True, which="both")
+        fig.tight_layout()
+        if (parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or
+                parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_rate" or
+                 parameter_key == "rms_formal_error_lander_position"):
+            ax.set_yscale("log")
+        fig.tight_layout()
+        fig.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
+        plt.close(fig)
+
+
+def plot_tuning_parameters_refinement_analysis(input_path,
+                                               no_configurations,
+                                               fontsize=12):
+
+    parameters_of_interest = dict(
+        max_estimatable_degree_gravity_field= [],
+        formal_error_love_number = [],
+        formal_error_libration_amplitude = [],
+        formal_error_pole_position = [],
+        formal_error_pole_rate = [],
+        rms_formal_error_degree_2 = []
+    )
+    parameters_of_interest_axis_labels = dict(
+        max_estimatable_degree_gravity_field="Max. degree gravity field  [-]",
+        formal_error_love_number = r"$\sigma$ $k_2$ Love number  [-]",
+        formal_error_libration_amplitude = r"$\sigma$ libration amplitude  [deg]",
+        formal_error_pole_position = r"$\sigma$ pole position  [deg]",
+        formal_error_pole_rate = r"$\sigma$ pole rate  [deg s$^{-1}$]",
+        rms_formal_error_degree_2 = "RMS formal error degree 2 SH gravity  [-]",
+    )
+
+    for i in range(no_configurations):
+        input_path_configuration = os.path.join(input_path, f"configuration_no_{i}")
+        input_path_covariance_results = os.path.join(input_path_configuration, "covariance_results")
+
+        # Load results
+        max_estimatable_degree_gravity_field = np.loadtxt(
+            os.path.join(input_path_covariance_results, "max_estimatable_degree_gravity_field.dat")
+        )
+        formal_error_love_number = np.loadtxt(
+            os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
+        )
+        formal_error_libration_amplitude = np.loadtxt(
+            os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
+        )
+        formal_error_pole_position = np.loadtxt(
+            os.path.join(input_path_covariance_results, "formal_error_pole_position.dat")
+        )
+        formal_error_pole_rate = np.loadtxt(
+            os.path.join(input_path_covariance_results, "formal_error_pole_rate.dat")
+        )
+        rms_formal_error_degree_2 = np.loadtxt(
+            os.path.join(input_path_covariance_results, "rms_formal_error_degree_2.dat")
+        )
+
+        parameters_of_interest["max_estimatable_degree_gravity_field"].append(max_estimatable_degree_gravity_field)
+        parameters_of_interest["formal_error_love_number"].append(formal_error_love_number)
+        parameters_of_interest["formal_error_libration_amplitude"].append(formal_error_libration_amplitude)
+        parameters_of_interest["formal_error_pole_position"].append(formal_error_pole_position)
+        parameters_of_interest["formal_error_pole_rate"].append(formal_error_pole_rate)
+        parameters_of_interest["rms_formal_error_degree_2"].append(rms_formal_error_degree_2)
+
+    RA_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="RA"
+    )
+
+    DE_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="DE"
+    )
+
+    real_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="Re()"
+    )
+
+    imaginary_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="Im()"
+    )
+
+    nb_parameters_of_interest = len(parameters_of_interest.keys())
+
+    for i in range(nb_parameters_of_interest):
+        fig = plt.figure(figsize=(18, 6))
+        ax = fig.add_subplot(1, 1, 1)
+        parameter_key = list(parameters_of_interest.keys())[i]
+        if parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
+            for j in range(no_configurations):
+                ax.scatter(j, parameters_of_interest[parameter_key][j][0], color="blue")
+                ax.scatter(j, parameters_of_interest[parameter_key][j][1], color="red")
+        else:
+            ax.scatter(np.arange(0, no_configurations, 1), parameters_of_interest[parameter_key], color="black")
+        if parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
             ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
         elif parameter_key == "formal_error_love_number":
             ax.legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
@@ -510,7 +717,8 @@ def summarise_tuning_parameters_analysis(input_path,
         ax.tick_params(axis="y", labelsize=fontsize)
         ax.grid(True, which="both")
         fig.tight_layout()
-        if parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_love_number":
+        if (parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or
+                parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_rate"):
             ax.set_yscale("log")
         fig.tight_layout()
         fig.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
@@ -525,17 +733,24 @@ def main():
     # Analyse parameters of interest varying one at a time
     plot_tuning_parameters_analysis_flag = False
     if plot_tuning_parameters_analysis_flag:
-        input_directory = "output/covariance_analysis/tuning_parameters_analysis"
+        input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.02.09.40.15"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
     summarise_tuning_parameters_analysis_flag = True
     if summarise_tuning_parameters_analysis_flag:
-        input_directory = "output/covariance_analysis/tuning_parameters_analysis"
+        input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.02.09.40.15"
         input_path = os.path.join(input_directory, time_stamp_folder)
-        summarise_tuning_parameters_analysis(input_path)
+        summarise_tuning_parameters_analysis(input_path, 14)
+
+    plot_tuning_parameters_refinement_analysis_flag = False
+    if plot_tuning_parameters_refinement_analysis_flag:
+        input_directory = "./output/covariance_analysis/tuning_parameters_refinement_analysis"
+        no_configurations = 36
+        plot_tuning_parameters_refinement_analysis(input_directory,
+                                                   no_configurations)
 
 
 if __name__ == "__main__":
