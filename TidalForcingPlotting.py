@@ -271,7 +271,8 @@ def main():
     if perform_tidal_correction_verification_flag:
         output_directory_correction = os.path.join(output_directory, "2025.05.28.11.45.48/tidal_forcing_correction")
         perform_tidal_correction_verification_plotting(output_directory_correction,
-                                                       [(2, 0), (2, 1), (2, 2)])
+                                                       [(2, 0), (2, 1), (2, 2)],
+                                                       14)
 
 
 if __name__ == "__main__":
