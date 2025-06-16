@@ -388,13 +388,21 @@ class CovarianceAnalysis:
             link_ends_per_station[observation.reflector1] = observation.body_origin_link_end_id("Vehicle")
             link_ends.append(link_ends_per_station)
 
-        # Define tracking arcs
-        tracking_arcs_start = []
-        tracking_arcs_end = []
+        # Define tracking arcs for Earth ground stations
+        tracking_arcs_start_Earth_GS = []
+        tracking_arcs_end_Earth_GS = []
         for arc_start in arc_start_times:
-            tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_stat_of_propagation
-            tracking_arcs_start.append(tracking_arc_start)
-            tracking_arcs_end.append(tracking_arc_start + self.tracking_arc_duration)
+            tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_start_of_propagation_Earth_GS
+            tracking_arcs_start_Earth_GS.append(tracking_arc_start)
+            tracking_arcs_end_Earth_GS.append(tracking_arc_start + self.tracking_arc_duration)
+
+        # Define tracking arcs for surface landers
+        tracking_arcs_start_Enceladus_lander = []
+        tracking_arcs_end_Enceladus_lander = []
+        for arc_start in arc_start_times:
+            tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_start_of_propagation_Enceladus_lander
+            tracking_arcs_start_Enceladus_lander.append(tracking_arc_start)
+            tracking_arcs_end_Enceladus_lander.append(tracking_arc_start + self.tracking_arc_duration)
 
         # Create observation settings for each link ends and observable
         # Define light-time calculations settings
@@ -403,7 +411,8 @@ class CovarianceAnalysis:
         biases = []
         for i in range(nb_arcs):
             biases.append(np.array([CovAnalysisConfig.range_bias]))
-        range_bias_settings = observation.arcwise_absolute_bias(tracking_arcs_start, biases, observation.receiver)
+        range_bias_settings_Earth_GS = observation.arcwise_absolute_bias(tracking_arcs_start_Earth_GS, biases, observation.receiver)
+        range_bias_settings_Enceladus_lander = observation.arcwise_absolute_bias(tracking_arcs_start_Enceladus_lander, biases, observation.receiver)
 
         # Define observation settings list
         observation_settings_list = []
@@ -412,7 +421,7 @@ class CovarianceAnalysis:
             link_definition = observation.LinkDefinition(link_end)
             range_observation = observation.two_way_range(link_definition,
                                                           [light_time_correction_settings],
-                                                          range_bias_settings)
+                                                          range_bias_settings_Earth_GS,)
             doppler_observation = observation.two_way_doppler_averaged(link_definition,
                                                                        [light_time_correction_settings])
             observation_settings_list.append(doppler_observation)
@@ -430,30 +439,51 @@ class CovarianceAnalysis:
                 range_observation = observation.two_way_range(
                     link_definition,
                     [light_time_correction_settings],
-                    range_bias_settings
+                    range_bias_settings_Enceladus_lander
                 )
                 observation_settings_list.append(range_observation)
 
-        observation_times_doppler = []
-        observation_times_range = []
-
+        # Set observation times for Earth GS
+        observation_times_doppler_Earth_GS = []
+        observation_times_range_Earth_GS = []
         for i in range(nb_arcs):
 
             # Doppler observables
-            t = tracking_arcs_start[i]
-            while t <= tracking_arcs_end[i]:
-                observation_times_doppler.append(t)
+            t = tracking_arcs_start_Earth_GS[i]
+            while t <= tracking_arcs_end_Earth_GS[i]:
+                observation_times_doppler_Earth_GS.append(t)
                 t += CovAnalysisConfig.doppler_cadence
 
             # Range observables
-            t = tracking_arcs_start[i]
-            while t <= tracking_arcs_end[i]:
-                observation_times_range.append(t)
+            t = tracking_arcs_start_Earth_GS[i]
+            while t <= tracking_arcs_end_Earth_GS[i]:
+                observation_times_range_Earth_GS.append(t)
                 t += CovAnalysisConfig.range_cadence
 
-        observation_times_per_type = dict()
-        observation_times_per_type[observation.n_way_averaged_doppler_type] = observation_times_doppler
-        observation_times_per_type[observation.n_way_range_type] = observation_times_range
+        observation_times_per_type_Earth_GS = dict()
+        observation_times_per_type_Earth_GS[observation.n_way_averaged_doppler_type] = observation_times_doppler_Earth_GS
+        observation_times_per_type_Earth_GS[observation.n_way_range_type] = observation_times_range_Earth_GS
+
+        # Set observation times for Enceladus landers
+        observation_times_doppler_Enceladus_lander = []
+        observation_times_range_Enceladus_lander = []
+        for i in range(nb_arcs):
+
+            # Doppler observables
+            t = tracking_arcs_start_Enceladus_lander[i]
+            while t <= tracking_arcs_end_Enceladus_lander[i]:
+                observation_times_doppler_Enceladus_lander.append(t)
+                t += CovAnalysisConfig.doppler_cadence
+
+            # Range observables
+            t = tracking_arcs_start_Enceladus_lander[i]
+            while t <= tracking_arcs_end_Enceladus_lander[i]:
+                observation_times_range_Enceladus_lander.append(t)
+                t += CovAnalysisConfig.range_cadence
+
+        observation_times_per_type_Enceladus_lander = dict()
+        observation_times_per_type_Enceladus_lander[observation.n_way_averaged_doppler_type] = observation_times_doppler_Enceladus_lander
+        observation_times_per_type_Enceladus_lander[observation.n_way_range_type] = observation_times_range_Enceladus_lander
 
         # Define observation settings for both observables, and all link ends (i.e., all ground stations)
         observation_simulation_settings = []
@@ -463,13 +493,13 @@ class CovarianceAnalysis:
             observation_simulation_settings.append(observation.tabulated_simulation_settings(
                 observation.n_way_averaged_doppler_type,
                 observation.LinkDefinition(link_end),
-                observation_times_per_type[observation.n_way_averaged_doppler_type]
+                observation_times_per_type_Earth_GS[observation.n_way_averaged_doppler_type]
             ))
             # Range observables
             observation_simulation_settings.append(observation.tabulated_simulation_settings(
                 observation.n_way_range_type,
                 observation.LinkDefinition(link_end),
-                observation_times_per_type[observation.n_way_range_type]
+                observation_times_per_type_Earth_GS[observation.n_way_range_type]
             ))
         for i in range(len(ground_station_names), len(ground_station_names) + len(self.lander_to_include)):
             link_end = link_ends[i]
@@ -477,14 +507,14 @@ class CovarianceAnalysis:
             observation_simulation_settings.append(observation.tabulated_simulation_settings(
                 observation.n_way_averaged_doppler_type,
                 observation.LinkDefinition(link_end),
-                observation_times_per_type[observation.n_way_averaged_doppler_type]
+                observation_times_per_type_Enceladus_lander[observation.n_way_averaged_doppler_type]
             ))
             if self.include_lander_range_observable_flag:
                 # Range observables
                 observation_simulation_settings.append(observation.tabulated_simulation_settings(
                     observation.n_way_range_type,
                     observation.LinkDefinition(link_end),
-                    observation_times_per_type[observation.n_way_range_type]
+                    observation_times_per_type_Enceladus_lander[observation.n_way_range_type]
                 ))
 
         # Create viability settings which define when an observation is feasible
@@ -689,16 +719,17 @@ class CovarianceAnalysis:
         # Apply Kaula's constraint to Enceladus' gravity field
         inv_apriori = CovUtil.apply_kaula_constraint_a_priori(self.kaula_constraint_multiplier,
                                                               CovAnalysisConfig.maximum_degree_gravity_enceladus,
+                                                              CovAnalysisConfig.minimum_degree_c_enceladus,
                                                               indices_cosine_coef,
                                                               indices_sine_coef,
                                                               inv_apriori)
         # Overwrite Kaula's rule with existing uncertainties
-        inv_apriori[indices_cosine_coef[0], indices_cosine_coef[0]] = CovAnalysisConfig.a_priori_c20 ** -2
-        inv_apriori[indices_cosine_coef[0] + 1, indices_cosine_coef[0] + 1] = CovAnalysisConfig.a_priori_c21 ** -2
-        inv_apriori[indices_cosine_coef[0] + 2, indices_cosine_coef[0] + 2] = CovAnalysisConfig.a_priori_c22 ** -2
-        inv_apriori[indices_cosine_coef[0] + 3, indices_cosine_coef[0] + 3] = CovAnalysisConfig.a_priori_c30 ** -2
-        inv_apriori[indices_sine_coef[0], indices_sine_coef[0]] = CovAnalysisConfig.a_priori_s21 ** -2
-        inv_apriori[indices_sine_coef[0] + 1, indices_sine_coef[0] + 1] = CovAnalysisConfig.a_priori_s22 ** -2
+        inv_apriori[indices_cosine_coef[0] + 2, indices_cosine_coef[0] + 2] = CovAnalysisConfig.a_priori_c20 ** -2
+        inv_apriori[indices_cosine_coef[0] + 3, indices_cosine_coef[0] + 3] = CovAnalysisConfig.a_priori_c21 ** -2
+        inv_apriori[indices_cosine_coef[0] + 4, indices_cosine_coef[0] + 4] = CovAnalysisConfig.a_priori_c22 ** -2
+        inv_apriori[indices_cosine_coef[0] + 5, indices_cosine_coef[0] + 5] = CovAnalysisConfig.a_priori_c30 ** -2
+        inv_apriori[indices_sine_coef[0] + 1, indices_sine_coef[0] + 1] = CovAnalysisConfig.a_priori_s21 ** -2
+        inv_apriori[indices_sine_coef[0] + 2, indices_sine_coef[0] + 2] = CovAnalysisConfig.a_priori_s22 ** -2
 
         # Set a priori constraint for empirical accelerations
         indices_empirical_acceleration_components = parameters_to_estimate.indices_for_parameter_type(
