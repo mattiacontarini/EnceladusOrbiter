@@ -27,7 +27,7 @@ import os
 import matplotlib.pyplot as plt
 import statistics
 import matplotlib.lines as mlines
-
+import time
 #######################################################################################################################
 ### Class definition ##################################################################################################
 #######################################################################################################################
@@ -43,7 +43,8 @@ class CovarianceAnalysis:
                  save_inv_apriori_matrix_flag: bool,
                  simulation_duration: float,
                  arc_duration: float,
-                 tracking_arc_duration: float,
+                 tracking_arc_duration_Earth_GS: float,
+                 tracking_arc_duration_Enceladus_lander: float,
                  kaula_constraint_multiplier: float,
                  a_priori_empirical_accelerations: float,
                  a_priori_lander_position: float,
@@ -68,7 +69,8 @@ class CovarianceAnalysis:
         self.save_inv_apriori_matrix_flag = save_inv_apriori_matrix_flag
         self.simulation_duration = simulation_duration
         self.arc_duration = arc_duration
-        self.tracking_arc_duration = tracking_arc_duration
+        self.tracking_arc_duration_Earth_GS = tracking_arc_duration_Earth_GS
+        self.tracking_arc_duration_Enceladus_lander = tracking_arc_duration_Enceladus_lander
         self.empirical_accelerations_arc_duration = empirical_accelerations_arc_duration
         self.kaula_constraint_multiplier = kaula_constraint_multiplier
         self.a_priori_empirical_accelerations = a_priori_empirical_accelerations
@@ -95,7 +97,8 @@ class CovarianceAnalysis:
         save_inv_apriori_matrix_flag = False
         simulation_duration = CovAnalysisConfig.simulation_duration
         arc_duration = CovAnalysisConfig.arc_duration
-        tracking_arc_duration = CovAnalysisConfig.tracking_arc_duration
+        tracking_arc_duration_Earth_gs = CovAnalysisConfig.tracking_arc_duration_Earth_GS
+        tracking_arc_duration_Enceladus_lander = CovAnalysisConfig.tracking_arc_duration_Enceladus_lander
         kaula_constraint_multiplier = CovAnalysisConfig.kaula_constraint_multiplier
         a_priori_empirical_accelerations = CovAnalysisConfig.a_priori_empirical_accelerations
         a_priori_lander_position = CovAnalysisConfig.a_priori_lander_position
@@ -119,7 +122,8 @@ class CovarianceAnalysis:
                    save_inv_apriori_matrix_flag,
                    simulation_duration,
                    arc_duration,
-                   tracking_arc_duration,
+                   tracking_arc_duration_Earth_gs,
+                   tracking_arc_duration_Enceladus_lander,
                    kaula_constraint_multiplier,
                    a_priori_empirical_accelerations,
                    a_priori_lander_position,
@@ -149,7 +153,8 @@ class CovarianceAnalysis:
             "initial_state_index [-]": self.initial_state_index,
             "simulation_duration [days]": self.simulation_duration / constants.JULIAN_DAY,
             "arc_duration [days]": self.arc_duration / constants.JULIAN_DAY,
-            "tracking_arc_duration [hours]": self.tracking_arc_duration / 3600.0,
+            "tracking_arc_duration_Earth_GS [hours]": self.tracking_arc_duration_Earth_GS / 3600.0,
+            "tracking_arc_duration_Enceladus_lander [hours]": self.tracking_arc_duration_Enceladus_lander / 3600.0,
             "empirical_accelerations_arc_duration [hours]": self.empirical_accelerations_arc_duration / 3600.0,
             "kaula_constraint_multiplier [-]": self.kaula_constraint_multiplier,
             r"a_priori_empirical_accelerations [m s$^{-2}$]": self.a_priori_empirical_accelerations,
@@ -391,28 +396,37 @@ class CovarianceAnalysis:
         # Define tracking arcs for Earth ground stations
         tracking_arcs_start_Earth_GS = []
         tracking_arcs_end_Earth_GS = []
-        for arc_start in arc_start_times:
+        arc_start = CovAnalysisConfig.simulation_start_epoch
+        while arc_start + constants.JULIAN_DAY + self.tracking_arc_duration_Earth_GS <= simulation_end_epoch:
             tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_start_of_propagation_Earth_GS
             tracking_arcs_start_Earth_GS.append(tracking_arc_start)
-            tracking_arcs_end_Earth_GS.append(tracking_arc_start + self.tracking_arc_duration)
+            tracking_arcs_end_Earth_GS.append(tracking_arc_start + self.tracking_arc_duration_Earth_GS)
+            arc_start = arc_start + constants.JULIAN_DAY
 
         # Define tracking arcs for surface landers
         tracking_arcs_start_Enceladus_lander = []
         tracking_arcs_end_Enceladus_lander = []
-        for arc_start in arc_start_times:
+        arc_start = CovAnalysisConfig.simulation_start_epoch
+        while arc_start + constants.JULIAN_DAY + self.tracking_arc_duration_Enceladus_lander <= simulation_end_epoch:
             tracking_arc_start = arc_start + CovAnalysisConfig.tracking_delay_after_start_of_propagation_Enceladus_lander
             tracking_arcs_start_Enceladus_lander.append(tracking_arc_start)
-            tracking_arcs_end_Enceladus_lander.append(tracking_arc_start + self.tracking_arc_duration)
+            tracking_arcs_end_Enceladus_lander.append(tracking_arc_start + self.tracking_arc_duration_Enceladus_lander)
+            arc_start = arc_start + constants.JULIAN_DAY
 
         # Create observation settings for each link ends and observable
         # Define light-time calculations settings
         light_time_correction_settings = observation.first_order_relativistic_light_time_correction(["Sun"])
+
         # Define range biases settings
-        biases = []
-        for i in range(nb_arcs):
-            biases.append(np.array([CovAnalysisConfig.range_bias]))
-        range_bias_settings_Earth_GS = observation.arcwise_absolute_bias(tracking_arcs_start_Earth_GS, biases, observation.receiver)
-        range_bias_settings_Enceladus_lander = observation.arcwise_absolute_bias(tracking_arcs_start_Enceladus_lander, biases, observation.receiver)
+        biases_Earth_GS = []
+        for i in range(len(tracking_arcs_start_Earth_GS)):
+            biases_Earth_GS.append(np.array([CovAnalysisConfig.range_bias_Earth_GS]))
+        range_bias_settings_Earth_GS = observation.arcwise_absolute_bias(tracking_arcs_start_Earth_GS, biases_Earth_GS, observation.receiver)
+        # Define range biases settings
+        biases_Enceladus_lander = []
+        for i in range(len(tracking_arcs_start_Enceladus_lander)):
+            biases_Enceladus_lander.append(np.array([CovAnalysisConfig.range_bias_Enceladus_lander]))
+        range_bias_settings_Enceladus_lander = observation.arcwise_absolute_bias(tracking_arcs_start_Enceladus_lander, biases_Enceladus_lander, observation.receiver)
 
         # Define observation settings list
         observation_settings_list = []
@@ -446,17 +460,17 @@ class CovarianceAnalysis:
         # Set observation times for Earth GS
         observation_times_doppler_Earth_GS = []
         observation_times_range_Earth_GS = []
-        for i in range(nb_arcs):
+        for i in range(len(tracking_arcs_start_Earth_GS)):
 
             # Doppler observables
             t = tracking_arcs_start_Earth_GS[i]
-            while t <= tracking_arcs_end_Earth_GS[i]:
+            while t + CovAnalysisConfig.doppler_cadence <= tracking_arcs_end_Earth_GS[i]:
                 observation_times_doppler_Earth_GS.append(t)
                 t += CovAnalysisConfig.doppler_cadence
 
             # Range observables
             t = tracking_arcs_start_Earth_GS[i]
-            while t <= tracking_arcs_end_Earth_GS[i]:
+            while t + CovAnalysisConfig.range_cadence <= tracking_arcs_end_Earth_GS[i]:
                 observation_times_range_Earth_GS.append(t)
                 t += CovAnalysisConfig.range_cadence
 
@@ -467,17 +481,17 @@ class CovarianceAnalysis:
         # Set observation times for Enceladus landers
         observation_times_doppler_Enceladus_lander = []
         observation_times_range_Enceladus_lander = []
-        for i in range(nb_arcs):
+        for i in range(len(tracking_arcs_start_Enceladus_lander)):
 
             # Doppler observables
             t = tracking_arcs_start_Enceladus_lander[i]
-            while t <= tracking_arcs_end_Enceladus_lander[i]:
+            while t + CovAnalysisConfig.doppler_cadence <= tracking_arcs_end_Enceladus_lander[i]:
                 observation_times_doppler_Enceladus_lander.append(t)
                 t += CovAnalysisConfig.doppler_cadence
 
             # Range observables
             t = tracking_arcs_start_Enceladus_lander[i]
-            while t <= tracking_arcs_end_Enceladus_lander[i]:
+            while t + CovAnalysisConfig.range_cadence <= tracking_arcs_end_Enceladus_lander[i]:
                 observation_times_range_Enceladus_lander.append(t)
                 t += CovAnalysisConfig.range_cadence
 
@@ -633,7 +647,7 @@ class CovarianceAnalysis:
             for link_end in link_ends:
                 consider_parameter_settings.append(
                     numerical_simulation.estimation_setup.parameter.arcwise_absolute_observation_bias(
-                        observation.LinkDefinition(link_end), observation.n_way_range_type, tracking_arcs_start, observation.receiver
+                        observation.LinkDefinition(link_end), observation.n_way_range_type, tracking_arcs_start_Earth_GS, observation.receiver
                     )
                 )
         if self.use_station_position_consider_parameter_flag:
@@ -946,6 +960,9 @@ class CovarianceAnalysis:
             for i in range(nb_parameters):
                 for j in range(nb_parameters):
                     correlations_with_consider_parameters[i, j] /= formal_errors_with_consider_parameters[i] * formal_errors_with_consider_parameters[j]
+
+        # print("Pausing the simulation ...")
+        # time.sleep(3)
 
         # Add h2 Love number to parameters to estimate and retrieve covariance matrix
         if self.estimate_h2_love_number_flag:
