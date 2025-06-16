@@ -62,7 +62,7 @@ def tuning_parameter_refinement_analysis(save_simulation_results_flag,
     arc_duration = arc_durations[0]
     UDP.arc_duration = arc_duration
 
-    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
+    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3, 4e-4]
     kaula_constraint_multiplier = kaula_constraint_multipliers[0]
     UDP.kaula_constraint_multiplier = kaula_constraint_multiplier
 
@@ -111,7 +111,7 @@ def perform_tuning_parameters_analysis(time_stamp,
                      7.0 * constants.JULIAN_DAY]
 
     # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
-    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
+    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
     a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
@@ -130,8 +130,8 @@ def perform_tuning_parameters_analysis(time_stamp,
 
     # Set list of number of landers to include in the simulation
     lander_to_include = [ [ ],
-                          ["L1"],
-                          ["L1", "L2"],
+                          ["L3"],
+                          ["L1", "L3"],
                           ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
     # Set list of values for the a priori constraint on the rotation pole position
@@ -276,14 +276,13 @@ def main():
     save_covariance_results_flag = True
 
     # Analyse every combination of parameters of interest
-    perform_full_parameters_spectrum_analysis_flag = True
+    perform_full_parameters_spectrum_analysis_flag = False
     if perform_full_parameters_spectrum_analysis_flag:
-        tuning_parameter_refinement_analysis(time_stamp,
-                                             save_simulation_results_flag,
+        tuning_parameter_refinement_analysis(save_simulation_results_flag,
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = False
+    perform_tuning_parameters_analysis_flag = True
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
