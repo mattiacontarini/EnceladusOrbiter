@@ -478,7 +478,7 @@ def summarise_tuning_parameters_analysis(input_path,
                             list(formal_errors[index_start_lander_position + length_lander_position * l:
                                                index_start_lander_position + length_lander_position * l + length_lander_position]))
 
-                    rms_position = np.zeros((3,))
+                    rms_position = np.zeros((4,))
                     for l in range(nb_landers):
                         rms_position[0] += formal_error_lander_position[l][0] ** 2
                         rms_position[1] += formal_error_lander_position[l][1] ** 2
@@ -486,6 +486,7 @@ def summarise_tuning_parameters_analysis(input_path,
                     rms_position[0] = np.sqrt(rms_position[0] / nb_landers)
                     rms_position[1] = np.sqrt(rms_position[1] / nb_landers)
                     rms_position[2] = np.sqrt(rms_position[2] / nb_landers)
+                    rms_position[3] = np.mean(rms_position[:3])
 
                     parameters_of_interest["rms_formal_error_lander_position"].append(rms_position)
                     configurations_lander_position_list.append(
@@ -566,6 +567,15 @@ def summarise_tuning_parameters_analysis(input_path,
         label="z"
     )
 
+    position_average_handle = mlines.Line2D(
+        [],
+        [],
+        color="black",
+        marker="o",
+        linestyle="None",
+        label="Average"
+    )
+
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
         ax = fig.add_subplot(1, 1, 1)
@@ -583,15 +593,30 @@ def summarise_tuning_parameters_analysis(input_path,
                            color="red")
                 ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][2],
                            color="green")
+                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][3],
+                           color="black")
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
+
+        if parameter_key == "formal_error_love_number":
+            ax.set_ylim(bottom=1e-5, top=2e-2)
+        elif parameter_key == "formal_error_pole_position":
+            ax.set_ylim(bottom=1e-7, top=1e0)
+        elif parameter_key == "formal_error_pole_rate":
+            ax.set_ylim(bottom=1e-13, top=1e-7)
+        elif parameter_key == "rms_formal_error_lander_position":
+            ax.set_ylim(bottom=1e-3, top=1e2)
+        elif parameter_key == "formal_error_libration_amplitude":
+            ax.set_ylim(bottom=1e-7, top=1e-2)
+        elif parameter_key == "max_estimatable_degree_gravity_field":
+            ax.set_ylim(bottom=6)
 
         if parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
             ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
         elif parameter_key == "formal_error_love_number":
             ax.legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
         elif parameter_key == "rms_formal_error_lander_position":
-            ax.legend(handles=[position_x_handle, position_y_handle, position_z_handle], fontsize=fontsize)
+            ax.legend(handles=[position_x_handle, position_y_handle, position_z_handle, position_average_handle], fontsize=fontsize)
         ax.set_xlabel("Configuration  [-]", fontsize=fontsize)
         ax.set_ylabel(parameters_of_interest_axis_labels[parameter_key], fontsize=fontsize)
         ax.tick_params(axis="x", labelsize=10, rotation=90)
