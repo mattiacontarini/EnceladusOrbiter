@@ -121,8 +121,10 @@ lander_coordinates_type = {lander_names[0]: element_conversion.geodetic_position
                            lander_names[8]: element_conversion.geodetic_position_type}
 
 # Tracking arcs properties
-tracking_arc_duration = 8.0 * 3600.0
-tracking_delay_after_stat_of_propagation = 2.0 * 3600.0
+tracking_arc_duration_Earth_GS = 8.0 * 3600.0
+tracking_arc_duration_Enceladus_lander = 8.0 * 3600.0
+tracking_delay_after_start_of_propagation_Earth_GS = 2.0 * 3600.0
+tracking_delay_after_start_of_propagation_Enceladus_lander = 0.0
 
 # Length of the arc over which the empirical accelerations are estimated
 empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
@@ -134,12 +136,12 @@ range_cadence = 300.0
 range_bias = 2.0
 
 # Minimum D/O for spherical harmonic cosine coefficients of Enceladus
-minimum_degree_c_enceladus = 2
+minimum_degree_c_enceladus = 1
 minimum_order_c_enceladus  = 0
 maximum_degree_gravity_enceladus = 30
 
 # Minimum D/O for spherical harmonic sine coefficients of Enceladus
-minimum_degree_s_enceladus = 2
+minimum_degree_s_enceladus = 1
 minimum_order_s_enceladus  = 1
 
 # A priori constraints on the arc-wise initial state of the vehicle
