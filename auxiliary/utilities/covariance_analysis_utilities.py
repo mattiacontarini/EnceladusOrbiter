@@ -174,3 +174,15 @@ def get_correlation_matrix(covariance_matrix, formal_errors):
             correlation_matrix[i, j] = covariance_matrix[i, j] / (formal_errors[i] * formal_errors[j])
 
     return correlation_matrix
+
+
+def get_number_of_observations_per_station_type(doppler_obs_time_list, station_labels):
+
+    nb_observation_times = dict()
+    for i in range(len(doppler_obs_time_list)):
+        doppler_obs_time = doppler_obs_time_list[i]
+        nb_observation_times[station_labels[i]] = len(doppler_obs_time)
+
+    return nb_observation_times
+
+
