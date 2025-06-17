@@ -41,7 +41,7 @@ class CovarianceAnalysis:
                  save_correlation_matrix_flag: bool,
                  save_design_matrix_flag: bool,
                  save_inv_apriori_matrix_flag: bool,
-                 save_visibility_of_vehicle_flag: bool,
+                 save_obs_times_of_vehicle_flag: bool,
                  simulation_duration: float,
                  arc_duration: float,
                  tracking_arc_duration_Earth_GS: float,
@@ -68,7 +68,7 @@ class CovarianceAnalysis:
         self.save_correlation_matrix_flag = save_correlation_matrix_flag
         self.save_design_matrix_flag = save_design_matrix_flag
         self.save_inv_apriori_matrix_flag = save_inv_apriori_matrix_flag
-        self.save_visibility_of_vehicle_flag = save_visibility_of_vehicle_flag
+        self.save_obs_times_of_vehicle_flag = save_obs_times_of_vehicle_flag
         self.simulation_duration = simulation_duration
         self.arc_duration = arc_duration
         self.tracking_arc_duration_Earth_GS = tracking_arc_duration_Earth_GS
@@ -97,7 +97,7 @@ class CovarianceAnalysis:
         save_correlation_matrix_flag = False
         save_design_matrix_flag = False
         save_inv_apriori_matrix_flag = False
-        save_visibility_of_vehicle_flag = False
+        save_obs_times_of_vehicle_flag = False
         simulation_duration = CovAnalysisConfig.simulation_duration
         arc_duration = CovAnalysisConfig.arc_duration
         tracking_arc_duration_Earth_gs = CovAnalysisConfig.tracking_arc_duration_Earth_GS
@@ -123,7 +123,7 @@ class CovarianceAnalysis:
                    save_correlation_matrix_flag,
                    save_design_matrix_flag,
                    save_inv_apriori_matrix_flag,
-                   save_visibility_of_vehicle_flag,
+                   save_obs_times_of_vehicle_flag,
                    simulation_duration,
                    arc_duration,
                    tracking_arc_duration_Earth_gs,
@@ -176,6 +176,7 @@ class CovarianceAnalysis:
             "estimate_h2_love_number_flag": self.estimate_h2_love_number_flag,
             "save_simulation_results_flag": self.save_simulation_results_flag,
             "save_covariance_results_flag": self.save_covariance_results_flag,
+            "save_obs_times_of_vehicle_flag": self.save_obs_times_of_vehicle_flag
         }
 
         save2txt(problem_configuration, "problem_configuration.txt", output_directory)
@@ -1200,8 +1201,7 @@ class CovarianceAnalysis:
         doppler_obs_times_GS = []
         for i in range(len(CovAnalysisConfig.ground_station_names)):
             doppler_obs_times_GS.append([(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
-                                             sorted_observations[observation.n_way_averaged_doppler_type][i +
-                                                len(CovAnalysisConfig.ground_station_names)][0].observation_times])
+                                             sorted_observations[observation.n_way_averaged_doppler_type][i][0].observation_times])
             nb_observations_per_GS = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_GS,
                                                                                          CovAnalysisConfig.ground_station_names)
         if self.lander_to_include != []:
@@ -1427,39 +1427,28 @@ class CovarianceAnalysis:
             nb_observations_ratio_filename = os.path.join(covariance_results_output_path, "nb_observations_ratio.dat")
             np.savetxt(nb_observations_ratio_filename, [nb_observations_ratio])
 
+            # Save number of observations per station
+            save2txt(nb_observations_per_GS, "nb_observations_per_GS.txt", covariance_results_output_path)
+            if self.lander_to_include != [ ]:
+                save2txt(nb_observations_per_lander, "nb_observations_per_lander.txt", covariance_results_output_path)
+
             # Save indices of estimation parameters
             indices_estimation_parameters_filename = os.path.join(covariance_results_output_path, "indices_estimation_parameters.dat")
             np.savetxt(indices_estimation_parameters_filename, indices_estimation_parameters)
 
             print("Covariance results saved.")
 
-        if self.save_visibility_of_vehicle_flag:
+        if self.save_obs_times_of_vehicle_flag:
 
             # Plot Earth observation times for the entire mission
-            doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
-                                                      sorted_observations[observation.n_way_averaged_doppler_type][0][
-                                                          0].observation_times]
-            doppler_obs_times_newnorcia_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
-                                                      sorted_observations[observation.n_way_averaged_doppler_type][1][
-                                                          0].observation_times]
-            doppler_obs_times_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
-                                                     sorted_observations[observation.n_way_averaged_doppler_type][2][
-                                                         0].observation_times]
             PlottingUtil.plot_observation_times("entire mission",
                                                 plots_output_path,
                                                 "observation_times_Earth_GS_entire_mission.pdf",
-                                                [doppler_obs_times_malargue_current_arc,
-                                                 doppler_obs_times_newnorcia_current_arc,
-                                                 doppler_obs_times_cebreros_current_arc],
+                                                doppler_obs_times_GS,
                                                 ['New Norcia', 'Cebreros', 'Malargue'])
 
             # Plot lander observation times for the entire mission
             if self.lander_to_include != [ ]:
-                doppler_obs_times_lander = []
-                for i in range(len(self.lander_to_include)):
-                    doppler_obs_times_lander.append([(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
-                                                      sorted_observations[observation.n_way_averaged_doppler_type][i +
-                                                        len(CovAnalysisConfig.ground_station_names)][0].observation_times])
                 PlottingUtil.plot_observation_times("entire mission",
                                                     plots_output_path,
                                                     "observation_times_Enceladus_lander_entire_mission.pdf",
@@ -1510,38 +1499,6 @@ class CovarianceAnalysis:
                                                f"ground_track_arc_{i}.pdf",
                                                f"Arc {i}",
                                                "red")
-
-                # Retrieve Doppler observation times for the current arc
-                sorted_observations = simulated_observations.sorted_observation_sets
-                doppler_obs_times_malargue_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t
-                                                          in
-                                                          sorted_observations[observation.n_way_averaged_doppler_type][
-                                                              0][
-                                                              0].observation_times if
-                                                          arc_start_times[i] <= t <= arc_start_times[i] +
-                                                          self.arc_duration]
-                doppler_obs_time_newnorcia_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t
-                                                          in
-                                                          sorted_observations[observation.n_way_averaged_doppler_type][
-                                                              1][
-                                                              0].observation_times if
-                                                          arc_start_times[i] <= t <= arc_start_times[i] +
-                                                          self.arc_duration]
-                doppler_obs_time_cebreros_current_arc = [(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t
-                                                         in
-                                                         sorted_observations[observation.n_way_averaged_doppler_type][
-                                                             2][
-                                                             0].observation_times if
-                                                         arc_start_times[i] <= t <= arc_start_times[i] +
-                                                         self.arc_duration]
-
-                # Plot observation times
-                PlottingUtil.plot_observation_times(f"Arc {i}",
-                                                    plots_output_path,
-                                                    f"observation_times_arc_{i}.pdf",
-                                                    doppler_obs_times_malargue_current_arc=doppler_obs_times_malargue_current_arc,
-                                                    doppler_obs_times_new_norcia_current_arc=doppler_obs_time_newnorcia_current_arc,
-                                                    doppler_obs_times_cebreros_current_arc=doppler_obs_time_cebreros_current_arc)
 
                 print("Simulation results saved.")
 
