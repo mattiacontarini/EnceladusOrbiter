@@ -122,9 +122,9 @@ lander_coordinates_type = {lander_names[0]: element_conversion.geodetic_position
 
 # Tracking arcs properties
 tracking_arc_duration_Earth_GS = 8.0 * 3600.0
-tracking_arc_duration_Enceladus_lander = 8.0 * 3600.0
+tracking_arc_duration_Enceladus_lander = constants.JULIAN_DAY
 tracking_delay_after_start_of_propagation_Earth_GS = 2.0 * 3600.0
-tracking_delay_after_start_of_propagation_Enceladus_lander = 0.0
+tracking_delay_after_start_of_propagation_Enceladus_lander = 60
 
 # Length of the arc over which the empirical accelerations are estimated
 empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
@@ -133,7 +133,9 @@ empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
 doppler_cadence = 60
 range_cadence = 300.0
 
-range_bias = 2.0
+# Set bias for range observations
+range_bias_Earth_GS = 2.0
+range_bias_Enceladus_lander = 2.0
 
 # Minimum D/O for spherical harmonic cosine coefficients of Enceladus
 minimum_degree_c_enceladus = 1
