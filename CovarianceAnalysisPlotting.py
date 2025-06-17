@@ -750,6 +750,84 @@ def plot_tuning_parameters_refinement_analysis(input_path,
         plt.close(fig)
 
 
+def plot_lander_location_analysis(input_path, fontsize):
+
+    # Load latitudes and longitudes range
+    latitudes_range = np.rad2deg(np.loadtxt(os.path.join(input_path, "latitudes_range.txt")))
+    longitudes_range = np.rad2deg(np.loadtxt(os.path.join(input_path, "longitudes_range.txt")))
+
+    # Prepare storage of results
+    max_estimatable_degree_gravity_field_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    formal_error_love_number_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    formal_error_libration_amplitude_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    formal_error_pole_RA_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    formal_error_pole_DE_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    rms_formal_error_degree_2_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+
+    parameters_of_interest_store = dict()
+    parameters_of_interest_store_labels = dict(
+        max_estimatable_degree_gravity_field="Max estimatable gravity degree",
+        formal_error_love_number="Formal error love number",
+        formal_error_libration_amplitude="Formal error libration amplitude",
+        formal_error_pole_RA="Formal error pole RA",
+        formal_error_pole_DE="Formal error pole DE",
+        rms_formal_error_degree_2="RMS formal error gravity degree 2",
+    )
+
+    for i in range(len(latitudes_range)):
+        latitude_case_path = os.path.join(input_path, f"latitude_case_{i}")
+        for j in range(len(longitudes_range)):
+            longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{i}")
+
+            # Load results
+            max_estimatable_degree_gravity_field = np.loadtxt(
+                os.path.join(longitude_case_path, "max_estimatable_degree_gravity_field.dat")
+            )
+            formal_error_love_number = np.loadtxt(
+                os.path.join(longitude_case_path, "formal_error_love_number.dat")
+            )
+            formal_error_libration_amplitude = np.loadtxt(
+                os.path.join(longitude_case_path, "formal_error_libration_amplitude.dat")
+            )
+            formal_error_pole_position = np.loadtxt(
+                os.path.join(longitude_case_path, "formal_error_pole_position.dat")
+            )
+            rms_formal_error_degree_2 = np.loadtxt(
+                os.path.join(longitude_case_path, "rms_formal_error_degree_2.dat")
+            )
+
+            max_estimatable_degree_gravity_field_store[i, j] = max_estimatable_degree_gravity_field
+            formal_error_love_number_store[i, j] = np.sqrt(formal_error_love_number[0] ** 2 + formal_error_love_number[1] ** 2)
+            formal_error_libration_amplitude_store[i, j] = formal_error_libration_amplitude
+            formal_error_pole_RA_store[i, j] = formal_error_pole_position[0]
+            formal_error_pole_DE_store[i, j] = formal_error_pole_position[1]
+            rms_formal_error_degree_2_store[i, j] = rms_formal_error_degree_2
+
+    parameters_of_interest_store["max_estimatable_degree_gravity_field"]=(max_estimatable_degree_gravity_field_store)
+    parameters_of_interest_store["formal_error_love_number"]=formal_error_love_number_store
+    parameters_of_interest_store["formal_error_libration_amplitude"]=formal_error_libration_amplitude_store
+    parameters_of_interest_store["formal_error_pole_RA"]=formal_error_pole_RA_store
+    parameters_of_interest_store["formal_error_pole_DE"]=formal_error_pole_DE_store
+    parameters_of_interest_store["rms_formal_error_degree_2"]=rms_formal_error_degree_2_store
+
+    # Plot figures of merit
+    parameters_keys = list(parameters_of_interest_store.keys())
+    for i in range(len(parameters_keys)):
+        parameter_key = parameters_keys[i]
+
+        plt.imshow(parameters_of_interest_store[parameter_key], aspect='auto', interpolation='none')
+        plt.colorbar()
+        plt.xticks(latitudes_range, latitudes_range, fontsize=fontsize)
+        plt.yticks(longitudes_range, longitudes_range, fontsize=fontsize)
+        plt.xlabel("Latitude  [deg]", fontsize=fontsize)
+        plt.ylabel("Longitude  [deg]", fontsize=fontsize)
+        plt.title(parameters_of_interest_store_labels[parameter_key], fontsize=fontsize)
+        plt.tight_layout()
+        plt.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
+        plt.close()
+
+
+
 #######################################################################################################################
 ### Generate figures of merit #########################################################################################
 #######################################################################################################################
