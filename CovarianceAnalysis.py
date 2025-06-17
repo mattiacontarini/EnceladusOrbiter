@@ -6,6 +6,7 @@ from tudatpy.data import save2txt
 
 from CovarianceAnalysisObject import CovarianceAnalysis
 from auxiliary.utilities import plotting_utilities as PlotUtil
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 
 # Tudat import
 from tudatpy.kernel.interface import spice
@@ -194,6 +195,10 @@ def perform_tuning_parameters_analysis(time_stamp,
                 # Set landers to include in the simulation
                 UDP.lander_to_include = lander
 
+                # Estimate h2 Love number
+                if lander != [ ]:
+                    UDP.estimate_h2_love_number_flag = True
+
                 output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
                 os.makedirs(output_path, exist_ok=True)
                 if parameter_key == "initial_state_index":
@@ -229,6 +234,53 @@ def perform_tuning_parameters_analysis(time_stamp,
                 UDP.perform_covariance_analysis(output_path)
 
 
+def perform_lander_location_analysis(time_stamp,
+                                     save_simulation_results_flag,
+                                     save_covariance_results_flag):
+
+    # Load SPICE kernels for simulation
+    spice.load_standard_kernels()
+    kernels_to_load = [
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
+    ]
+    spice.load_standard_kernels(kernels_to_load)
+
+    # Set output path
+    output_folder = "./output/covariance_analysis/lander_location_analysis"
+    output_path = os.path.join(output_folder, time_stamp)
+    os.makedirs(output_path, exist_ok=True)
+
+    lander_to_include = CovAnalysisConfig.lander_names[0]
+    latitudes_range = np.deg2rad(np.arange(-90, 90, 15))
+    longitudes_range = np.deg2rad(np.arange(0, 360, 45))
+    for i in range(len(latitudes_range)):
+        latitude_case_path = os.path.join(output_path, f"latitude_case_{i}")
+        os.makedirs(latitude_case_path, exist_ok=True)
+        for j in range(len(longitudes_range)):
+
+            print(f"Analysing coordinates {0.0, np.rad2deg(latitudes_range[i]), np.rad2deg(longitudes_range[j])}")
+
+            longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{i}")
+            os.makedirs(longitude_case_path, exist_ok=True)
+
+            # Setup problem
+            UDP = CovarianceAnalysis.from_config()
+            UDP.lander_to_include = [lander_to_include]
+            UDP.lander_coordinates[lander_to_include[0]] = [0.0, latitudes_range[i], longitudes_range[j]]
+            UDP.estimate_h2_love_number_flag = True
+            UDP.save_simulation_results_flag = save_simulation_results_flag
+            UDP.save_covariance_results_flag = save_covariance_results_flag
+
+            # Run covariance analysis
+            UDP.save_problem_configuration(longitude_case_path)
+            UDP.perform_covariance_analysis(longitude_case_path)
+
+
 def single_case_analysis(time_stamp,
                          save_simulation_results_flag,
                          save_covariance_results_flag):
@@ -255,12 +307,13 @@ def single_case_analysis(time_stamp,
     # Set flag for saving results
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
+    UDP.save_obs_times_of_vehicle_flag = True
 
     UDP.include_lander_range_observable_flag = False
     UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
     UDP.use_station_position_consider_parameter_flag = True
 
-    UDP.estimate_h2_love_number_flag = True
+    # UDP.estimate_h2_love_number_flag = True
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
@@ -282,7 +335,7 @@ def main():
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = True
+    perform_tuning_parameters_analysis_flag = False
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
@@ -294,6 +347,13 @@ def main():
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
                              save_covariance_results_flag)
+
+    # Study the effect of changing the location of the landers
+    perform_landers_location_analysis_flag = True
+    if perform_landers_location_analysis_flag:
+        perform_lander_location_analysis(time_stamp,
+                                         save_simulation_results_flag,
+                                         save_covariance_results_flag)
 
     # Plot the distribution of the landers
     plot_lander_distribution_flag = False
