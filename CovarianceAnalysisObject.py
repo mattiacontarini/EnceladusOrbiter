@@ -1033,16 +1033,16 @@ class CovarianceAnalysis:
                 normalized_covariance_to_use = normalized_covariance_with_consider_parameters
                 correlations_to_use = correlations_with_consider_parameters
                 formal_errors_to_use = formal_errors_with_consider_parameters
-                partials_to_use = partials_extended
-                inv_apriori_to_use = inv_apriori_extended
+                partials_to_use = partials
+                inv_apriori_to_use = inv_apriori
         else:
             if self.estimate_h2_love_number_flag:
                 covariance_to_use = covariance_extended
                 normalized_covariance_to_use = normalized_covariance_extended
                 correlations_to_use = correlations_extended
                 formal_errors_to_use = formal_errors_extended
-                partials_to_use = partials
-                inv_apriori_to_use = inv_apriori
+                partials_to_use = partials_extended
+                inv_apriori_to_use = inv_apriori_extended
             else:
                 covariance_to_use = covariance
                 normalized_covariance_to_use = normalized_covariance
