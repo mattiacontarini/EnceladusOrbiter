@@ -55,6 +55,7 @@ class CovarianceAnalysis:
                  a_priori_rotation_pole_rate: list[float],
                  a_priori_radiation_pressure_coefficient: float,
                  lander_to_include: list[str],
+                 lander_coordinates: dict,
                  include_lander_range_observable_flag: bool,
                  use_range_bias_consider_parameter_flag: bool,
                  use_station_position_consider_parameter_flag: bool,
@@ -83,6 +84,7 @@ class CovarianceAnalysis:
         self.a_priori_rotation_pole_rate = a_priori_rotation_pole_rate
         self.a_priori_radiation_pressure_coefficient = a_priori_radiation_pressure_coefficient
         self.lander_to_include = lander_to_include
+        self.lander_coordinates = lander_coordinates
         self.include_lander_range_observable_flag = include_lander_range_observable_flag
         self.use_range_bias_consider_parameter_flag = use_range_bias_consider_parameter_flag
         self.use_station_position_consider_parameter_flag = use_station_position_consider_parameter_flag
@@ -111,6 +113,7 @@ class CovarianceAnalysis:
         a_priori_rotation_pole_rate = CovAnalysisConfig.a_priori_rotation_pole_rate
         a_priori_radiation_pressure_coefficient = CovAnalysisConfig.a_priori_radiation_pressure_coefficient
         lander_to_include = CovAnalysisConfig.lander_names
+        lander_coordinates = CovAnalysisConfig.lander_coordinates
         include_lander_range_observable_flag = False
         use_range_bias_consider_parameter_flag = False
         use_station_position_consider_parameter_flag = True
@@ -137,6 +140,7 @@ class CovarianceAnalysis:
                    a_priori_rotation_pole_rate,
                    a_priori_radiation_pressure_coefficient,
                    lander_to_include,
+                   lander_coordinates,
                    include_lander_range_observable_flag,
                    use_range_bias_consider_parameter_flag,
                    use_station_position_consider_parameter_flag,
@@ -370,7 +374,7 @@ class CovarianceAnalysis:
         for lander_name in lander_to_include:
             lander_settings = numerical_simulation.environment_setup.ground_station.basic_station(
                 lander_name,
-                CovAnalysisConfig.lander_coordinates[lander_name],
+                self.lander_coordinates[lander_name],
                 CovAnalysisConfig.lander_coordinates_type[lander_name]
             )
             numerical_simulation.environment_setup.add_ground_station(bodies.get_body("Enceladus"), lander_settings)
@@ -990,9 +994,9 @@ class CovarianceAnalysis:
 
             Enceladus_radius = spice.get_average_radius("Enceladus")
             station_state_spherical = np.zeros((6,))
-            station_state_spherical[0] = Enceladus_radius + CovAnalysisConfig.lander_coordinates[lander_to_include[0]][0]
-            station_state_spherical[1] = CovAnalysisConfig.lander_coordinates[lander_to_include[0]][1]
-            station_state_spherical[2] = CovAnalysisConfig.lander_coordinates[lander_to_include[0]][2]
+            station_state_spherical[0] = Enceladus_radius + self.lander_coordinates[lander_to_include[0]][0]
+            station_state_spherical[1] = self.lander_coordinates[lander_to_include[0]][1]
+            station_state_spherical[2] = self.lander_coordinates[lander_to_include[0]][2]
             station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
 
             sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
