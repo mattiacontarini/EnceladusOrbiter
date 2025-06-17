@@ -95,24 +95,18 @@ def plot_correlations(correlations,
 def plot_observation_times(arc_ID,
                            output_path,
                            filename,
-                           doppler_obs_times_new_norcia_current_arc=None,
-                           doppler_obs_times_cebreros_current_arc=None,
-                           doppler_obs_times_malargue_current_arc=None,
+                           doppler_obs_time_list,
+                           station_labels
                            ):
     plt.figure(figsize=(7.5, 6))
-    if doppler_obs_times_new_norcia_current_arc is not None:
-        plt.scatter(doppler_obs_times_new_norcia_current_arc, np.ones((len(doppler_obs_times_new_norcia_current_arc), 1)))
-    if doppler_obs_times_cebreros_current_arc is not None:
-        plt.scatter(doppler_obs_times_cebreros_current_arc,
-                 2.0 * np.ones((len(doppler_obs_times_cebreros_current_arc), 1)))
-    if doppler_obs_times_malargue_current_arc is not None:
-        plt.scatter(doppler_obs_times_malargue_current_arc,
-                 3.0 * np.ones((len(doppler_obs_times_malargue_current_arc), 1)))
+    for i in range(len(doppler_obs_time_list)):
+        doppler_obs_time = doppler_obs_time_list[i]
+        plt.scatter(doppler_obs_time, (i + 1) * np.ones((len(doppler_obs_time), 1)))
 
     plt.xlabel('Observation times [h]')
     plt.ylabel('')
-    plt.yticks([1, 2, 3], ['New Norcia', 'Cebreros', 'Malargue'])
-    plt.ylim([0.5, 3.5])
+    plt.yticks(np.arange(1, len(station_labels) + 1, 1), station_labels)
+    plt.ylim([0.5, len(doppler_obs_time_list) + 0.5])
     plt.title(f'Viable observations over {arc_ID}')
     plt.grid()
 
