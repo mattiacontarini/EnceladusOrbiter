@@ -256,17 +256,19 @@ def perform_lander_location_analysis(time_stamp,
     os.makedirs(output_path, exist_ok=True)
 
     lander_to_include = CovAnalysisConfig.lander_names[0]
-    latitudes_range = np.deg2rad(np.arange(-90, 90, 15))
-    longitudes_range = np.deg2rad(np.arange(0, 360, 45))
+    latitudes_range = np.deg2rad(np.arange(-90, 90 + 15, 15))
+    longitudes_range = np.deg2rad(np.arange(0, 360 + 45, 45))
+    np.savetxt(os.path.join(output_path, "latitudes_range.txt"), latitudes_range)
+    np.savetxt(os.path.join(output_path, "longitudes_range.txt"), longitudes_range)
+
     for i in range(len(latitudes_range)):
         latitude_case_path = os.path.join(output_path, f"latitude_case_{i}")
         os.makedirs(latitude_case_path, exist_ok=True)
         for j in range(len(longitudes_range)):
-
-            print(f"Analysing coordinates {0.0, np.rad2deg(latitudes_range[i]), np.rad2deg(longitudes_range[j])}")
-
             longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{i}")
             os.makedirs(longitude_case_path, exist_ok=True)
+
+            print(f"Analysing coordinates {0.0, np.rad2deg(latitudes_range[i]), np.rad2deg(longitudes_range[j])}")
 
             # Setup problem
             UDP = CovarianceAnalysis.from_config()
