@@ -273,7 +273,7 @@ def perform_lander_location_analysis(time_stamp,
             # Setup problem
             UDP = CovarianceAnalysis.from_config()
             UDP.lander_to_include = [lander_to_include]
-            UDP.lander_coordinates[lander_to_include[0]] = [0.0, latitudes_range[i], longitudes_range[j]]
+            UDP.lander_coordinates[UDP.lander_to_include[0]] = [0.0, latitudes_range[i], longitudes_range[j]]
             UDP.estimate_h2_love_number_flag = True
             UDP.save_simulation_results_flag = save_simulation_results_flag
             UDP.save_covariance_results_flag = save_covariance_results_flag
