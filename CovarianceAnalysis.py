@@ -76,7 +76,6 @@ def tuning_parameter_refinement_analysis(save_simulation_results_flag,
     UDP.perform_covariance_analysis(output_path)
 
 
-
 def perform_tuning_parameters_analysis(time_stamp,
                                        save_simulation_results_flag,
                                        save_covariance_results_flag):
@@ -265,7 +264,7 @@ def perform_lander_location_analysis(time_stamp,
         latitude_case_path = os.path.join(output_path, f"latitude_case_{i}")
         os.makedirs(latitude_case_path, exist_ok=True)
         for j in range(len(longitudes_range)):
-            longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{i}")
+            longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{j}")
             os.makedirs(longitude_case_path, exist_ok=True)
 
             print(f"Analysing coordinates {0.0, np.rad2deg(latitudes_range[i]), np.rad2deg(longitudes_range[j])}")
