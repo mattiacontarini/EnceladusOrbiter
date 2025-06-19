@@ -5,7 +5,6 @@
 # Files and variables import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
 from auxiliary import VehicleParameters as VehicleParam
-from auxiliary.CovarianceAnalysisConfig import a_priori_libration_amplitude
 from auxiliary.utilities import utilities as Util
 from auxiliary.utilities import plotting_utilities as PlottingUtil
 from auxiliary.utilities import environment_setup_utilities as EnvUtil
@@ -27,7 +26,7 @@ import os
 import matplotlib.pyplot as plt
 import statistics
 import matplotlib.lines as mlines
-import time
+
 #######################################################################################################################
 ### Class definition ##################################################################################################
 #######################################################################################################################
@@ -1184,6 +1183,9 @@ class CovarianceAnalysis:
                                                indices_pole_rate[0] + indices_pole_rate[1]]
 
         # Compute ratio of lander data to ground station data
+        nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
+                                                                                          "ground_station",
+                                                                                          indices_lander_position)
         if lander_to_include != []:
             indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
@@ -1194,12 +1196,11 @@ class CovarianceAnalysis:
             nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
                                                                                       "lander",
                                                                                       indices_lander_position)
-            nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
-                                                                                              "ground_station",
-                                                                                              indices_lander_position)
             nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
+            nb_observations_total = nb_ground_station_observations + nb_lander_observations
         else:
             nb_observations_ratio = 0.0
+            nb_observations_total = nb_ground_station_observations
 
         # Compute number of observation epochs per station
         doppler_obs_times_GS = []
@@ -1435,6 +1436,10 @@ class CovarianceAnalysis:
             save2txt(nb_observations_per_GS, "nb_observations_per_GS.txt", covariance_results_output_path)
             if self.lander_to_include != [ ]:
                 save2txt(nb_observations_per_lander, "nb_observations_per_lander.txt", covariance_results_output_path)
+
+            # Save total number of observations over the mission
+            nb_observations_total_filename = os.path.join(covariance_results_output_path, "nb_observations_total.dat")
+            np.savetxt(nb_observations_total_filename, [nb_observations_total])
 
             # Save indices of estimation parameters
             indices_estimation_parameters_filename = os.path.join(covariance_results_output_path, "indices_estimation_parameters.dat")
