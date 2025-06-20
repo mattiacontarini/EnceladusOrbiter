@@ -443,11 +443,19 @@ def perform_h2_partials_love_number(arc_start,
 
         drL_dh2_array = result2array(drL_dh2_store)
 
-        # Compute average position deformation
-        drL_dh2_average = [np.mean(drL_dh2_array[:, 1]), np.mean(drL_dh2_array[:, 2]), np.mean(drL_dh2_array[:, 3])]
+        # Compute average position deformation and save corrected data
+        drL_dh2_average = np.array([np.mean(drL_dh2_array[:, 1]), np.mean(drL_dh2_array[:, 2]), np.mean(drL_dh2_array[:, 3])])
+        drL_dh2_corrected_store = dict()
+        for epoch in epochs:
+            drL_dh2_corrected_store[epoch] = drL_dh2_store[epoch] - drL_dh2_average
 
-        save2txt(drL_dh2_store, f"drL_dh2_{station_name}_lander.dat", output_directory)
+        drL_dh2_corrected_array = result2array(drL_dh2_corrected_store)
+        drL_dh2_corrected_average = np.array([np.mean(drL_dh2_corrected_array[:, 1]), np.mean(drL_dh2_corrected_array[:, 2]), np.mean(drL_dh2_corrected_array[:, 3])])
+
+        save2txt(drL_dh2_store, f"drL_dh2_history_{station_name}_lander.dat", output_directory)
         np.savetxt(os.path.join(output_directory, f"drL_dh2_average_{station_name}_lander.dat"), drL_dh2_average)
+        save2txt(drL_dh2_corrected_store, f"drL_dh2_corrected_history_{station_name}_lander.dat", output_directory)
+        np.savetxt(os.path.join(output_directory, f"drL_dh2_corrected_average_{station_name}_lander.dat"), drL_dh2_corrected_average)
 
 
 def main():
