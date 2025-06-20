@@ -992,19 +992,23 @@ class CovarianceAnalysis:
             gravitational_parameter_ratio = bodies.get("Saturn").gravitational_parameter / bodies.get("Enceladus").gravitational_parameter
 
             Enceladus_radius = spice.get_average_radius("Enceladus")
+
+            station_name = self.lander_to_include[0]
             station_state_spherical = np.zeros((6,))
-            station_state_spherical[0] = Enceladus_radius + self.lander_coordinates[lander_to_include[0]][0]
-            station_state_spherical[1] = self.lander_coordinates[lander_to_include[0]][1]
-            station_state_spherical[2] = self.lander_coordinates[lander_to_include[0]][2]
+            station_state_spherical[0] = Enceladus_radius + self.lander_coordinates[station_name][0]
+            station_state_spherical[1] = self.lander_coordinates[station_name][1]
+            station_state_spherical[2] = self.lander_coordinates[station_name][2]
             station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
 
             sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
-            partials_extended = CovUtil.extend_design_matrix_to_h2_love_number(partials,
+            partials_extended, drL_dh2_dict, dh_dh2_dict = CovUtil.extend_design_matrix_to_h2_love_number(partials,
                                                                                indices_lander,
                                                                                gravitational_parameter_ratio,
                                                                                station_position_cartesian,
+                                                                               station_name,
                                                                                Enceladus_radius,
-                                                                               sorted_observation_epochs)
+                                                                               sorted_observation_epochs,
+                                                                               bodies)
             normalization_terms_extended = CovUtil.get_normalization_terms(partials_extended)
             normalized_partials_extended = CovUtil.normalize_design_matrix(partials_extended, normalization_terms_extended)
             normalized_inv_apriori_extended = CovUtil.normalize_inv_apriori_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
@@ -1407,6 +1411,9 @@ class CovarianceAnalysis:
                 formal_error_radial_love_number_filename = os.path.join(covariance_results_output_path,
                                                                         "formal_error_radial_love_number.dat")
                 np.savetxt(formal_error_radial_love_number_filename, formal_error_radial_love_number)
+
+                save2txt(drL_dh2_dict, "drL_dh2_partials.dat", covariance_results_output_path)
+                save2txt(dh_dh2_dict, "dh_dh2_partials.dat", covariance_results_output_path)
 
             # Save formal error of libration amplitude
             formal_error_libration_amplitude_filename = os.path.join(covariance_results_output_path,

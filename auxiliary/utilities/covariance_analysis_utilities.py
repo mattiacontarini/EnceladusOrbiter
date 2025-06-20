@@ -61,8 +61,10 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
                                            indices_lander_position,
                                            gravitational_parameter_ratio,
                                            station_position,
+                                           station_name,
                                            body_equatorial_radius,
-                                           sorted_observation_epochs):
+                                           sorted_observation_epochs,
+                                           bodies):
 
     nb_observations = design_matrix.shape[0]
     nb_parameters = design_matrix.shape[1]
@@ -73,22 +75,31 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
     station_position_unit_vector = station_position / np.linalg.norm(station_position)
     dh_drL = design_matrix[:, indices_lander_position[0]:indices_lander_position[0] + indices_lander_position[1]]
     dh_dh2 = np.zeros((nb_observations,))
+    drL_dh2_store = dict()
+    dh_dh2_store = dict()
     for i in range(nb_observations):
         epoch = sorted_observation_epochs[i]
-        relative_body_position = spice.get_body_cartesian_position_at_epoch("Saturn",
-                                                                            "Enceladus",
-                                                                            CovAnalysisConfig.global_frame_orientation,
-                                                                            "NONE",
-                                                                            epoch)
+
+        # Compute nominal station position displacement
+        saturn_position_cartesian = bodies.get("Saturn").state_in_base_frame_from_ephemeris(epoch)[:3]
+        enceladus_inertial_to_body_fixed_rotation_matrix = bodies.get("Enceladus").rotation_model.inertial_to_body_fixed_rotation(epoch)
+        relative_body_position_cartesian = np.dot(enceladus_inertial_to_body_fixed_rotation_matrix, saturn_position_cartesian)
         drL_dh2_i = astro.gravitation.calculate_degree_two_basic_tidal_displacement(gravitational_parameter_ratio,
                                                                                     station_position_unit_vector,
-                                                                                    relative_body_position,
+                                                                                    relative_body_position_cartesian,
                                                                                     body_equatorial_radius,
                                                                                     1.0,
                                                                                     0.0)
+
+        drL_dh2_average = CovAnalysisConfig.lander_average_position_deformation[station_name]
+        drL_dh2_i = np.abs(drL_dh2_i - drL_dh2_average)
         dh_dh2[i] = np.dot(dh_drL[i, :], drL_dh2_i)
+
+        drL_dh2_store[epoch] = drL_dh2_i
+        dh_dh2_store[epoch] = dh_dh2[i]
+    
     design_matrix_extended[:, nb_parameters_extended - 1] = dh_dh2
-    return design_matrix_extended
+    return design_matrix_extended, drL_dh2_store, dh_dh2_store
 
 
 def retrieve_sorted_observation_epochs(simulated_observations,):

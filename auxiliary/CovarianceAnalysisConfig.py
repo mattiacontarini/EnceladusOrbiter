@@ -120,6 +120,16 @@ lander_coordinates_type = {lander_names[0]: element_conversion.geodetic_position
                            lander_names[7]: element_conversion.geodetic_position_type,
                            lander_names[8]: element_conversion.geodetic_position_type}
 
+lander_average_position_deformation = {lander_names[0]: np.array([-9.848572379805604271e+01, 0.0, 1.705822774384282070e+02]),
+                                       lander_names[1]: np.array([1.673873517842470733e+02, 1.404546651459033058e+02, -1.261560389604755414e+02]),
+                                       lander_names[2]: np.array([-1.243935423964807541e+02, -7.054708354710057847e+02, -4.386402310038810715e-14]),
+                                       lander_names[3]: np.array([1.491986906371963642e+02, -2.584197126063751853e+02, -1.722798084042500477e+02]),
+                                       lander_names[4]: np.array([1.250113412623462636e+02, -4.550040716518835637e+01, -2.304221506045504668e+02]),
+                                       lander_names[5]: np.array([1.250164105311263825e+02, 4.550225222813376291e+01, 2.304314943313074195e+02]),
+                                       lander_names[6]: np.array([1.492174785312355993e+02, 2.584522541934179003e+02, 1.723015027956119241e+02]),
+                                       lander_names[7]: np.array([-1.243895780323826301e+02, 7.054483524449716469e+02, -4.386262517445873122e-14]),
+                                       lander_names[8]: np.array([1.674200255057187690e+02, -1.404820816535395522e+02, 1.261806644010183476e+02])}
+
 # Tracking arcs properties
 tracking_arc_duration_Earth_GS = 8.0 * 3600.0
 tracking_arc_duration_Enceladus_lander = constants.JULIAN_DAY
