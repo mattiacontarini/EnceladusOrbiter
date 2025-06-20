@@ -92,7 +92,7 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
                                                                                     0.0)
 
         drL_dh2_average = CovAnalysisConfig.lander_average_position_deformation[station_name]
-        drL_dh2_i = np.abs(drL_dh2_i - drL_dh2_average)
+        drL_dh2_i = drL_dh2_i - drL_dh2_average
         dh_dh2[i] = np.dot(dh_drL[i, :], drL_dh2_i)
 
         drL_dh2_store[epoch] = drL_dh2_i
