@@ -261,18 +261,17 @@ def perform_tidal_correction_verification_plotting(output_directory,
 def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
 
     # Load drL_dh2 partials
-    #fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(8, 12))
     for lander_name in CovAnalysisConfig.lander_names:
-        drL_dh2 = np.loadtxt(os.path.join(output_directory, f"drL_dh2_{lander_name}_lander.dat"))
-        drL_dh2_average = np.loadtxt(os.path.join(output_directory, f"drL_dh2_average_{lander_name}_lander.dat"))
+        drL_dh2_corrected = np.loadtxt(os.path.join(output_directory, f"drL_dh2_corrected_history_{lander_name}_lander.dat"))
 
         fig, ax = plt.subplots()
-        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 1] - drL_dh2_average[0], label="x", marker=".")
-        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 2] - drL_dh2_average[1], label="y", marker=".")
-        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 3] - drL_dh2_average[2], label="z", marker=".")
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 1], label="x", color="blue")
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 2], label="y", linestyle="--", color="red")
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 3], label="z", linestyle="-.", color="green")
         ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
         ax.set_ylabel(r"$\Delta \mathbf{r}_{L}$  [m]", fontsize=fontsize)
         ax.set_title(f"Lander {lander_name}", fontsize=fontsize)
+        ax.legend(fontsize=fontsize)
         ax.grid(True)
         ax.tick_params(labelsize=fontsize)
         fig.tight_layout()
@@ -300,7 +299,7 @@ def main():
 
     perform_h2_partials_analysis_plotting_flag = True
     if perform_h2_partials_analysis_plotting_flag:
-        output_directory_partials = os.path.join(output_directory, "2025.06.20.16.11.35/h2_partials")
+        output_directory_partials = os.path.join(output_directory, "2025.06.20.16.38.50/h2_partials")
         perform_h2_partials_analysis_plotting(output_directory_partials, 14)
 
 if __name__ == "__main__":
