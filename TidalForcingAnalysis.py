@@ -15,6 +15,7 @@ from tudatpy.interface import spice
 from tudatpy.data import save2txt
 from tudatpy.util import result2array
 from tudatpy import numerical_simulation
+from tudatpy import astro
 
 # General import
 import numpy as np
@@ -22,6 +23,7 @@ import math
 import sympy as sym
 import os
 import datetime
+
 
 def kronecker_delta(order):
      if order == 0:
@@ -392,13 +394,69 @@ def verify_tidal_correction(arc_start,
              output_directory)
 
 
+def perform_h2_partials_love_number(arc_start,
+                                    nb_orbits,
+                                    output_directory):
+    os.makedirs(output_directory, exist_ok=True)
+
+    enceladus_reference_orbital_period = 1.370218 * constants.JULIAN_DAY
+    arc_duration = nb_orbits * enceladus_reference_orbital_period
+    arc_end = arc_start + arc_duration
+
+    # Retrieve Enceladus-fixed spherical coordinates of Saturn
+    saturn_spherical_coordinates_history, enceladus_keplerian_state_history = get_saturn_colatitude_and_longitude_history(
+        arc_start,
+        arc_end)
+
+    saturn_gravitational_parameter = 3.793120749865224E+16
+    enceladus_gravitational_parameter = 7.210366688598896E+9
+
+    gravitational_parameter_ratio = saturn_gravitational_parameter / enceladus_gravitational_parameter
+    enceladus_radius = spice.get_average_radius("Enceladus")
+    station_state_spherical = np.zeros((6,))
+
+    # Compute position deformation of the landers
+    for station_name in CovAnalysisConfig.lander_names:
+
+        station_state_spherical[0] = enceladus_radius + CovAnalysisConfig.lander_coordinates[station_name][0]
+        station_state_spherical[1] = CovAnalysisConfig.lander_coordinates[station_name][1]
+        station_state_spherical[2] = CovAnalysisConfig.lander_coordinates[station_name][2]
+        station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
+        station_position_unit_vector = station_position_cartesian / np.linalg.norm(station_position_cartesian)
+
+        epochs = list(saturn_spherical_coordinates_history.keys())
+
+        drL_dh2_store = dict()
+        for epoch in epochs:
+            saturn_spherical_position = saturn_spherical_coordinates_history[epoch]
+            saturn_spherical_state = np.zeros((6,))
+            saturn_spherical_state[:3] = saturn_spherical_position
+            saturn_cartesian_position = astro.element_conversion.spherical_to_cartesian(saturn_spherical_state)[:3]
+
+            drL_dh2_i = astro.gravitation.calculate_degree_two_basic_tidal_displacement(gravitational_parameter_ratio,
+                                                                                    station_position_unit_vector,
+                                                                                    saturn_cartesian_position,
+                                                                                    enceladus_radius,
+                                                                                    1.0,
+                                                                                    0.0)
+            drL_dh2_store[epoch] = drL_dh2_i
+
+        drL_dh2_array = result2array(drL_dh2_store)
+
+        # Compute average position deformation
+        drL_dh2_average = [np.mean(drL_dh2_array[:, 1]), np.mean(drL_dh2_array[:, 2]), np.mean(drL_dh2_array[:, 3])]
+
+        save2txt(drL_dh2_store, f"drL_dh2_{station_name}_lander.dat", output_directory)
+        np.savetxt(os.path.join(output_directory, f"drL_dh2_average_{station_name}_lander.dat"), drL_dh2_average)
+
+
 def main():
 
     # Set start epoch of simulation
     arc_start = 0
 
     # Set number of orbits
-    nb_orbits = 60
+    nb_orbits = 20
 
     # Set output directory
     output_directory = "./output/tidal_forcing_analysis"
@@ -412,11 +470,15 @@ def main():
         output_directory_analysis = os.path.join(output_directory, "tidal_forcing_computation")
         perform_tidal_forcing_analysis(arc_start, nb_orbits, output_directory_analysis)
 
-    verify_tidal_correction_flag = True
+    verify_tidal_correction_flag = False
     if verify_tidal_correction_flag:
         output_directory_correction = os.path.join(output_directory, "tidal_forcing_correction")
         verify_tidal_correction(arc_start, nb_orbits, output_directory_correction)
 
+    perform_h2_partials_love_number_flag = True
+    if perform_h2_partials_love_number_flag:
+        output_directory_partials = os.path.join(output_directory, "h2_partials")
+        perform_h2_partials_love_number(arc_start, nb_orbits, output_directory_partials)
 
 if __name__ == "__main__":
     main()

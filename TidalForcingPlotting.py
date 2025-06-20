@@ -11,6 +11,9 @@ import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 import os
 
+# Files and variables import
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
+
 def perform_tidal_forcing_analysis_plotting(output_directory,
                                    degrees_to_consider,
                                    fontsize=12):
@@ -255,6 +258,27 @@ def perform_tidal_correction_verification_plotting(output_directory,
                average_sine_coefficient_variation_list)
 
 
+def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
+
+    # Load drL_dh2 partials
+    #fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(8, 12))
+    for lander_name in CovAnalysisConfig.lander_names:
+        drL_dh2 = np.loadtxt(os.path.join(output_directory, f"drL_dh2_{lander_name}_lander.dat"))
+        drL_dh2_average = np.loadtxt(os.path.join(output_directory, f"drL_dh2_average_{lander_name}_lander.dat"))
+
+        fig, ax = plt.subplots()
+        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 1] - drL_dh2_average[0], label="x", marker=".")
+        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 2] - drL_dh2_average[1], label="y", marker=".")
+        ax.plot(drL_dh2[:, 0] / constants.JULIAN_DAY, drL_dh2[:, 3] - drL_dh2_average[2], label="z", marker=".")
+        ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+        ax.set_ylabel(r"$\Delta \mathbf{r}_{L}$  [m]", fontsize=fontsize)
+        ax.set_title(f"Lander {lander_name}", fontsize=fontsize)
+        ax.grid(True)
+        ax.tick_params(labelsize=fontsize)
+        fig.tight_layout()
+        fig.savefig(os.path.join(output_directory, f"h2_partials_analysis_{lander_name}.pdf"))
+        plt.close(fig)
+
 def main():
 
     # Set output directory
@@ -267,13 +291,17 @@ def main():
                                                 [2],
                                                 14)
 
-    perform_tidal_correction_verification_flag = True
+    perform_tidal_correction_verification_flag = False
     if perform_tidal_correction_verification_flag:
         output_directory_correction = os.path.join(output_directory, "2025.05.28.11.45.48/tidal_forcing_correction")
         perform_tidal_correction_verification_plotting(output_directory_correction,
                                                        [(2, 0), (2, 1), (2, 2)],
                                                        14)
 
+    perform_h2_partials_analysis_plotting_flag = True
+    if perform_h2_partials_analysis_plotting_flag:
+        output_directory_partials = os.path.join(output_directory, "2025.06.20.16.11.35/h2_partials")
+        perform_h2_partials_analysis_plotting(output_directory_partials, 14)
 
 if __name__ == "__main__":
     main()
