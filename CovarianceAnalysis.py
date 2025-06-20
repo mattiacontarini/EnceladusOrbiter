@@ -16,6 +16,7 @@ from tudatpy import constants
 import datetime
 import os
 import numpy as np
+import multiprocessing as mp
 
 def tuning_parameter_refinement_analysis(save_simulation_results_flag,
                                          save_covariance_results_flag):
@@ -73,7 +74,8 @@ def tuning_parameter_refinement_analysis(save_simulation_results_flag,
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
-    UDP.perform_covariance_analysis(output_path)
+    with mp.Pool(1) as pool:
+        pool.apply(UDP.perform_covariance_analysis(output_path))
 
 
 def perform_tuning_parameters_analysis(time_stamp,
@@ -230,7 +232,8 @@ def perform_tuning_parameters_analysis(time_stamp,
                     raise Exception("Unknown key for parameters to tune.")
 
                 UDP.save_problem_configuration(output_path)
-                UDP.perform_covariance_analysis(output_path)
+                with mp.Pool(1) as pool:
+                    pool.apply(UDP.perform_covariance_analysis(output_path))
 
 
 def perform_lander_location_analysis(time_stamp,
@@ -279,7 +282,8 @@ def perform_lander_location_analysis(time_stamp,
 
             # Run covariance analysis
             UDP.save_problem_configuration(longitude_case_path)
-            UDP.perform_covariance_analysis(longitude_case_path)
+            with mp.Pool(1) as pool:
+                pool.apply(UDP.perform_covariance_analysis(output_path))
 
 
 def single_case_analysis(time_stamp,
@@ -314,7 +318,7 @@ def single_case_analysis(time_stamp,
     UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
     UDP.use_station_position_consider_parameter_flag = True
 
-    # UDP.estimate_h2_love_number_flag = True
+    UDP.estimate_h2_love_number_flag = True
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
@@ -336,7 +340,7 @@ def main():
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = False
+    perform_tuning_parameters_analysis_flag = True
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
@@ -350,7 +354,7 @@ def main():
                              save_covariance_results_flag)
 
     # Study the effect of changing the location of the landers
-    perform_landers_location_analysis_flag = True
+    perform_landers_location_analysis_flag = False
     if perform_landers_location_analysis_flag:
         perform_lander_location_analysis(time_stamp,
                                          save_simulation_results_flag,
