@@ -750,7 +750,7 @@ def plot_tuning_parameters_refinement_analysis(input_path,
         plt.close(fig)
 
 
-def plot_lander_location_analysis(input_path, fontsize):
+def plot_lander_location_analysis(input_path, fontsize=12):
 
     # Load latitudes and longitudes range
     latitudes_range = np.rad2deg(np.loadtxt(os.path.join(input_path, "latitudes_range.txt")))
@@ -762,7 +762,8 @@ def plot_lander_location_analysis(input_path, fontsize):
     formal_error_libration_amplitude_store = np.zeros((len(latitudes_range), len(longitudes_range)))
     formal_error_pole_RA_store = np.zeros((len(latitudes_range), len(longitudes_range)))
     formal_error_pole_DE_store = np.zeros((len(latitudes_range), len(longitudes_range)))
-    rms_formal_error_degree_2_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    rms_formal_error_degree_2_cosine_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    formal_error_radial_love_number_store = np.zeros((len(latitudes_range), len(longitudes_range)))
 
     parameters_of_interest_store = dict()
     parameters_of_interest_store_labels = dict(
@@ -772,28 +773,33 @@ def plot_lander_location_analysis(input_path, fontsize):
         formal_error_pole_RA="Formal error pole RA",
         formal_error_pole_DE="Formal error pole DE",
         rms_formal_error_degree_2="RMS formal error gravity degree 2",
+        formal_error_radial_love_number=r"Formal error $h_{2}$ love number",
     )
 
     for i in range(len(latitudes_range)):
         latitude_case_path = os.path.join(input_path, f"latitude_case_{i}")
         for j in range(len(longitudes_range)):
             longitude_case_path = os.path.join(latitude_case_path, f"longitude_case_{i}")
+            covariance_results_path = os.path.join(longitude_case_path, "covariance_results")
 
             # Load results
             max_estimatable_degree_gravity_field = np.loadtxt(
-                os.path.join(longitude_case_path, "max_estimatable_degree_gravity_field.dat")
+                os.path.join(covariance_results_path, "max_estimatable_degree_gravity_field.dat")
             )
             formal_error_love_number = np.loadtxt(
-                os.path.join(longitude_case_path, "formal_error_love_number.dat")
+                os.path.join(covariance_results_path, "formal_error_love_number.dat")
             )
             formal_error_libration_amplitude = np.loadtxt(
-                os.path.join(longitude_case_path, "formal_error_libration_amplitude.dat")
+                os.path.join(covariance_results_path, "formal_error_libration_amplitude.dat")
             )
             formal_error_pole_position = np.loadtxt(
-                os.path.join(longitude_case_path, "formal_error_pole_position.dat")
+                os.path.join(covariance_results_path, "formal_error_pole_position.dat")
             )
             rms_formal_error_degree_2 = np.loadtxt(
-                os.path.join(longitude_case_path, "rms_formal_error_degree_2.dat")
+                os.path.join(covariance_results_path, "rms_formal_error_degree_2.dat")
+            )
+            formal_error_radial_love_number = np.loadtxt(
+                os.path.join(covariance_results_path, "formal_error_radial_love_number.dat")
             )
 
             max_estimatable_degree_gravity_field_store[i, j] = max_estimatable_degree_gravity_field
@@ -801,14 +807,16 @@ def plot_lander_location_analysis(input_path, fontsize):
             formal_error_libration_amplitude_store[i, j] = formal_error_libration_amplitude
             formal_error_pole_RA_store[i, j] = formal_error_pole_position[0]
             formal_error_pole_DE_store[i, j] = formal_error_pole_position[1]
-            rms_formal_error_degree_2_store[i, j] = rms_formal_error_degree_2
+            rms_formal_error_degree_2_cosine_store[i, j] = rms_formal_error_degree_2[0]
+            formal_error_radial_love_number_store[i, j] = formal_error_radial_love_number
 
     parameters_of_interest_store["max_estimatable_degree_gravity_field"]=(max_estimatable_degree_gravity_field_store)
     parameters_of_interest_store["formal_error_love_number"]=formal_error_love_number_store
     parameters_of_interest_store["formal_error_libration_amplitude"]=formal_error_libration_amplitude_store
     parameters_of_interest_store["formal_error_pole_RA"]=formal_error_pole_RA_store
     parameters_of_interest_store["formal_error_pole_DE"]=formal_error_pole_DE_store
-    parameters_of_interest_store["rms_formal_error_degree_2"]=rms_formal_error_degree_2_store
+    parameters_of_interest_store["rms_formal_error_degree_2"]=rms_formal_error_degree_2_cosine_store
+    parameters_of_interest_store["formal_error_radial_love_number"]=formal_error_radial_love_number_store
 
     # Plot figures of merit
     parameters_keys = list(parameters_of_interest_store.keys())
@@ -817,14 +825,40 @@ def plot_lander_location_analysis(input_path, fontsize):
 
         plt.imshow(parameters_of_interest_store[parameter_key], aspect='auto', interpolation='none')
         plt.colorbar()
-        plt.xticks(latitudes_range, latitudes_range, fontsize=fontsize)
-        plt.yticks(longitudes_range, longitudes_range, fontsize=fontsize)
+        plt.yticks(latitudes_range, latitudes_range, fontsize=fontsize)
+        plt.xticks(longitudes_range, longitudes_range, fontsize=fontsize)
         plt.xlabel("Latitude  [deg]", fontsize=fontsize)
         plt.ylabel("Longitude  [deg]", fontsize=fontsize)
         plt.title(parameters_of_interest_store_labels[parameter_key], fontsize=fontsize)
         plt.tight_layout()
         plt.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
         plt.close()
+
+
+def plot_h2_partials_analysis(input_path, fontsize=12):
+
+    covariance_results_path = os.path.join(input_path, "covariance_results")
+
+    # Load results
+    drL_dh2_partials = np.loadtxt(os.path.join(covariance_results_path, "drL_dh2_partials.dat"))
+    dh_dh2_partials = np.loadtxt(os.path.join(covariance_results_path, "dh_dh2_partials.dat"))
+
+    fig = plt.figure(constrained_layout=True, figsize=(10, 6))
+    ax1 = fig.add_subplot(121)
+    ax1.scatter(dh_dh2_partials[:, 0] / constants.JULIAN_DAY, dh_dh2_partials[:, 1], marker=".")
+    ax1.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax1.set_ylabel(r"$dh/dh_{2}$  [respective IS unit]", fontsize=fontsize)
+    ax1.grid(True)
+    ax2 = fig.add_subplot(122)
+    ax2.scatter(drL_dh2_partials[:, 0] / constants.JULIAN_DAY, drL_dh2_partials[:, 1], label="x", marker=".")
+    ax2.scatter(drL_dh2_partials[:, 0] / constants.JULIAN_DAY, drL_dh2_partials[:, 2], label="y", marker=".")
+    ax2.scatter(drL_dh2_partials[:, 0] / constants.JULIAN_DAY, drL_dh2_partials[:, 3], label="z", marker=".")
+    ax2.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax2.set_ylabel(r"$\Delta \mathbf{r}_{L} - mean(\Delta \mathbf{r}_{L})$", fontsize=fontsize)
+    ax2.legend(fontsize=fontsize)
+    ax2.grid(True)
+    fig.savefig(os.path.join(input_path, "h2_partials.pdf"))
+
 
 
 
@@ -841,7 +875,7 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = True
+    summarise_tuning_parameters_analysis_flag = False
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.02.09.40.15"
@@ -854,6 +888,20 @@ def main():
         no_configurations = 36
         plot_tuning_parameters_refinement_analysis(input_directory,
                                                    no_configurations)
+
+    plot_lander_location_analysis_flag = False
+    if plot_lander_location_analysis_flag:
+        input_directory = "./output/covariance_analysis/lander_location_analysis"
+        time_stamp_folder = "2025.06.17.17.08.38"
+        input_path = os.path.join(input_directory, time_stamp_folder)
+        plot_lander_location_analysis(input_path)
+
+    plot_h2_love_number_partials_flag = True
+    if plot_h2_love_number_partials_flag:
+        input_directory = "./output/covariance_analysis/single_case_analysis"
+        time_stamp_folder = "2025.06.20.16.31.24"
+        input_path = os.path.join(input_directory, time_stamp_folder)
+        plot_h2_partials_analysis(input_path)
 
 
 if __name__ == "__main__":
