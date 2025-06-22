@@ -32,31 +32,6 @@ def apply_kaula_constraint_a_priori(kaula_constraint_multiplier, max_deg_gravity
     return inv_apriori
 
 
-def get_number_observations_for_station_type(partials_matrix,
-                                             station_type,
-                                             indices_lander_position):
-
-    nb_observations = 0
-    if station_type == "ground_station":
-        for i in range(partials_matrix.shape[0]):
-            zeros_row_flag = True
-            for j in range(indices_lander_position[0], indices_lander_position[0] + indices_lander_position[1]):
-                if partials_matrix[i, j] != 0.0:
-                    zeros_row_flag = False
-            if zeros_row_flag:
-                nb_observations += 1
-    elif station_type == "lander":
-        for i in range(partials_matrix.shape[0]):
-            zeros_row_flag = True
-            for j in range(indices_lander_position[0], indices_lander_position[0] + indices_lander_position[1]):
-                if partials_matrix[i, j] != 0.0:
-                    zeros_row_flag = False
-            if not zeros_row_flag:
-                nb_observations += 1
-
-    return nb_observations
-
-
 def extend_design_matrix_to_h2_love_number(design_matrix,
                                            indices_lander_position,
                                            gravitational_parameter_ratio,
