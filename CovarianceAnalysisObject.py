@@ -1186,33 +1186,13 @@ class CovarianceAnalysis:
         formal_error_pole_rate = formal_errors_to_use[indices_pole_rate[0] :
                                                indices_pole_rate[0] + indices_pole_rate[1]]
 
-        # Compute ratio of lander data to ground station data
-        nb_ground_station_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
-                                                                                          "ground_station",
-                                                                                          indices_lander_position)
-        if lander_to_include != []:
-            indices_lander_position_first_lander = parameters_to_estimate.indices_for_parameter_type(
-                (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
-                ("Enceladus", lander_to_include[0])))[0]
-            nb_landers = len(lander_to_include)
-            indices_lander_position = [indices_lander_position_first_lander[0], 3 * nb_landers]
-
-            nb_lander_observations = CovUtil.get_number_observations_for_station_type(partials_to_use,
-                                                                                      "lander",
-                                                                                      indices_lander_position)
-            nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
-            nb_observations_total = nb_ground_station_observations + nb_lander_observations
-        else:
-            nb_observations_ratio = 0.0
-            nb_observations_total = nb_ground_station_observations
-
         # Compute number of observation epochs per station
         doppler_obs_times_GS = []
         for i in range(len(CovAnalysisConfig.ground_station_names)):
             doppler_obs_times_GS.append([(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
                                              sorted_observations[observation.n_way_averaged_doppler_type][i][0].observation_times])
-            nb_observations_per_GS = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_GS,
-                                                                                         CovAnalysisConfig.ground_station_names)
+        nb_observations_per_GS = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_GS,
+                                                                                     CovAnalysisConfig.ground_station_names)
         if self.lander_to_include != []:
             doppler_obs_times_lander = []
             for i in range(len(self.lander_to_include)):
@@ -1221,6 +1201,16 @@ class CovarianceAnalysis:
                                                 len(CovAnalysisConfig.ground_station_names)][0].observation_times])
             nb_observations_per_lander = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_lander,
                                                                                              self.lander_to_include)
+
+        # Compute ratio of lander data to ground station data
+        nb_ground_station_observations = 0
+        for ground_station in CovAnalysisConfig.ground_station_names:
+            nb_ground_station_observations += nb_observations_per_GS[ground_station]
+        nb_lander_observations = 0
+        if self.lander_to_include != []:
+            for lander in self.lander_to_include:
+                nb_lander_observations += nb_observations_per_lander[lander]
+        nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
 
         plots_output_path = os.path.join(output_path, "plots")
         if self.save_covariance_results_flag:
