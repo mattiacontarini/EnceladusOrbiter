@@ -1211,6 +1211,7 @@ class CovarianceAnalysis:
             for lander in self.lander_to_include:
                 nb_lander_observations += nb_observations_per_lander[lander]
         nb_observations_ratio = nb_lander_observations / nb_ground_station_observations
+        nb_observations_total = nb_ground_station_observations + nb_lander_observations
 
         plots_output_path = os.path.join(output_path, "plots")
         if self.save_covariance_results_flag:
@@ -1220,7 +1221,7 @@ class CovarianceAnalysis:
             os.makedirs(covariance_results_output_path, exist_ok=True)
             os.makedirs(plots_output_path, exist_ok=True)
             covariance_filename = os.path.join(covariance_results_output_path, "covariance_matrix.dat")
-            np.savetxt(covariance_filename, covariance)
+            np.savetxt(covariance_filename, covariance_to_use)
 
             # Save correlation matrix
             if self.save_correlation_matrix_flag:
