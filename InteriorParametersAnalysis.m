@@ -80,7 +80,7 @@ Numerics_Enceladus.perturbation_order = 2;
 
 interior_parameters_to_vary = fieldnames(Interior_Model_Enceladus_Delta);
 nb_interior_parameters_to_vary = length(interior_parameters_to_vary);
-nb_runs_per_interior_parameter = 10;
+nb_runs_per_interior_parameter = 20;
 
 % Setup output structure
 Interior_Model_Enceladus_Analysis_Output(1).R0.k = [];
@@ -297,25 +297,25 @@ for i = 2:Numerics_Enceladus.Nlayers
         output_save_aux = zeros(nb_runs_per_interior_parameter, 3);
             
         if j == 1
-            output_save_aux(:, 1) = Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter;
-            output_save_aux(:, 2) = Interior_Model_Enceladus_Analysis_Output(i).R0.k;
-            output_save_aux(:, 3) = Interior_Model_Enceladus_Analysis_Output(i).R0.h;
+            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter);
+            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.k);
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.h);
         elseif j == 2
-            output_save_aux(:, 1) = Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter;
-            output_save_aux(:, 2) = Interior_Model_Enceladus_Analysis_Output(i).rho0.k;
-            output_save_aux(:, 3) = Interior_Model_Enceladus_Analysis_Output(i).rho0.h;
+            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter);
+            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.k);
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.h);
         elseif j == 3
-            output_save_aux(:, 1) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter;
-            output_save_aux(:, 2) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.k;
-            output_save_aux(:, 3) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.h;
+            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter);
+            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.k);
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.h);
         elseif j == 4
-            output_save_aux(:, 1) = Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter;
-            output_save_aux(:, 2) = Interior_Model_Enceladus_Analysis_Output(i).mu0.k;
-            output_save_aux(:, 3) = Interior_Model_Enceladus_Analysis_Output(i).mu0.h;
+            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter);
+            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.k);
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.h);
         elseif j == 5
-            output_save_aux(:, 1) = Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter;
-            output_save_aux(:, 2) = Interior_Model_Enceladus_Analysis_Output(i).eta0.k;
-            output_save_aux(:, 3) = Interior_Model_Enceladus_Analysis_Output(i).eta0.h;                
+            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter);
+            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.k);
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.h);                
         end
     
         writematrix(output_save_aux, parameter_path)
