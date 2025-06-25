@@ -61,7 +61,7 @@ def plot_tuning_parameters_analysis(input_path,
     a_priori_radiation_pressure_coefficient  = [np.infty, 0.1, 1e-10]
 
     # Set list of number of landers to include in the simulation
-    lander_to_include = [[None],
+    lander_to_include = [[ ],
                          ["L1"],
                          ["L1", "L2"],
                          ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
@@ -69,7 +69,7 @@ def plot_tuning_parameters_analysis(input_path,
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        "simulation_duration": simulation_durations,
+        # "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -205,8 +205,9 @@ def plot_tuning_parameters_analysis(input_path,
         label="DE rate"
     )
 
-    for lander in lander_to_include:
-        input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_to_include.index(lander)}")
+    for lander_index in range(len(lander_to_include)):
+        lander = lander_to_include[lander_index]
+        input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_index}")
 
         for parameter_key in list(parameters_to_tune.keys()):
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
@@ -234,9 +235,10 @@ def plot_tuning_parameters_analysis(input_path,
                 formal_error_love_number = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
                 )
-                formal_error_radial_love_number = np.loadtxt(
-                    os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
-                )
+                if lander != []:
+                    formal_error_radial_love_number = np.loadtxt(
+                        os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
+                    )
                 formal_error_libration_amplitude = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
                 )
@@ -268,44 +270,50 @@ def plot_tuning_parameters_analysis(input_path,
                     parameter_value = str(parameter_value)
 
                 # Plot results
-                axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="black", marker="P")
-                axes[0, 1].scatter(parameter_value, max_estimatable_degree_gravity_field, color="black", marker="P")
+                # axes[0, 0].scatter(parameter_value, condition_number_covariance_matrix, color="black", marker="P")
+                axes[0, 0].scatter(parameter_value, max_estimatable_degree_gravity_field, color="black", marker="P")
                 for i in range(len(colors_rsw_interval)):
                     for j in range(len(markers_rsw_interval)):
-                        axes[1, 0].scatter(parameter_value,
+                        axes[0, 1].scatter(parameter_value,
                                            formal_error_initial_position_rsw_interval[i, j],
                                            color=colors_rsw_interval[i],
                                            marker=markers_rsw_interval[j])
-                        axes[1, 1].scatter(parameter_value,
+                        axes[1, 0].scatter(parameter_value,
                                            formal_error_empirical_accelerations_rsw_interval[i, j],
                                            color=colors_rsw_interval[i],
                                            marker=markers_rsw_interval[j])
-                axes[2, 0].scatter(parameter_value, nb_observations_ratio, color="black", marker="P")
-                axes[2, 1].scatter(parameter_value, formal_error_love_number[0], color="orange", marker="P")
-                axes[2, 1].scatter(parameter_value, formal_error_love_number[1], color="midnightblue", marker="P")
-                axes[3, 0].scatter(parameter_value, np.rad2deg(formal_error_libration_amplitude), color="black", marker="P")
-                axes[3, 1].scatter(parameter_value, np.rad2deg(formal_error_pole_position[0]), color="orange", marker="P")
-                axes[3, 1].scatter(parameter_value, np.rad2deg(formal_error_pole_position[1]), color="midnightblue", marker="P")
-                axes[4, 0].scatter(parameter_value, np.rad2deg(formal_error_pole_rate[0]), color="orange", marker="P")
-                axes[4, 0].scatter(parameter_value, formal_error_pole_rate[1], color="midnightblue", marker="P")
-                axes[4, 1].scatter(parameter_value, formal_error_radial_love_number, color="black", marker="P")
+                axes[1, 1].scatter(parameter_value, nb_observations_ratio, color="black", marker="P")
+                axes[2, 0].scatter(parameter_value, formal_error_love_number[0], color="orange", marker="P")
+                axes[2, 0].scatter(parameter_value, formal_error_love_number[1], color="midnightblue", marker="P")
+                axes[2, 1].scatter(parameter_value, np.rad2deg(formal_error_libration_amplitude), color="black", marker="P")
+                axes[3, 0].scatter(parameter_value, np.rad2deg(formal_error_pole_position[0]), color="orange", marker="P")
+                axes[3, 0].scatter(parameter_value, np.rad2deg(formal_error_pole_position[1]), color="midnightblue", marker="P")
+                axes[3, 1].scatter(parameter_value, np.rad2deg(formal_error_pole_rate[0]), color="orange", marker="P")
+                axes[3, 1].scatter(parameter_value, formal_error_pole_rate[1], color="midnightblue", marker="P")
+                if lander != []:
+                    axes[4, 0].scatter(parameter_value, formal_error_radial_love_number, color="black", marker="P")
 
-            axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
-            axes[0, 0].set_yscale("log")
-            axes[0, 1].set_ylabel("Max. degree gravity field [-]", fontsize=fontsize)
-            axes[1, 0].set_ylabel(r"$\sigma$ initial position  [m]", fontsize=fontsize)
-            axes[1, 1].set_ylabel(r"$\sigma$ empirical acc.  [m/s$^{2}$]", fontsize=fontsize)
-            axes[2, 0].set_ylabel("no. lander data / no. GS data  [-]", fontsize=fontsize)
-            axes[2, 1].set_ylabel(r"$\sigma$ $k_2$ Love number  [-]", fontsize=fontsize)
-            axes[2, 1].legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
-            axes[3, 0].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
-            axes[3, 1].set_ylabel(f"$\sigma$ pole position  [deg]", fontsize=fontsize)
-            axes[3, 1].legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
-            axes[4, 0].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
-            axes[4, 0].set_ylabel(f"$\sigma$ pole rate  [deg/s]", fontsize=fontsize)
-            axes[4, 0].legend(handles=[RA_rate_handle, DE_rate_handle], fontsize=fontsize)
-            axes[4, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
-            axes[4, 1].set_ylabel(f"$\sigma$ $h_2$ Love number  [-]", fontsize=fontsize)
+            #axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
+            #axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
+            #axes[0, 0].set_yscale("log")
+            axes[0, 0].set_ylabel("Max. degree gravity [-]", fontsize=fontsize)
+            axes[0, 1].set_ylabel(r"$\sigma$ initial position  [m]", fontsize=fontsize)
+            axes[0, 1].set_yscale("log")
+            axes[1, 0].set_ylabel(r"$\sigma$ empirical acc.  [m/s$^{2}$]", fontsize=fontsize)
+            axes[1, 0].set_yscale("log")
+            axes[1, 1].set_ylabel("no. lander data / no. GS data  [-]", fontsize=fontsize)
+            axes[2, 0].set_ylabel(r"$\sigma$ $k_2$ Love number  [-]", fontsize=fontsize)
+            axes[2, 0].legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
+            axes[2, 1].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
+            axes[3, 0].set_ylabel(f"$\sigma$ pole position  [deg]", fontsize=fontsize)
+            axes[3, 0].legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
+            axes[3, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+            axes[3, 1].set_ylabel(f"$\sigma$ pole rate  [deg/s]", fontsize=fontsize)
+            axes[3, 1].legend(handles=[RA_rate_handle, DE_rate_handle], fontsize=fontsize)
+            axes[3, 1].set_yscale("log")
+            if lander != [ ]:
+                axes[4, 0].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+                axes[4, 0].set_ylabel(f"$\sigma$ $h_2$ Love number  [-]", fontsize=fontsize)
 
 
             for ax in axes.flat:
@@ -321,15 +329,31 @@ def plot_tuning_parameters_analysis(input_path,
                 for ax in axes.flat:
                     ax.set_xlim(left=0)
 
-            fig.legend(handles=[rsw_interval_min_value_handle,
+            if lander == []:
+                fig.legend(handles=[rsw_interval_min_value_handle,
                                 rsw_interval_median_value_handle,
                                 rsw_interval_max_value_handle,
                                 rsw_interval_radial_direction_handle,
                                 rsw_interval_along_track_direction_handle,
                                 rsw_interval_cross_track_direction_handle],
                        fontsize=fontsize,
-                       bbox_to_anchor=(0.85, 0.2),)
+                       bbox_to_anchor=(0.6, 0.15),)
+            else:
+                fig.legend(handles=[rsw_interval_min_value_handle,
+                                rsw_interval_median_value_handle,
+                                rsw_interval_max_value_handle,
+                                rsw_interval_radial_direction_handle,
+                                rsw_interval_along_track_direction_handle,
+                                rsw_interval_cross_track_direction_handle],
+                       fontsize=fontsize,
+                       bbox_to_anchor=(0.85, 0.15),)
             fig.suptitle(f"Parameter: {parameters_to_tune_label[parameter_key]}", fontsize=fontsize)
+
+            if lander == []:
+                plt.delaxes(axes[4, 0])
+                plt.delaxes(axes[4, 1])
+            else:
+                plt.delaxes(axes[4, 1])
             fig.savefig(os.path.join(input_path_parameter, "figures_of_merit.pdf"))
             plt.close(fig)
 
@@ -378,7 +402,7 @@ def summarise_tuning_parameters_analysis(input_path,
     a_priori_radiation_pressure_coefficient = [np.infty, 0.1, 1e-10]
 
     # Set list of number of landers to include in the simulation
-    lander_to_include = [[None],
+    lander_to_include = [[ ],
                          ["L1"],
                          ["L1", "L2"],
                          ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
@@ -386,7 +410,7 @@ def summarise_tuning_parameters_analysis(input_path,
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        "simulation_duration": simulation_durations,
+        # "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -408,7 +432,8 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_libration_amplitude = [],
         formal_error_pole_position = [],
         formal_error_pole_rate = [],
-        rms_formal_error_lander_position = []
+        rms_formal_error_lander_position = [],
+        formal_error_radial_love_number = [],
     )
     parameters_of_interest_axis_labels = dict(
         max_estimatable_degree_gravity_field="Max. degree gravity field  [-]",
@@ -417,6 +442,7 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_pole_position = r"$\sigma$ pole position  [deg]",
         formal_error_pole_rate = r"$\sigma$ pole rate  [deg s$^{-1}$]",
         rms_formal_error_lander_position = "RMS formal error lander position  [m]",
+        formal_error_radial_love_number = r"$\sigma$ $h_2$ Love number  [-]",
     )
 
     for lander_index in range(len(lander_to_include)):
@@ -448,6 +474,10 @@ def summarise_tuning_parameters_analysis(input_path,
                 formal_error_pole_rate = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_pole_rate.dat")
                 )
+                if lander_index != 0:
+                    formal_error_radial_love_number = np.loadtxt(
+                        os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
+                    )
                 indices_estimation_parameters = np.loadtxt(
                     os.path.join(input_path_covariance_results, "indices_estimation_parameters.dat")
                 )
@@ -498,6 +528,8 @@ def summarise_tuning_parameters_analysis(input_path,
                 parameters_of_interest["formal_error_libration_amplitude"].append(np.rad2deg(formal_error_libration_amplitude))
                 parameters_of_interest["formal_error_pole_position"].append(np.rad2deg(formal_error_pole_position))
                 parameters_of_interest["formal_error_pole_rate"].append(np.rad2deg(formal_error_pole_rate))
+                if lander_index != 0:
+                    parameters_of_interest["formal_error_radial_love_number"].append(formal_error_radial_love_number)
 
                 configurations_list.append(f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
                 configurations_counter += 1
@@ -595,17 +627,21 @@ def summarise_tuning_parameters_analysis(input_path,
                            color="green")
                 ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][3],
                            color="black")
+        elif parameter_key == "formal_error_radial_love_number":
+            for j in range(len(configurations_lander_position_list)):
+                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j],
+                           color="black")
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
 
         if parameter_key == "formal_error_love_number":
-            ax.set_ylim(bottom=1e-5, top=2e-2)
+            ax.set_ylim(bottom=1e-5, top=1e-3)
         elif parameter_key == "formal_error_pole_position":
-            ax.set_ylim(bottom=1e-7, top=1e0)
+            ax.set_ylim(bottom=1e-7, top=1e-2)
         elif parameter_key == "formal_error_pole_rate":
-            ax.set_ylim(bottom=1e-13, top=1e-7)
+            ax.set_ylim(bottom=1e-13, top=1e-9)
         elif parameter_key == "rms_formal_error_lander_position":
-            ax.set_ylim(bottom=1e-3, top=1e2)
+            ax.set_ylim(bottom=1e-3, top=1e0)
         elif parameter_key == "formal_error_libration_amplitude":
             ax.set_ylim(bottom=1e-7, top=1e-2)
         elif parameter_key == "max_estimatable_degree_gravity_field":
@@ -880,14 +916,14 @@ def main():
     plot_tuning_parameters_analysis_flag = False
     if plot_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
-        time_stamp_folder = "2025.06.02.09.40.15"
+        time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = False
+    summarise_tuning_parameters_analysis_flag = True
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
-        time_stamp_folder = "2025.06.02.09.40.15"
+        time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         summarise_tuning_parameters_analysis(input_path, 14)
 
@@ -898,7 +934,7 @@ def main():
         plot_tuning_parameters_refinement_analysis(input_directory,
                                                    no_configurations)
 
-    plot_lander_location_analysis_flag = True
+    plot_lander_location_analysis_flag = False
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
         time_stamp_folder = "2025.06.20.17.01.29"
