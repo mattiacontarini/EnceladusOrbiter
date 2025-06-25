@@ -34,7 +34,7 @@ def plot_tuning_parameters_analysis(input_path,
                      7.0 * constants.JULIAN_DAY]
 
     # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
-    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
+    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
     a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
@@ -62,8 +62,8 @@ def plot_tuning_parameters_analysis(input_path,
 
     # Set list of number of landers to include in the simulation
     lander_to_include = [[ ],
-                         ["L1"],
-                         ["L1", "L2"],
+                         ["L3"],
+                         ["L1", "L3"],
                          ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
     parameters_to_tune = {
@@ -220,9 +220,6 @@ def plot_tuning_parameters_analysis(input_path,
                 input_path_covariance_results = os.path.join(input_path_configuration, "covariance_results")
 
                 # Load results
-                condition_number_covariance_matrix = np.loadtxt(
-                    os.path.join(input_path_covariance_results, "condition_number_covariance_matrix.dat")
-                )
                 max_estimatable_degree_gravity_field = np.loadtxt(
                     os.path.join(input_path_covariance_results, "max_estimatable_degree_gravity_field.dat")
                 )
@@ -358,6 +355,373 @@ def plot_tuning_parameters_analysis(input_path,
             plt.close(fig)
 
 
+def plot_delta_tuning_parameters_analysis(input_path,
+                                          fontsize=12):
+    # Set initial states to consider
+    initial_state_indices = [1, 2, 3]
+
+    # Set list of simulation durations to consider
+    simulation_durations = [28.0 * constants.JULIAN_DAY,
+                            60.0 * constants.JULIAN_DAY,
+                            90.0 * constants.JULIAN_DAY, ]
+
+    # Set list of arc durations to consider
+    arc_durations = [1.0 * constants.JULIAN_DAY,
+                     2.0 * constants.JULIAN_DAY,
+                     7.0 * constants.JULIAN_DAY]
+
+    # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
+    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
+
+    # Set list of values for the a priori constraint on the empirical accelerations
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
+
+    # Set list of values for the a priori constraint on the landers position
+    a_priori_lander_position = [1e2, 1e3]
+
+    # Include range observable flag
+    include_lander_range_observable_flag = [False, True]
+
+    # Set list of values for the duration of the arc-wise empirical accelerations
+    empirical_accelerations_arc_duration = [0.5 * constants.JULIAN_DAY, 1.0 * constants.JULIAN_DAY]
+
+    # Set list of values for the cadence of the data
+    tracking_arc_duration = [4.0 * 3600.0, 6.0 * 3600.0, 8.0 * 3600.0]
+
+    # Set list of values for the a priori constraint on the position of the rotation pole
+    a_priori_rotation_pole_position = np.deg2rad([[np.infty, np.infty], [0.1, 0.1], [1e-2, 1e-2]])
+
+    # Set list of values for the a priori constraint on the position rate of the rotation pole
+    a_priori_rotation_pole_rate = np.deg2rad([[np.infty, np.infty], [0.1, 0.1], [1e-2, 1e-2]])
+
+    # Set list of values for the a priori constraint on the radiation pressure coefficient
+    a_priori_radiation_pressure_coefficient = [np.infty, 0.1, 1e-10]
+
+    # Set list of number of landers to include in the simulation
+    lander_to_include = [[],
+                         ["L3"],
+                         ["L1", "L3"],
+                         ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
+
+    parameters_to_tune = {
+        "initial_state_index": initial_state_indices,
+        "arc_duration": arc_durations,
+        # "simulation_duration": simulation_durations,
+        "kaula_constraint_multiplier": kaula_constraint_multipliers,
+        "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
+        "a_priori_lander_position": a_priori_lander_position,
+        "include_lander_range_observable_flag": include_lander_range_observable_flag,
+        "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
+        "tracking_arc_duration": tracking_arc_duration,
+        "a_priori_rotation_pole_position": a_priori_rotation_pole_position,
+        "a_priori_rotation_pole_rate": a_priori_rotation_pole_rate,
+        "a_priori_radiation_pressure_coefficient": a_priori_radiation_pressure_coefficient
+    }
+
+    colors_rsw_interval = ["blue", "green", "red"]
+    markers_rsw_interval = ["o", "*", "X"]
+
+    parameters_to_tune_axis_label = {
+        "initial_state_index": "K- orbit index  [-]",
+        "arc_duration": "Arc duration  [days]",
+        "simulation_duration": "Simulation duration  [days]",
+        "kaula_constraint_multiplier": "Kaula constraint multiplier  [-]",
+        "a_priori_empirical_acceleration": r"A priori $\sigma$ empirical acc.  [m/s$^2$]",
+        "a_priori_lander_position": r"A priori $\sigma$ lander position  [m]",
+        "include_lander_range_observable_flag": "Lander range observable inclusion flag  [-]",
+        "empirical_accelerations_arc_duration": "Empirical acc. arc duration  [hours]",
+        "tracking_arc_duration": "Tracking arc duration  [hours]",
+        "a_priori_rotation_pole_position": r"A priori $\sigma$ rotation pole position  [deg]",
+        "a_priori_rotation_pole_rate": r"A priori $\sigma$ rotation pole rate  [deg/s]",
+        "a_priori_radiation_pressure_coefficient": r"A priori $\sigma$ radiation pressure coefficient  [-]",
+    }
+
+    parameters_to_tune_label = {
+        "initial_state_index": "K- orbit index",
+        "arc_duration": "Arc duration",
+        "simulation_duration": "Simulation duration",
+        "kaula_constraint_multiplier": "Kaula constraint multiplier",
+        "a_priori_empirical_acceleration": r"A priori $\sigma$ empirical acc.",
+        "a_priori_lander_position": r"A priori $\sigma$ lander position",
+        "include_lander_range_observable_flag": "Lander range observable inclusion",
+        "empirical_accelerations_arc_duration": "Empirical acc. arc duration",
+        "tracking_arc_duration": "Tracking arc duration",
+        "a_priori_rotation_pole_position": r"A priori $\sigma$ rotation pole position",
+        "a_priori_rotation_pole_rate": r"A priori $\sigma$ rotation pole rate",
+        "a_priori_radiation_pressure_coefficient": r"A priori $\sigma$ SRP coeff.",
+    }
+
+    real_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="orange",
+        marker="P",
+        linestyle="None",
+        label="Re()"
+    )
+
+    imaginary_part_handle = mlines.Line2D(
+        [],
+        [],
+        color="midnightblue",
+        marker="P",
+        linestyle="None",
+        label="Im()"
+    )
+
+    RA_handle = mlines.Line2D(
+        [],
+        [],
+        color="orange",
+        marker="P",
+        linestyle="None",
+        label="RA"
+    )
+
+    DE_handle = mlines.Line2D(
+        [],
+        [],
+        color="midnightblue",
+        marker="P",
+        linestyle="None",
+        label="DE"
+    )
+
+    RA_rate_handle = mlines.Line2D(
+        [],
+        [],
+        color="orange",
+        marker="P",
+        linestyle="None",
+        label="RA rate"
+    )
+
+    DE_rate_handle = mlines.Line2D(
+        [],
+        [],
+        color="midnightblue",
+        marker="P",
+        linestyle="None",
+        label="DE rate"
+    )
+
+    cases_store = dict()
+
+    for lander_index in range(len(lander_to_include)):
+        lander = lander_to_include[lander_index]
+        input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_index}")
+
+        cases_store[lander_index] = dict()
+
+        for parameter_key in list(parameters_to_tune.keys()):
+            input_path_parameter = os.path.join(input_path_lander, parameter_key)
+
+            cases_store[lander_index][parameter_key] = dict()
+            cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"] = []
+            cases_store[lander_index][parameter_key]["formal_error_love_number"] = []
+            cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"] = []
+            cases_store[lander_index][parameter_key]["formal_error_pole_position"] = []
+            cases_store[lander_index][parameter_key]["formal_error_pole_rate"] = []
+            cases_store[lander_index][parameter_key]["formal_error_radial_love_number"] = []
+
+            for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
+
+                input_path_configuration = os.path.join(input_path_parameter, f"configuration_{parameter_value_index}")
+                input_path_covariance_results = os.path.join(input_path_configuration, "covariance_results")
+
+                # Load results
+                max_estimatable_degree_gravity_field = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "max_estimatable_degree_gravity_field.dat")
+                )
+                formal_error_love_number = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
+                )
+                if lander != []:
+                    formal_error_radial_love_number = np.loadtxt(
+                        os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
+                    )
+                formal_error_libration_amplitude = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
+                )
+                formal_error_pole_position = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_pole_position.dat")
+                )
+                formal_error_pole_rate = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_pole_rate.dat")
+                )
+
+                # Store results
+                cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"].append(max_estimatable_degree_gravity_field)
+                cases_store[lander_index][parameter_key]["formal_error_love_number"].append(formal_error_love_number)
+                cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"].append(formal_error_libration_amplitude)
+                cases_store[lander_index][parameter_key]["formal_error_pole_position"].append(formal_error_pole_position)
+                cases_store[lander_index][parameter_key]["formal_error_pole_rate"].append(formal_error_pole_rate)
+                if lander != []:
+                    cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(formal_error_radial_love_number)
+                else:
+                    cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(0.0)
+
+    # Compute difference wrt base case
+    delta_cases_store = dict()
+    for lander_index in range(1, len(lander_to_include)):
+        lander = lander_to_include[lander_index]
+        delta_cases_store[lander_index] = dict()
+        for parameter_key in list(parameters_to_tune.keys()):
+            delta_cases_store[lander_index][parameter_key] = dict()
+            delta_cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"] = []
+            delta_cases_store[lander_index][parameter_key]["formal_error_love_number"] = []
+            delta_cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"] = []
+            delta_cases_store[lander_index][parameter_key]["formal_error_pole_position"] = []
+            delta_cases_store[lander_index][parameter_key]["formal_error_pole_rate"] = []
+            delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"] = []
+
+            for i in range(len(parameters_to_tune[parameter_key])):
+                delta_cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"].append(
+                    ((cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"][i] -
+                    cases_store[lander_index - 1][parameter_key]["max_estimatable_degree_gravity_field"][i]) /
+                    cases_store[lander_index - 1][parameter_key]["max_estimatable_degree_gravity_field"][i])*100
+                )
+                delta_cases_store[lander_index][parameter_key]["formal_error_love_number"].append(
+                    ((cases_store[lander_index][parameter_key]["formal_error_love_number"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_love_number"][i][:]) /
+                    cases_store[lander_index - 1][parameter_key]["formal_error_love_number"][i][:]) * 100
+                )
+                delta_cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"].append(
+                    ((cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"][i] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_libration_amplitude"][i]) /
+                    cases_store[lander_index - 1][parameter_key]["formal_error_libration_amplitude"][i]) * 100
+                )
+                delta_cases_store[lander_index][parameter_key]["formal_error_pole_position"].append(
+                    ((cases_store[lander_index][parameter_key]["formal_error_pole_position"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_position"][i][:]) /
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_position"][i][:]) * 100
+                )
+                delta_cases_store[lander_index][parameter_key]["formal_error_pole_rate"].append(
+                    ((cases_store[lander_index][parameter_key]["formal_error_pole_rate"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_rate"][i][:]) /
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_rate"][i][:] ) * 100
+                )
+                if lander_index - 1 == 0:
+                    delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(
+                        cases_store[lander_index][parameter_key]["formal_error_radial_love_number"][i] -
+                        cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i]
+                    )
+                else:
+                    delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(
+                        ((cases_store[lander_index][parameter_key]["formal_error_radial_love_number"][i] -
+                        cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i]) /
+                         cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i]) * 100
+                    )
+
+
+    # Plot difference wrt base case
+    for lander_index in range(1, len(lander_to_include)):
+        lander = lander_to_include[lander_index]
+        input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_index}")
+
+        for parameter_key in list(parameters_to_tune.keys()):
+            input_path_parameter = os.path.join(input_path_lander, parameter_key)
+            fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(10, 8))
+            for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
+                parameter_value = parameters_to_tune[parameter_key][parameter_value_index]
+
+                if parameter_key == "simulation_duration":
+                    parameter_value = parameter_value / constants.JULIAN_DAY
+                elif parameter_key == "arc_duration":
+                    parameter_value = parameter_value / constants.JULIAN_DAY
+                elif parameter_key == "empirical_accelerations_arc_duration":
+                    parameter_value = parameter_value / 3600.0
+                elif parameter_key == "tracking_arc_duration":
+                    parameter_value = parameter_value / 3600.0
+                elif parameter_key == "lander_to_include":
+                    parameter_value = len(parameter_value)
+                elif parameter_key == "a_priori_rotation_pole_position":
+                    parameter_value = str(np.rad2deg(parameter_value))
+                elif parameter_key == "a_priori_rotation_pole_rate":
+                    parameter_value = str(np.rad2deg(parameter_value))
+                elif parameter_key == "a_priori_radiation_pressure_coefficient":
+                    parameter_value = str(parameter_value)
+
+                axes[0, 0].scatter(
+                    parameter_value,
+                    delta_cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"][parameter_value_index],
+                    color="black", marker="P"
+                )
+                axes[0, 1].scatter(
+                    parameter_value,
+                    delta_cases_store[lander_index][parameter_key]["formal_error_love_number"][parameter_value_index][0],
+                    color="orange", marker="P"
+                )
+                axes[0, 1].scatter(
+                    parameter_value,
+                    delta_cases_store[lander_index][parameter_key]["formal_error_love_number"][parameter_value_index][1],
+                    color="midnightblue", marker="P"
+                )
+                axes[1, 0].scatter(
+                    parameter_value,
+                    delta_cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"][parameter_value_index],
+                    color="black", marker="P"
+                )
+                axes[1, 1].scatter(
+                    parameter_value,
+                    np.rad2deg(delta_cases_store[lander_index][parameter_key]["formal_error_pole_position"][parameter_value_index][0]),
+                    color="orange", marker="P"
+                )
+                axes[1, 1].scatter(
+                    parameter_value,
+                    np.rad2deg(delta_cases_store[lander_index][parameter_key]["formal_error_pole_position"][parameter_value_index][1]),
+                    color="midnightblue",
+                    marker="P"
+                )
+                axes[2, 0].scatter(
+                    parameter_value,
+                    np.rad2deg(delta_cases_store[lander_index][parameter_key]["formal_error_pole_rate"][parameter_value_index][0]),
+                    color="orange", marker="P"
+                )
+                axes[2, 0].scatter(
+                    parameter_value,
+                    np.rad2deg(delta_cases_store[lander_index][parameter_key]["formal_error_pole_rate"][parameter_value_index][1]),
+                    color="midnightblue", marker="P"
+                )
+                axes[2, 1].scatter(
+                    parameter_value,
+                    delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"][parameter_value_index],
+                    color="black", marker="P"
+                )
+            axes[0, 0].set_ylabel(r"$\Delta$ Max. degree gravity [%]", fontsize=fontsize)
+            axes[0, 1].set_ylabel(r"$\Delta \sigma$ $k_2$ Love number  [%]", fontsize=fontsize)
+            axes[0, 1].legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
+            axes[1, 0].set_ylabel(r"$\Delta \sigma$ libration amplitude  [%]", fontsize=fontsize)
+            axes[1, 1].set_ylabel(f"$\Delta \sigma$ pole position  [%]", fontsize=fontsize)
+            axes[1, 1].legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
+            axes[2, 0].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+            axes[2, 0].set_ylabel(f"$\Delta \sigma$ pole rate  [%]", fontsize=fontsize)
+            axes[2, 0].legend(handles=[RA_rate_handle, DE_rate_handle], fontsize=fontsize)
+            if lander_index - 1 == 0:
+                axes[2, 1].set_ylabel(r"$\Delta \sigma$ $h_2$ Love number  [-]", fontsize=fontsize)
+            else:
+                axes[2, 1].set_ylabel(r"$\Delta \sigma$ $h_2$ Love number  [%]", fontsize=fontsize)
+            axes[2, 1].set_xlabel(parameters_to_tune_axis_label[parameter_key], fontsize=fontsize)
+
+            for ax in axes.flat:
+                ax.tick_params(labelsize=fontsize)
+                ax.grid(True, which="both")
+            if parameter_key == "kaula_constraint_multiplier" or parameter_key == "a_priori_empirical_acceleration":
+                for ax in axes.flat:
+                    ax.set_xscale("log")
+            elif parameter_key == "simulation_duration":
+                for ax in axes.flat:
+                    ax.set_xlim(left=20)
+            elif parameter_key == "a_priori_lander_position":
+                for ax in axes.flat:
+                    ax.set_xlim(left=0)
+
+            fig.suptitle(f"Improvement wrt to reduced lander case: {len(lander)} vs {len(lander_to_include[lander_index-1])}. Parameter: {parameters_to_tune_label[parameter_key]}",
+                         fontsize=fontsize)
+            fig.savefig(os.path.join(input_path_parameter, "delta_wrt_base_case.pdf"))
+            plt.close(fig)
+
+
 def summarise_tuning_parameters_analysis(input_path,
                                         fontsize=12):
 
@@ -375,7 +739,7 @@ def summarise_tuning_parameters_analysis(input_path,
                      7.0 * constants.JULIAN_DAY]
 
     # Set list of values for the Kaula multiplier for a priori constraint on standard deviation
-    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 1e-3]
+    kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
     a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
@@ -403,8 +767,8 @@ def summarise_tuning_parameters_analysis(input_path,
 
     # Set list of number of landers to include in the simulation
     lander_to_include = [[ ],
-                         ["L1"],
-                         ["L1", "L2"],
+                         ["L3"],
+                         ["L1", "L3"],
                          ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
     parameters_to_tune = {
@@ -920,12 +1284,19 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = True
+    summarise_tuning_parameters_analysis_flag = False
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         summarise_tuning_parameters_analysis(input_path, 14)
+
+    plot_delta_tuning_parameters_analysis_flag = True
+    if plot_delta_tuning_parameters_analysis_flag:
+        input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
+        time_stamp_folder = "2025.06.22.10.35.56"
+        input_path = os.path.join(input_directory, time_stamp_folder)
+        plot_delta_tuning_parameters_analysis(input_path)
 
     plot_tuning_parameters_refinement_analysis_flag = False
     if plot_tuning_parameters_refinement_analysis_flag:
