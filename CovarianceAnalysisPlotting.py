@@ -69,7 +69,7 @@ def plot_tuning_parameters_analysis(input_path,
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        # "simulation_duration": simulation_durations,
+        "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -210,6 +210,8 @@ def plot_tuning_parameters_analysis(input_path,
         input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_index}")
 
         for parameter_key in list(parameters_to_tune.keys()):
+            if lander_index == 3 and parameter_key == "simulation_duration":
+                continue
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
 
             # Create plot of figures of merit for current considered parameter
@@ -406,7 +408,7 @@ def plot_delta_tuning_parameters_analysis(input_path,
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        # "simulation_duration": simulation_durations,
+        "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -516,6 +518,9 @@ def plot_delta_tuning_parameters_analysis(input_path,
         for parameter_key in list(parameters_to_tune.keys()):
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
 
+            if lander_index == 3 and parameter_key == "simulation_duration":
+                continue
+
             cases_store[lander_index][parameter_key] = dict()
             cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"] = []
             cases_store[lander_index][parameter_key]["formal_error_love_number"] = []
@@ -567,6 +572,8 @@ def plot_delta_tuning_parameters_analysis(input_path,
         lander = lander_to_include[lander_index]
         delta_cases_store[lander_index] = dict()
         for parameter_key in list(parameters_to_tune.keys()):
+            if lander_index == 3 and parameter_key == "simulation_duration":
+                continue
             delta_cases_store[lander_index][parameter_key] = dict()
             delta_cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"] = []
             delta_cases_store[lander_index][parameter_key]["formal_error_love_number"] = []
@@ -577,29 +584,24 @@ def plot_delta_tuning_parameters_analysis(input_path,
 
             for i in range(len(parameters_to_tune[parameter_key])):
                 delta_cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"].append(
-                    ((cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"][i] -
-                    cases_store[lander_index - 1][parameter_key]["max_estimatable_degree_gravity_field"][i]) /
-                    cases_store[lander_index - 1][parameter_key]["max_estimatable_degree_gravity_field"][i])*100
+                    (cases_store[lander_index][parameter_key]["max_estimatable_degree_gravity_field"][i] -
+                    cases_store[lander_index - 1][parameter_key]["max_estimatable_degree_gravity_field"][i])
                 )
                 delta_cases_store[lander_index][parameter_key]["formal_error_love_number"].append(
-                    ((cases_store[lander_index][parameter_key]["formal_error_love_number"][i][:] -
-                    cases_store[lander_index - 1][parameter_key]["formal_error_love_number"][i][:]) /
-                    cases_store[lander_index - 1][parameter_key]["formal_error_love_number"][i][:]) * 100
+                    (cases_store[lander_index][parameter_key]["formal_error_love_number"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_love_number"][i][:])
                 )
                 delta_cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"].append(
-                    ((cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"][i] -
-                    cases_store[lander_index - 1][parameter_key]["formal_error_libration_amplitude"][i]) /
-                    cases_store[lander_index - 1][parameter_key]["formal_error_libration_amplitude"][i]) * 100
+                    (cases_store[lander_index][parameter_key]["formal_error_libration_amplitude"][i] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_libration_amplitude"][i])
                 )
                 delta_cases_store[lander_index][parameter_key]["formal_error_pole_position"].append(
-                    ((cases_store[lander_index][parameter_key]["formal_error_pole_position"][i][:] -
-                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_position"][i][:]) /
-                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_position"][i][:]) * 100
+                    (cases_store[lander_index][parameter_key]["formal_error_pole_position"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_position"][i][:])
                 )
                 delta_cases_store[lander_index][parameter_key]["formal_error_pole_rate"].append(
-                    ((cases_store[lander_index][parameter_key]["formal_error_pole_rate"][i][:] -
-                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_rate"][i][:]) /
-                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_rate"][i][:] ) * 100
+                    (cases_store[lander_index][parameter_key]["formal_error_pole_rate"][i][:] -
+                    cases_store[lander_index - 1][parameter_key]["formal_error_pole_rate"][i][:])
                 )
                 if lander_index - 1 == 0:
                     delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(
@@ -608,9 +610,8 @@ def plot_delta_tuning_parameters_analysis(input_path,
                     )
                 else:
                     delta_cases_store[lander_index][parameter_key]["formal_error_radial_love_number"].append(
-                        ((cases_store[lander_index][parameter_key]["formal_error_radial_love_number"][i] -
-                        cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i]) /
-                         cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i]) * 100
+                        (cases_store[lander_index][parameter_key]["formal_error_radial_love_number"][i] -
+                        cases_store[lander_index - 1][parameter_key]["formal_error_radial_love_number"][i])
                     )
 
 
@@ -621,6 +622,9 @@ def plot_delta_tuning_parameters_analysis(input_path,
 
         for parameter_key in list(parameters_to_tune.keys()):
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
+            if lander_index == 3 and parameter_key == "simulation_duration":
+                continue
+
             fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(10, 8))
             for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
                 parameter_value = parameters_to_tune[parameter_key][parameter_value_index]
@@ -774,7 +778,7 @@ def summarise_tuning_parameters_analysis(input_path,
     parameters_to_tune = {
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        # "simulation_duration": simulation_durations,
+        "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -816,6 +820,9 @@ def summarise_tuning_parameters_analysis(input_path,
         for parameter_key in list(parameters_to_tune.keys()):
             parameter_configuration = int(list(parameters_to_tune.keys()).index(parameter_key))
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
+
+            if lander_index == 3 and parameter_key == "simulation_duration":
+                continue
 
             for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
                 parameter_value_configuration = int(parameter_value_index)
