@@ -282,8 +282,7 @@ def perform_lander_location_analysis(time_stamp,
 
             # Run covariance analysis
             UDP.save_problem_configuration(longitude_case_path)
-            with mp.Pool(1) as pool:
-                pool.apply(UDP.perform_covariance_analysis(output_path))
+            UDP.perform_covariance_analysis(output_path)
 
 
 def single_case_analysis(time_stamp,
