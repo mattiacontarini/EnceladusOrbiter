@@ -10,28 +10,7 @@ end
 
 %% Mean Values Enceladus
 
-%Core layer (1)
-Interior_Model_Enceladus(1).R0= 5; 
-Interior_Model_Enceladus(1).rho0= 5500;  
-%Silicate layer (2) 
-Interior_Model_Enceladus(2).R0= Interior_Model_Enceladus(1).R0+195; 
-Interior_Model_Enceladus(2).rho0= 2422; % Rovirra et al. (2022)
-Interior_Model_Enceladus(2).Ks0=10E9; 
-Interior_Model_Enceladus(2).mu0=1E9; 
-Interior_Model_Enceladus(2).eta0=1e20; 
-% Ocean layer (3) 
-Interior_Model_Enceladus(3).R0=Interior_Model_Enceladus(2).R0+26; 
-Interior_Model_Enceladus(3).rho0= 1000; 
-Interior_Model_Enceladus(3).ocean=1; 
-Interior_Model_Enceladus(3).mu0=3.3e-1; 
-Interior_Model_Enceladus(3).Ks0=2.2E9; 
-Interior_Model_Enceladus(3).eta0=1.9E-3;
-% Ice layer
-Interior_Model_Enceladus(4).R0 = Interior_Model_Enceladus(3).R0+26;  
-Interior_Model_Enceladus(4).rho0=920; 
-Interior_Model_Enceladus(4).mu0=3.3E9;  
-Interior_Model_Enceladus(4).Ks0=33E9;  
-Interior_Model_Enceladus(4).eta0=1e18; 
+Interior_Model_Enceladus = set_interior_model_enceladus(); 
 
 %% Forcing Enceladus
 
@@ -39,6 +18,7 @@ Forcing_Enceladus(1).Td=33*3600;
 Forcing_Enceladus(1).n=2; 
 Forcing_Enceladus(1).m=0; 
 Forcing_Enceladus(1).F=1;
+Forcing_Enceladus(1).eccen = 0.0047;
 
 %% Variation delta
 
@@ -85,67 +65,89 @@ nb_runs_per_interior_parameter = 20;
 % Setup output structure
 Interior_Model_Enceladus_Analysis_Output(1).R0.k = [];
 Interior_Model_Enceladus_Analysis_Output(1).R0.h = [];
+Interior_Model_Enceladus_Analysis_Output(1).R0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(1).rho0.k = [];
 Interior_Model_Enceladus_Analysis_Output(1).rho0.h = [];
+Interior_Model_Enceladus_Analysis_Output(1).rho0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(1).Ks0.k = [];
 Interior_Model_Enceladus_Analysis_Output(1).Ks0.h = [];
+Interior_Model_Enceladus_Analysis_Output(1).Ks0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(1).mu0.k = [];
 Interior_Model_Enceladus_Analysis_Output(1).mu0.h = [];
+Interior_Model_Enceladus_Analysis_Output(1).mu0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(1).eta0.k = [];
 Interior_Model_Enceladus_Analysis_Output(1).eta0.h = [];
+Interior_Model_Enceladus_Analysis_Output(1).eta0.libration = [];
 
 Interior_Model_Enceladus_Analysis_Output(2).R0.k = [];
 Interior_Model_Enceladus_Analysis_Output(2).R0.h = [];
+Interior_Model_Enceladus_Analysis_Output(2).R0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(2).R0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(2).rho0.k = [];
 Interior_Model_Enceladus_Analysis_Output(2).rho0.h = [];
+Interior_Model_Enceladus_Analysis_Output(2).rho0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(2).rho0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(2).Ks0.k = [];
 Interior_Model_Enceladus_Analysis_Output(2).Ks0.h = [];
+Interior_Model_Enceladus_Analysis_Output(2).Ks0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(2).Ks0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(2).mu0.k = [];
 Interior_Model_Enceladus_Analysis_Output(2).mu0.h = [];
+Interior_Model_Enceladus_Analysis_Output(2).mu0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(2).mu0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(2).eta0.k = [];
 Interior_Model_Enceladus_Analysis_Output(2).eta0.h = [];
+Interior_Model_Enceladus_Analysis_Output(2).eta0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(2).eta0.interior_parameter = [];
 
 Interior_Model_Enceladus_Analysis_Output(3).R0.k = [];
 Interior_Model_Enceladus_Analysis_Output(3).R0.h = [];
+Interior_Model_Enceladus_Analysis_Output(3).R0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(3).R0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(3).rho0.k = [];
 Interior_Model_Enceladus_Analysis_Output(3).rho0.h = [];
+Interior_Model_Enceladus_Analysis_Output(3).rho0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(3).rho0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(3).Ks0.k = [];
 Interior_Model_Enceladus_Analysis_Output(3).Ks0.h = [];
+Interior_Model_Enceladus_Analysis_Output(3).Ks0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(3).Ks0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(3).mu0.k = [];
 Interior_Model_Enceladus_Analysis_Output(3).mu0.h = [];
+Interior_Model_Enceladus_Analysis_Output(3).mu0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(3).mu0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(3).eta0.k = [];
 Interior_Model_Enceladus_Analysis_Output(3).eta0.h = [];
+Interior_Model_Enceladus_Analysis_Output(3).eta0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(3).eta0.interior_parameter = [];
 
 Interior_Model_Enceladus_Analysis_Output(4).R0.k = [];
 Interior_Model_Enceladus_Analysis_Output(4).R0.h = [];
+Interior_Model_Enceladus_Analysis_Output(4).R0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).R0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(4).rho0.k = [];
 Interior_Model_Enceladus_Analysis_Output(4).rho0.h = [];
+Interior_Model_Enceladus_Analysis_Output(4).rho0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).rho0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(4).Ks0.k = [];
 Interior_Model_Enceladus_Analysis_Output(4).Ks0.h = [];
+Interior_Model_Enceladus_Analysis_Output(4).Ks0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).Ks0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(4).mu0.k = [];
 Interior_Model_Enceladus_Analysis_Output(4).mu0.h = [];
+Interior_Model_Enceladus_Analysis_Output(4).mu0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).mu0.interior_parameter = [];
 Interior_Model_Enceladus_Analysis_Output(4).eta0.k = [];
 Interior_Model_Enceladus_Analysis_Output(4).eta0.h = [];
+Interior_Model_Enceladus_Analysis_Output(4).eta0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).eta0.interior_parameter = [];
 
 % Run analysis
 for i = 2:Numerics_Enceladus.Nlayers
 
     for j = 1:nb_interior_parameters_to_vary
+
+        Interior_Model_Enceladus = set_interior_model_enceladus(); 
         
         if j == 1
             min = Interior_Model_Enceladus(i).R0 - Interior_Model_Enceladus_Delta(i).R0;
@@ -162,6 +164,8 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
+ 
+                [libration] = compute_librations(Interior_Model_Enceladus,Forcing_Enceladus);
                 
                 Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter, points(l)];
@@ -169,6 +173,8 @@ for i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).R0.k, k2_Enceladus];
                 Interior_Model_Enceladus_Analysis_Output(i).R0.h = [
                     Interior_Model_Enceladus_Analysis_Output(i).R0.h, h2_Enceladus];
+                Interior_Model_Enceladus_Analysis_Output(i).R0.libration = [
+                    Interior_Model_Enceladus_Analysis_Output(i).R0.libration, libration.amplitude_rad(1)];
             end
         elseif j == 2
             min = Interior_Model_Enceladus(i).rho0 - Interior_Model_Enceladus_Delta(i).rho0;
@@ -185,6 +191,7 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
+                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
                 
                 Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter, points(l)];
@@ -192,6 +199,8 @@ for i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).rho0.k, k2_Enceladus];
                 Interior_Model_Enceladus_Analysis_Output(i).rho0.h = [
                     Interior_Model_Enceladus_Analysis_Output(i).rho0.h, h2_Enceladus];
+                Interior_Model_Enceladus_Analysis_Output(i).rho0.libration = [
+                    Interior_Model_Enceladus_Analysis_Output(i).rho0.libration, libration.amplitude_rad(1)];
             end
         elseif j == 3
             min = Interior_Model_Enceladus(i).Ks0 - Interior_Model_Enceladus_Delta(i).Ks0;
@@ -208,12 +217,16 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
+                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+
                 Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter, points(l)];
                 Interior_Model_Enceladus_Analysis_Output(i).Ks0.k = [
                     Interior_Model_Enceladus_Analysis_Output(i).Ks0.k, k2_Enceladus];
                 Interior_Model_Enceladus_Analysis_Output(i).Ks0.h = [
                     Interior_Model_Enceladus_Analysis_Output(i).Ks0.h, h2_Enceladus];
+                Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration = [
+                    Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration, libration.amplitude_rad(1)];                
             end
         elseif j == 4
             min = Interior_Model_Enceladus(i).mu0 - Interior_Model_Enceladus_Delta(i).mu0;
@@ -230,12 +243,16 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
+                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+
                 Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter, points(l)];
                 Interior_Model_Enceladus_Analysis_Output(i).mu0.k = [
                     Interior_Model_Enceladus_Analysis_Output(i).mu0.k, k2_Enceladus];
                 Interior_Model_Enceladus_Analysis_Output(i).mu0.h = [
                     Interior_Model_Enceladus_Analysis_Output(i).mu0.h, h2_Enceladus];
+                Interior_Model_Enceladus_Analysis_Output(i).mu0.libration = [
+                    Interior_Model_Enceladus_Analysis_Output(i).mu0.libration, libration.amplitude_rad(1)];                
             end
         elseif j == 5
             min = Interior_Model_Enceladus(i).eta0 - Interior_Model_Enceladus_Delta(i).eta0;
@@ -252,12 +269,16 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
+                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+
                 Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter, points(l)];
                 Interior_Model_Enceladus_Analysis_Output(i).eta0.k = [
                     Interior_Model_Enceladus_Analysis_Output(i).eta0.k, k2_Enceladus];
                 Interior_Model_Enceladus_Analysis_Output(i).eta0.h = [
                     Interior_Model_Enceladus_Analysis_Output(i).eta0.h, h2_Enceladus];
+                Interior_Model_Enceladus_Analysis_Output(i).eta0.libration = [
+                    Interior_Model_Enceladus_Analysis_Output(i).eta0.libration, libration.amplitude_rad(1)];                
             end
         end
     
@@ -294,31 +315,62 @@ for i = 2:Numerics_Enceladus.Nlayers
             parameter_path = layer_path + "/eta0.dat";
         end
 
-        output_save_aux = zeros(nb_runs_per_interior_parameter, 3);
+        output_save_aux = zeros(nb_runs_per_interior_parameter, 4);
             
         if j == 1
             output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter);
             output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.k);
             output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).R0.h);
+            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).R0.libration;
         elseif j == 2
             output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter);
             output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.k);
             output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.h);
+            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).rho0.libration;
         elseif j == 3
             output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter);
             output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.k);
             output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.h);
+            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration;
         elseif j == 4
             output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter);
             output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.k);
             output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.h);
+            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).mu0.libration;
         elseif j == 5
             output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter);
             output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.k);
-            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.h);                
+            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.h);          
+            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).eta0.libration;
         end
     
         writematrix(output_save_aux, parameter_path)
 
     end
+end
+
+
+function interior_model_enceladus = set_interior_model_enceladus()
+    %Core layer (1)
+    interior_model_enceladus(1).R0= 5; 
+    interior_model_enceladus(1).rho0= 5500;  
+    %Silicate layer (2) 
+    interior_model_enceladus(2).R0= interior_model_enceladus(1).R0+195; 
+    interior_model_enceladus(2).rho0= 2422; % Rovirra et al. (2022)
+    interior_model_enceladus(2).Ks0=10E9; 
+    interior_model_enceladus(2).mu0=1E9; 
+    interior_model_enceladus(2).eta0=1e20; 
+    % Ocean layer (3) 
+    interior_model_enceladus(3).R0=interior_model_enceladus(2).R0+26; 
+    interior_model_enceladus(3).rho0= 1000; 
+    interior_model_enceladus(3).ocean=1; 
+    interior_model_enceladus(3).mu0=3.3e-1; 
+    interior_model_enceladus(3).Ks0=2.2E9; 
+    interior_model_enceladus(3).eta0=1.9E-3;
+    % Ice layer
+    interior_model_enceladus(4).R0 = interior_model_enceladus(3).R0+26;  
+    interior_model_enceladus(4).rho0=920; 
+    interior_model_enceladus(4).mu0=3.3E9;  
+    interior_model_enceladus(4).Ks0=33E9;  
+    interior_model_enceladus(4).eta0=1e18; 
 end
