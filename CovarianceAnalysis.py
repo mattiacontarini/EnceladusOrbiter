@@ -219,7 +219,7 @@ def perform_tuning_parameters_analysis(time_stamp,
                 elif parameter_key == "empirical_accelerations_arc_duration":
                     UDP.empirical_accelerations_arc_duration = parameter_value
                 elif parameter_key == "tracking_arc_duration":
-                    UDP.tracking_arc_duration = parameter_value
+                    UDP.tracking_arc_duration_Earth_GS = parameter_value
                 elif parameter_key == "lander_to_include":
                     UDP.lander_to_include = parameter_value
                 elif parameter_key == "a_priori_rotation_pole_position":
@@ -234,6 +234,63 @@ def perform_tuning_parameters_analysis(time_stamp,
                 UDP.save_problem_configuration(output_path)
                 with mp.Pool(1) as pool:
                     pool.apply(UDP.perform_covariance_analysis(output_path))
+
+
+def perform_nominal_cases_analysis(time_stamp,
+                                   save_simulation_results_flag,
+                                   save_covariance_results_flag,):
+    # Load SPICE kernels for simulation
+    spice.load_standard_kernels()
+    kernels_to_load = [
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de438.bsp",
+        # "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat427.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/de440.bsp",
+        "/Users/mattiacontarini/Documents/Code/Thesis/kernels/sat441l.bsp",
+        # "kernels/de440.bsp",
+        # "kernels/sat441l.bsp"
+    ]
+    spice.load_standard_kernels(kernels_to_load)
+
+    # Set output path
+    output_folder = "./output/covariance_analysis/nominal_cases_analysis"
+    output_path = os.path.join(output_folder, time_stamp)
+    os.makedirs(output_path, exist_ok=True)
+
+    # Set orbits to consider
+    initial_state_indices = [1, 2, 3]
+
+    # Set number of landers to consider for each orbit scenario
+    lander_to_include_list = [[ ],
+                         ["L3"],
+                         ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
+
+    for initial_state_index in initial_state_indices:
+        orbit_solution_path = os.path.join(output_path, f"initial_state_index_{initial_state_index}")
+        for j in range(len(lander_to_include_list)):
+            lander_to_include_path = os.path.join(orbit_solution_path, f"lander_to_include_case_{j}")
+            os.makedirs(lander_to_include_path, exist_ok=True)
+
+            # Setup problem
+            UDP = CovarianceAnalysis.from_config()
+            UDP.initial_state_index = initial_state_index
+            UDP.lander_to_include = lander_to_include_list[j]
+            UDP.arc_duration = 7.0 * constants.JULIAN_DAY
+            UDP.simulation_duration = 28.0 * constants.JULIAN_DAY
+            UDP.kaula_constraint_multiplier = 4e-4
+            UDP.a_priori_empirical_accelerations = 1e-9
+            UDP.a_priori_lander_position = 1e2
+            UDP.empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
+            UDP.tracking_arc_duration_Earth_GS = 8.0 * 3600.0
+            UDP.a_priori_rotation_pole_position = np.array([np.infty, np.infty])
+            UDP.a_priori_rotation_pole_rate = np.array([np.infty, np.inf])
+            UDP.a_priori_radiation_pressure_coefficient = 1e-10
+            UDP.estimate_h2_love_number_flag = True
+            UDP.save_simulation_results_flag = save_simulation_results_flag
+            UDP.save_covariance_results_flag = save_covariance_results_flag
+
+            # Run covariance analysis
+            UDP.save_problem_configuration(lander_to_include_path)
+            UDP.perform_covariance_analysis(lander_to_include_path)
 
 
 def perform_lander_location_analysis(time_stamp,
@@ -282,7 +339,7 @@ def perform_lander_location_analysis(time_stamp,
 
             # Run covariance analysis
             UDP.save_problem_configuration(longitude_case_path)
-            UDP.perform_covariance_analysis(output_path)
+            UDP.perform_covariance_analysis(longitude_case_path)
 
 
 def single_case_analysis(time_stamp,
