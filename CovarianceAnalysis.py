@@ -261,14 +261,16 @@ def perform_nominal_cases_analysis(time_stamp,
 
     # Set number of landers to consider for each orbit scenario
     lander_to_include_list = [[ ],
-                         ["L3"],
-                         ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
+                              ["L3"],
+                              ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
     for initial_state_index in initial_state_indices:
         orbit_solution_path = os.path.join(output_path, f"initial_state_index_{initial_state_index}")
         for j in range(len(lander_to_include_list)):
             lander_to_include_path = os.path.join(orbit_solution_path, f"lander_to_include_case_{j}")
             os.makedirs(lander_to_include_path, exist_ok=True)
+
+            print(f"Analysing lander to include case {j} of initial state K{initial_state_index}.")
 
             # Setup problem
             UDP = CovarianceAnalysis.from_config()
@@ -284,7 +286,8 @@ def perform_nominal_cases_analysis(time_stamp,
             UDP.a_priori_rotation_pole_position = np.array([np.infty, np.infty])
             UDP.a_priori_rotation_pole_rate = np.array([np.infty, np.inf])
             UDP.a_priori_radiation_pressure_coefficient = 1e-10
-            UDP.estimate_h2_love_number_flag = True
+            if lander_to_include_list[j] != []:
+                UDP.estimate_h2_love_number_flag = True
             UDP.save_simulation_results_flag = save_simulation_results_flag
             UDP.save_covariance_results_flag = save_covariance_results_flag
 
@@ -403,8 +406,15 @@ def main():
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
+    # Perform the covariance analysis for the selected nominal cases
+    perform_nominal_cases_analysis_flag = True
+    if perform_nominal_cases_analysis_flag:
+        perform_nominal_cases_analysis(time_stamp,
+                                       save_simulation_results_flag,
+                                       save_covariance_results_flag)
+
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = True
+    perform_single_case_analysis_flag = False
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
