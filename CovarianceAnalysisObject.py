@@ -1102,7 +1102,7 @@ class CovarianceAnalysis:
         # propagated_formal_errors = numerical_simulation.estimation.propagate_formal_errors(covariance_to_use, estimator.state_transition_interface, output_times)
 
         # Compute condition number of output covariance matrix
-        condition_number = np.linalg.cond(covariance_to_use)
+        condition_number = np.linalg.cond(covariance)
 
         # Retrieve rms of formal error of SH gravity coefficients
         formal_error_cosine_coef = formal_errors_to_use[indices_cosine_coef[0]:
