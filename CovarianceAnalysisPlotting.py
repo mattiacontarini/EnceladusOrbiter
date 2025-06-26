@@ -37,7 +37,7 @@ def plot_tuning_parameters_analysis(input_path,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
 
     # Set list of values for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
@@ -376,7 +376,7 @@ def plot_delta_tuning_parameters_analysis(input_path,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
 
     # Set list of values for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
@@ -746,7 +746,7 @@ def summarise_tuning_parameters_analysis(input_path,
     kaula_constraint_multipliers = [1e-6, 1e-5, 1e-4, 4e-4, 1e-3]
 
     # Set list of values for the a priori constraint on the empirical accelerations
-    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6]
+    a_priori_empirical_accelerations = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]
 
     # Set list of values for the a priori constraint on the landers position
     a_priori_lander_position = [1e2, 1e3]
@@ -802,6 +802,7 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_pole_rate = [],
         rms_formal_error_lander_position = [],
         formal_error_radial_love_number = [],
+        rms_formal_error_degree_2 = []
     )
     parameters_of_interest_axis_labels = dict(
         max_estimatable_degree_gravity_field="Max. degree gravity field  [-]",
@@ -811,6 +812,7 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_pole_rate = r"$\sigma$ pole rate  [deg s$^{-1}$]",
         rms_formal_error_lander_position = "RMS formal error lander position  [m]",
         formal_error_radial_love_number = r"$\sigma$ $h_2$ Love number  [-]",
+        rms_formal_error_degree_2 = r"RMS($\sigma$) gravity degree 2  [-] ",
     )
 
     for lander_index in range(len(lander_to_include)):
@@ -844,6 +846,9 @@ def summarise_tuning_parameters_analysis(input_path,
                 )
                 formal_error_pole_rate = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_pole_rate.dat")
+                )
+                rms_formal_error_degree_2 = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "rms_formal_error_degree_2.dat")
                 )
                 if lander_index != 0:
                     formal_error_radial_love_number = np.loadtxt(
@@ -899,6 +904,7 @@ def summarise_tuning_parameters_analysis(input_path,
                 parameters_of_interest["formal_error_libration_amplitude"].append(np.rad2deg(formal_error_libration_amplitude))
                 parameters_of_interest["formal_error_pole_position"].append(np.rad2deg(formal_error_pole_position))
                 parameters_of_interest["formal_error_pole_rate"].append(np.rad2deg(formal_error_pole_rate))
+                parameters_of_interest["rms_formal_error_degree_2"].append(rms_formal_error_degree_2)
                 if lander_index != 0:
                     parameters_of_interest["formal_error_radial_love_number"].append(formal_error_radial_love_number)
 
@@ -979,11 +985,30 @@ def summarise_tuning_parameters_analysis(input_path,
         label="Average"
     )
 
+    cosine_terms_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        marker="o",
+        linestyle="None",
+        label="Cosine"
+    )
+
+    sine_terms_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        marker="o",
+        linestyle="None",
+        label="Sine"
+    )
+
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
         ax = fig.add_subplot(1, 1, 1)
         parameter_key = list(parameters_of_interest.keys())[i]
-        if parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
+        if (parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position" or
+                parameter_key == "formal_error_pole_rate" or parameter_key == "rms_formal_error_degree_2"):
             for j in range(len(configurations_list)):
                 ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][0], color="blue")
                 ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][1], color="red")
@@ -1024,6 +1049,8 @@ def summarise_tuning_parameters_analysis(input_path,
             ax.legend(handles=[real_part_handle, imaginary_part_handle], fontsize=fontsize)
         elif parameter_key == "rms_formal_error_lander_position":
             ax.legend(handles=[position_x_handle, position_y_handle, position_z_handle, position_average_handle], fontsize=fontsize)
+        elif parameter_key == "rms_formal_error_degree_2":
+            ax.legend(handles=[cosine_terms_handle, sine_terms_handle], fontsize=fontsize)
         ax.set_xlabel("Configuration  [-]", fontsize=fontsize)
         ax.set_ylabel(parameters_of_interest_axis_labels[parameter_key], fontsize=fontsize)
         ax.tick_params(axis="x", labelsize=10, rotation=90)
@@ -1284,14 +1311,14 @@ def plot_h2_partials_analysis(input_path, fontsize=12):
 def main():
 
     # Analyse parameters of interest varying one at a time
-    plot_tuning_parameters_analysis_flag = False
+    plot_tuning_parameters_analysis_flag = True
     if plot_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = False
+    summarise_tuning_parameters_analysis_flag = True
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
