@@ -312,10 +312,12 @@ def single_case_analysis(time_stamp,
     # Set flag for saving results
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
-    UDP.save_obs_times_of_vehicle_flag = True
+    UDP.save_obs_times_of_vehicle_flag = False
 
     UDP.include_lander_range_observable_flag = False
-    UDP.lander_to_include = ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]
+    UDP.lander_to_include = ["L3"]
+    UDP.simulation_duration = 90.0 * constants.JULIAN_DAY
+    UDP.arc_duration = 7.0 * constants.JULIAN_DAY
     UDP.use_station_position_consider_parameter_flag = True
 
     UDP.estimate_h2_love_number_flag = True
@@ -340,14 +342,14 @@ def main():
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = True
+    perform_tuning_parameters_analysis_flag = False
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = False
+    perform_single_case_analysis_flag = True
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
