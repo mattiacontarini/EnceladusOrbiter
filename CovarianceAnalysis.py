@@ -317,7 +317,6 @@ def single_case_analysis(time_stamp,
     UDP.include_lander_range_observable_flag = False
     UDP.lander_to_include = ["L3"]
     UDP.simulation_duration = 90.0 * constants.JULIAN_DAY
-    UDP.arc_duration = 7.0 * constants.JULIAN_DAY
     UDP.use_station_position_consider_parameter_flag = True
 
     UDP.estimate_h2_love_number_flag = True
