@@ -1303,6 +1303,121 @@ def plot_h2_partials_analysis(input_path, fontsize=12):
     fig.savefig(os.path.join(input_path, "h2_partials.pdf"))
 
 
+def plot_nominal_cases_analysis(input_path, fontsize=12):
+    initial_state_indices = [1, 2, 3]
+
+    lander_to_include_list = [[ ],
+                              ["L3"],
+                              ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
+
+    colors_initial_state_index = dict()
+    colors_initial_state_index[1] = "blue"
+    colors_initial_state_index[2] = "red"
+    colors_initial_state_index[3] = "green"
+    markers_initial_state_index = dict()
+    markers_initial_state_index[1] = "o"
+    markers_initial_state_index[2] = "P"
+    markers_initial_state_index[3] = "^"
+
+    initial_state_handles = []
+    for initial_state_index in initial_state_indices:
+        initial_state_handles.append(
+            mlines.Line2D([],
+                          [],
+                          color=colors_initial_state_index[initial_state_index],
+                          linestyle=" ",
+                          marker=markers_initial_state_index[initial_state_index],
+                          label=f"K{initial_state_index}")
+        )
+
+    fig, axes = plt.subplots(3, 2, figsize=(10, 8), constrained_layout=True)
+    for initial_state_index in initial_state_indices:
+        initial_state_input_path = os.path.join(input_path, f"initial_state_index_{initial_state_index}")
+        for j in range(len(lander_to_include_list)):
+            lander_to_include_input_path = os.path.join(initial_state_input_path, f"lander_to_include_case_{j}")
+            input_path_covariance_results = os.path.join(lander_to_include_input_path, "covariance_results")
+            lander = lander_to_include_list[j]
+
+            nb_landers = str(len(lander))
+
+            # Load results
+            max_estimatable_degree_gravity_field = np.loadtxt(
+                os.path.join(input_path_covariance_results, "max_estimatable_degree_gravity_field.dat")
+            )
+            formal_error_love_number = np.loadtxt(
+                os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
+            )
+            sigma_k2 = np.sqrt(formal_error_love_number[0]**2 + formal_error_love_number[1]**2)
+            if lander != []:
+                formal_error_radial_love_number = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
+                )
+            formal_error_libration_amplitude = np.loadtxt(
+                os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
+            )
+            formal_error_pole_position = np.loadtxt(
+                os.path.join(input_path_covariance_results, "formal_error_pole_position.dat")
+            )
+
+            axes[0, 0].scatter(nb_landers, max_estimatable_degree_gravity_field,
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+            axes[0, 1].scatter(nb_landers, sigma_k2,
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+            if lander != []:
+                axes[1, 0].scatter(nb_landers, formal_error_radial_love_number,
+                                   color=colors_initial_state_index[initial_state_index],
+                                   marker=markers_initial_state_index[initial_state_index])
+            axes[1, 1].scatter(nb_landers, np.rad2deg(formal_error_libration_amplitude),
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+            axes[2, 0].scatter(nb_landers, np.rad2deg(formal_error_pole_position[0]),
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+            axes[2, 1].scatter(nb_landers, np.rad2deg(formal_error_pole_position[1]),
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+    axes[2, 0].set_xlabel("Nb. landers  [-]", fontsize=fontsize)
+    axes[2, 1].set_xlabel("Nb. landers  [-]", fontsize=fontsize)
+    axes[0, 0].set_ylabel("Max. deg. gravity  [-]", fontsize=fontsize)
+    axes[0, 1].set_ylabel(r"$\sigma$ $k_2$  [-]", fontsize=fontsize)
+    axes[1, 0].set_ylabel(r"$\sigma$ $h_2$  [-]", fontsize=fontsize)
+    axes[1, 1].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
+    axes[2, 0].set_ylabel(r"$\sigma$ pole RA  [deg]", fontsize=fontsize)
+    axes[2, 1].set_ylabel(r"$\sigma$ pole DE  [deg]", fontsize=fontsize)
+
+    ticks = []
+    ticks_labels = []
+    i = 0
+    for j in range(len(lander_to_include_list)):
+        ticks.append(i)
+        ticks_labels.append(len(lander_to_include_list[j]))
+        i+=1
+
+    for ax in axes.flat:
+        if ax == axes[1, 0]:
+            ax.set_xticks(ticks[:-1], ticks_labels[1:])
+        else:
+            ax.set_xticks(ticks, ticks_labels)
+        ax.tick_params(labelsize=fontsize)
+        ax.grid(True, which="both")
+    axes[0, 1].set_yscale("log")
+    axes[0, 1].set_ylim(bottom=1e-5)
+    axes[1, 0].set_yscale("log")
+    axes[1, 0].set_ylim(bottom=1e-4, top=2e-3)
+    axes[1, 1].set_yscale("log")
+    axes[1, 1].set_ylim(bottom=1e-7)
+    axes[2, 0].set_yscale("log")
+    axes[2, 0].set_ylim(bottom=1e-6)
+    axes[2, 1].set_yscale("log")
+    axes[2, 1].set_ylim(bottom=1e-7)
+
+    fig.legend(handles=initial_state_handles, fontsize=fontsize)
+
+    fig.suptitle("Representative nominal cases", fontsize=fontsize)
+    fig.savefig(os.path.join(input_path, "nominal_cases_analysis.pdf"))
+    plt.close(fig)
 
 
 #######################################################################################################################
@@ -1311,21 +1426,21 @@ def plot_h2_partials_analysis(input_path, fontsize=12):
 def main():
 
     # Analyse parameters of interest varying one at a time
-    plot_tuning_parameters_analysis_flag = True
+    plot_tuning_parameters_analysis_flag = False
     if plot_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = True
+    summarise_tuning_parameters_analysis_flag = False
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
         input_path = os.path.join(input_directory, time_stamp_folder)
         summarise_tuning_parameters_analysis(input_path, 14)
 
-    plot_delta_tuning_parameters_analysis_flag = True
+    plot_delta_tuning_parameters_analysis_flag = False
     if plot_delta_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.06.22.10.35.56"
@@ -1352,6 +1467,13 @@ def main():
         time_stamp_folder = "2025.06.20.16.31.24"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
+
+    plot_nominal_cases_analysis_flag = True
+    if plot_nominal_cases_analysis_flag:
+        input_directory = "./output/covariance_analysis/nominal_cases_analysis"
+        time_stamp_folder = "2025.06.26.14.11.48"
+        input_path = os.path.join(input_directory, time_stamp_folder)
+        plot_nominal_cases_analysis(input_path)
 
 
 if __name__ == "__main__":
