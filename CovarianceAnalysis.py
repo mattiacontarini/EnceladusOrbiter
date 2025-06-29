@@ -16,7 +16,6 @@ from tudatpy import constants
 import datetime
 import os
 import numpy as np
-import multiprocessing as mp
 
 def tuning_parameter_refinement_analysis(save_simulation_results_flag,
                                          save_covariance_results_flag):
@@ -74,8 +73,7 @@ def tuning_parameter_refinement_analysis(save_simulation_results_flag,
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
-    with mp.Pool(1) as pool:
-        pool.apply(UDP.perform_covariance_analysis(output_path))
+    UDP.perform_covariance_analysis(output_path)
 
 
 def perform_tuning_parameters_analysis(time_stamp,
@@ -146,9 +144,9 @@ def perform_tuning_parameters_analysis(time_stamp,
     a_priori_radiation_pressure_coefficient  = [np.infty, 0.1, 1e-10]
 
     parameters_to_tune = {
+        "simulation_duration": simulation_durations,
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
-        "simulation_duration": simulation_durations,
         "kaula_constraint_multiplier": kaula_constraint_multipliers,
         "a_priori_empirical_acceleration": a_priori_empirical_accelerations,
         "a_priori_lander_position": a_priori_lander_position,
@@ -199,6 +197,8 @@ def perform_tuning_parameters_analysis(time_stamp,
                 # Estimate h2 Love number
                 if lander != [ ]:
                     UDP.estimate_h2_love_number_flag = True
+                if parameter_key == "simulation_duration" and lander == ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]:
+                    UDP.estimate_h2_love_number_flag = False
 
                 output_path = os.path.join(output_path_parameter, f"configuration_{parameter_value_index}")
                 os.makedirs(output_path, exist_ok=True)
@@ -232,8 +232,7 @@ def perform_tuning_parameters_analysis(time_stamp,
                     raise Exception("Unknown key for parameters to tune.")
 
                 UDP.save_problem_configuration(output_path)
-                with mp.Pool(1) as pool:
-                    pool.apply(UDP.perform_covariance_analysis(output_path))
+                UDP.perform_covariance_analysis(output_path)
 
 
 def perform_nominal_cases_analysis(time_stamp,
@@ -297,6 +296,7 @@ def perform_nominal_cases_analysis(time_stamp,
 
 
 def perform_lander_location_analysis(time_stamp,
+                                     initial_state_index,
                                      save_simulation_results_flag,
                                      save_covariance_results_flag):
 
@@ -334,6 +334,7 @@ def perform_lander_location_analysis(time_stamp,
 
             # Setup problem
             UDP = CovarianceAnalysis.from_config()
+            UDP.initial_state_index = initial_state_index
             UDP.lander_to_include = [lander_to_include]
             UDP.lander_coordinates[UDP.lander_to_include[0]] = [0.0, latitudes_range[i], longitudes_range[j]]
             UDP.estimate_h2_love_number_flag = True
@@ -374,14 +375,14 @@ def single_case_analysis(time_stamp,
     UDP.save_obs_times_of_vehicle_flag = False
 
     UDP.include_lander_range_observable_flag = False
-    UDP.lander_to_include = ["L3"]
-    UDP.simulation_duration = 90.0 * constants.JULIAN_DAY
+    #UDP.lander_to_include = ["L3"]
+    #UDP.simulation_duration = 90.0 * constants.JULIAN_DAY
     UDP.use_station_position_consider_parameter_flag = True
 
     UDP.estimate_h2_love_number_flag = True
 
     # Perform covariance analysis
-    UDP.save_problem_configuration(output_path)
+    # UDP.save_problem_configuration(output_path)
     UDP.perform_covariance_analysis(output_path)
 
 
@@ -400,14 +401,14 @@ def main():
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = False
+    perform_tuning_parameters_analysis_flag = True
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = True
+    perform_nominal_cases_analysis_flag = False
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,
@@ -423,7 +424,9 @@ def main():
     # Study the effect of changing the location of the landers
     perform_landers_location_analysis_flag = False
     if perform_landers_location_analysis_flag:
+        initial_state_index = 2
         perform_lander_location_analysis(time_stamp,
+                                         initial_state_index,
                                          save_simulation_results_flag,
                                          save_covariance_results_flag)
 
