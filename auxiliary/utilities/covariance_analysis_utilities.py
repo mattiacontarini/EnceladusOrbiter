@@ -33,12 +33,12 @@ def apply_kaula_constraint_a_priori(kaula_constraint_multiplier, max_deg_gravity
 
 
 def extend_design_matrix_to_h2_love_number(design_matrix,
+                                           sorted_observation_epochs,
+                                           lander_to_include,
+                                           lander_coordinates,
                                            indices_lander_position,
                                            gravitational_parameter_ratio,
-                                           station_position,
-                                           station_name,
-                                           body_equatorial_radius,
-                                           sorted_observation_epochs,
+                                           body_radius,
                                            bodies):
 
     nb_observations = design_matrix.shape[0]
@@ -47,30 +47,59 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
     design_matrix_extended = np.zeros((nb_observations, nb_parameters_extended))
     design_matrix_extended[:, :nb_parameters] = design_matrix
 
-    station_position_unit_vector = station_position / np.linalg.norm(station_position)
-    dh_drL = design_matrix[:, indices_lander_position[0]:indices_lander_position[0] + indices_lander_position[1]]
     dh_dh2 = np.zeros((nb_observations,))
     drL_dh2_store = dict()
     dh_dh2_store = dict()
-    for i in range(nb_observations):
-        epoch = sorted_observation_epochs[i]
+    for j in range(len(lander_to_include)):
 
-        # Compute nominal station position displacement
-        saturn_position_cartesian = bodies.get("Saturn").state_in_base_frame_from_ephemeris(epoch)[:3]
-        enceladus_inertial_to_body_fixed_rotation_matrix = bodies.get("Enceladus").rotation_model.inertial_to_body_fixed_rotation(epoch)
-        relative_body_position_cartesian = np.dot(enceladus_inertial_to_body_fixed_rotation_matrix, saturn_position_cartesian)
-        drL_dh2_i = astro.gravitation.calculate_degree_two_basic_tidal_displacement(gravitational_parameter_ratio,
-                                                                                    station_position_unit_vector,
-                                                                                    relative_body_position_cartesian,
-                                                                                    body_equatorial_radius,
-                                                                                    1.0,
-                                                                                    0.0)
+        station_name = lander_to_include[j]
+
+        # Retrieve position of surface lander in Enceladus' frame
+        station_state_spherical = np.zeros((6,))
+        station_state_spherical[0] = body_radius + lander_coordinates[station_name][0]
+        station_state_spherical[1] = lander_coordinates[station_name][1]
+        station_state_spherical[2] = lander_coordinates[station_name][2]
+        station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
+        station_position_unit_vector = station_position_cartesian / np.linalg.norm(station_position_cartesian)
+
+        current_lander_indices = indices_lander_position[station_name]
+        dh_drL = design_matrix[:, current_lander_indices[0]:current_lander_indices[0] + current_lander_indices[1]]
+
+        continue_flag = True
+        for k in range(dh_drL.shape[0]):
+            if (dh_drL[k, :] != np.zeros((3,))).any():
+                continue_flag = False
+                break
 
         drL_dh2_average = CovAnalysisConfig.lander_average_position_deformation[station_name]
-        drL_dh2_i = drL_dh2_i - drL_dh2_average
-        dh_dh2[i] = np.dot(dh_drL[i, :], drL_dh2_i)
 
-        drL_dh2_store[epoch] = drL_dh2_i
+        drL_dh2_store[station_name] = dict()
+
+        if not continue_flag:
+
+            for i in range(nb_observations):
+                epoch = sorted_observation_epochs[i]
+
+                # Compute nominal station position displacement
+                saturn_position_cartesian = bodies.get("Saturn").state_in_base_frame_from_ephemeris(epoch)[:3]
+                enceladus_inertial_to_body_fixed_rotation_matrix = bodies.get("Enceladus").rotation_model.inertial_to_body_fixed_rotation(epoch)
+                relative_body_position_cartesian = np.dot(enceladus_inertial_to_body_fixed_rotation_matrix, saturn_position_cartesian)
+                drL_dh2_i = astro.gravitation.calculate_degree_two_basic_tidal_displacement(gravitational_parameter_ratio,
+                                                                                            station_position_unit_vector,
+                                                                                            relative_body_position_cartesian,
+                                                                                            body_radius,
+                                                                                            1.0,
+                                                                                            0.0)
+
+                drL_dh2_i = drL_dh2_i - drL_dh2_average
+
+                dh_dh2[i] += np.dot(dh_drL[i, :], drL_dh2_i)
+
+
+                drL_dh2_store[station_name][epoch] = drL_dh2_i
+
+    for i in range(nb_observations):
+        epoch = sorted_observation_epochs[i]
         dh_dh2_store[epoch] = dh_dh2[i]
     
     design_matrix_extended[:, nb_parameters_extended - 1] = dh_dh2

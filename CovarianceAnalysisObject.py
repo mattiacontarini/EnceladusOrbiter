@@ -766,11 +766,13 @@ class CovarianceAnalysis:
                 0] + i] = self.a_priori_empirical_accelerations ** -2
 
         # Set a priori constraint for landers' position
+        indices_lander_position_dict = dict()
         for lander_name in self.lander_to_include:
             indices_lander_position = parameters_to_estimate.indices_for_parameter_type(
                 (numerical_simulation.estimation_setup.parameter.ground_station_position_type,
                  ("Enceladus", lander_name)))[0]
             indices_estimation_parameters.append(indices_lander_position)
+            indices_lander_position_dict[lander_name] = indices_lander_position
             for i in range(indices_lander_position[1]):
                 inv_apriori[indices_lander_position[0] + i, indices_lander_position[
                     0] + i] = self.a_priori_lander_position ** -2
@@ -987,28 +989,20 @@ class CovarianceAnalysis:
             inv_apriori_extended[:nb_parameters, :nb_parameters] = inv_apriori
             inv_apriori_extended[nb_parameters_extended - 1, nb_parameters_extended - 1] = self.a_priori_h2_love_number ** -2
 
-            indices_lander = (indices_lander_position[0], 3)
-
             gravitational_parameter_ratio = bodies.get("Saturn").gravitational_parameter / bodies.get("Enceladus").gravitational_parameter
 
             Enceladus_radius = spice.get_average_radius("Enceladus")
 
-            station_name = self.lander_to_include[0]
-            station_state_spherical = np.zeros((6,))
-            station_state_spherical[0] = Enceladus_radius + self.lander_coordinates[station_name][0]
-            station_state_spherical[1] = self.lander_coordinates[station_name][1]
-            station_state_spherical[2] = self.lander_coordinates[station_name][2]
-            station_position_cartesian = astro.element_conversion.spherical_to_cartesian(station_state_spherical)[:3]
-
             sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
-            partials_extended, drL_dh2_dict, dh_dh2_dict = CovUtil.extend_design_matrix_to_h2_love_number(partials,
-                                                                               indices_lander,
-                                                                               gravitational_parameter_ratio,
-                                                                               station_position_cartesian,
-                                                                               station_name,
-                                                                               Enceladus_radius,
-                                                                               sorted_observation_epochs,
-                                                                               bodies)
+            partials_extended, drL_dh2_dict, dh_dh2_dict = CovUtil.extend_design_matrix_to_h2_love_number(
+                partials,
+                sorted_observation_epochs,
+                self.lander_to_include,
+                self.lander_coordinates,
+                indices_lander_position_dict,
+                gravitational_parameter_ratio,
+                Enceladus_radius,
+                bodies)
             normalization_terms_extended = CovUtil.get_normalization_terms(partials_extended)
             normalized_partials_extended = CovUtil.normalize_design_matrix(partials_extended, normalization_terms_extended)
             normalized_inv_apriori_extended = CovUtil.normalize_inv_apriori_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
