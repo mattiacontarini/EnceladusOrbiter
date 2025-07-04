@@ -958,11 +958,6 @@ class CovarianceAnalysis:
         weight_matrix_diagonal = covariance_input.weight_matrix_diagonal
         consider_normalization_terms = covariance_output.consider_normalization_factors
 
-        # Build weight matrix out of the main diagonal
-        weight_matrix = np.zeros((len(weight_matrix_diagonal), len(weight_matrix_diagonal)))
-        for i in range(len(weight_matrix_diagonal)):
-            weight_matrix[i, i] = weight_matrix_diagonal[i]
-
         # Retrieve results with consider parameters
         if self.use_range_bias_consider_parameter_flag or self.use_station_position_consider_parameter_flag:
             consider_covariance_contribution = covariance_output.consider_covariance_contribution
@@ -1006,6 +1001,11 @@ class CovarianceAnalysis:
             normalization_terms_extended = CovUtil.get_normalization_terms(partials_extended)
             normalized_partials_extended = CovUtil.normalize_design_matrix(partials_extended, normalization_terms_extended)
             normalized_inv_apriori_extended = CovUtil.normalize_inv_apriori_covariance_matrix(inv_apriori_extended, normalization_terms_extended)
+
+            # Build weight matrix out of the main diagonal
+            weight_matrix = np.zeros((len(weight_matrix_diagonal), len(weight_matrix_diagonal)))
+            for i in range(len(weight_matrix_diagonal)):
+                weight_matrix[i, i] = weight_matrix_diagonal[i]
 
 
             normalized_covariance_extended = np.linalg.inv(np.dot(normalized_partials_extended.T,
@@ -1316,15 +1316,20 @@ class CovarianceAnalysis:
 
             # Filter formal error of empirical accelerations
             formal_error_empirical_accelerations_rsw_filtered_list = []
-            for i in range(nb_empirical_accelerations_arcs):
-                if (self.a_priori_empirical_accelerations - 1e-10 <=
-                    formal_error_empirical_accelerations_rsw_list[i][0] < self.a_priori_empirical_accelerations + 1e-10
-                    and self.a_priori_empirical_accelerations - 1e-10 <=
-                    formal_error_empirical_accelerations_rsw_list[i][1] < self.a_priori_empirical_accelerations + 1e-10
-                    and self.a_priori_empirical_accelerations - 1e-10 <=
-                    formal_error_empirical_accelerations_rsw_list[i][2] < self.a_priori_empirical_accelerations + 1e-10):
-                    continue
-                else:
+            if self.empirical_accelerations_arc_duration != self.arc_duration:
+                for i in range(nb_empirical_accelerations_arcs):
+                    if (self.a_priori_empirical_accelerations - 1e-10 <=
+                        formal_error_empirical_accelerations_rsw_list[i][0] < self.a_priori_empirical_accelerations + 1e-10
+                        and self.a_priori_empirical_accelerations - 1e-10 <=
+                        formal_error_empirical_accelerations_rsw_list[i][1] < self.a_priori_empirical_accelerations + 1e-10
+                        and self.a_priori_empirical_accelerations - 1e-10 <=
+                        formal_error_empirical_accelerations_rsw_list[i][2] < self.a_priori_empirical_accelerations + 1e-10):
+                        continue
+                    else:
+                        formal_error_empirical_accelerations_rsw_filtered_list.append(
+                            formal_error_empirical_accelerations_rsw_list[i])
+            else:
+                for i in range(nb_empirical_accelerations_arcs):
                     formal_error_empirical_accelerations_rsw_filtered_list.append(
                         formal_error_empirical_accelerations_rsw_list[i])
 
