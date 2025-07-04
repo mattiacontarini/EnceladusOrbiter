@@ -234,10 +234,15 @@ def plot_tuning_parameters_analysis(input_path,
                 formal_error_love_number = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
                 )
-                if lander != []:
+                if lander != [] and (parameter_key != "simulation_duration"
+                                     or lander != ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]):
                     formal_error_radial_love_number = np.loadtxt(
                         os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
                     )
+                    plot_formal_error_radial_love_number = True
+                else:
+                    plot_formal_error_radial_love_number = False
+                    
                 formal_error_libration_amplitude = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_libration_amplitude.dat")
                 )
@@ -289,7 +294,7 @@ def plot_tuning_parameters_analysis(input_path,
                 axes[3, 0].scatter(parameter_value, np.rad2deg(formal_error_pole_position[1]), color="midnightblue", marker="P")
                 axes[3, 1].scatter(parameter_value, np.rad2deg(formal_error_pole_rate[0]), color="orange", marker="P")
                 axes[3, 1].scatter(parameter_value, formal_error_pole_rate[1], color="midnightblue", marker="P")
-                if lander != []:
+                if plot_formal_error_radial_love_number:
                     axes[4, 0].scatter(parameter_value, formal_error_radial_love_number, color="black", marker="P")
 
             #axes[0, 0].set_ylabel("Condition number cov. matrix  [-]", fontsize=fontsize)
@@ -818,6 +823,7 @@ def summarise_tuning_parameters_analysis(input_path,
     for lander_index in range(len(lander_to_include)):
         input_path_lander = os.path.join(input_path, f"lander_to_include_case_{lander_index}")
         lander_configuration = int(lander_index)
+        lander = lander_to_include[lander_index]
 
         for parameter_key in list(parameters_to_tune.keys()):
             parameter_configuration = int(list(parameters_to_tune.keys()).index(parameter_key))
@@ -850,10 +856,14 @@ def summarise_tuning_parameters_analysis(input_path,
                 rms_formal_error_degree_2 = np.loadtxt(
                     os.path.join(input_path_covariance_results, "rms_formal_error_degree_2.dat")
                 )
-                if lander_index != 0:
+                if lander != [] and (parameter_key != "simulation_duration"
+                                     or lander != ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]):
                     formal_error_radial_love_number = np.loadtxt(
                         os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
                     )
+                    plot_formal_error_radial_love_number = True
+                else:
+                    plot_formal_error_radial_love_number = False
                 indices_estimation_parameters = np.loadtxt(
                     os.path.join(input_path_covariance_results, "indices_estimation_parameters.dat")
                 )
@@ -905,7 +915,7 @@ def summarise_tuning_parameters_analysis(input_path,
                 parameters_of_interest["formal_error_pole_position"].append(np.rad2deg(formal_error_pole_position))
                 parameters_of_interest["formal_error_pole_rate"].append(np.rad2deg(formal_error_pole_rate))
                 parameters_of_interest["rms_formal_error_degree_2"].append(rms_formal_error_degree_2)
-                if lander_index != 0:
+                if plot_formal_error_radial_love_number:
                     parameters_of_interest["formal_error_radial_love_number"].append(formal_error_radial_love_number)
 
                 configurations_list.append(f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
@@ -1429,14 +1439,14 @@ def main():
     plot_tuning_parameters_analysis_flag = False
     if plot_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
-        time_stamp_folder = "2025.06.22.10.35.56"
+        time_stamp_folder = "2025.07.01.17.51.42"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = False
+    summarise_tuning_parameters_analysis_flag = True
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
-        time_stamp_folder = "2025.06.22.10.35.56"
+        time_stamp_folder = "2025.07.01.17.51.42"
         input_path = os.path.join(input_directory, time_stamp_folder)
         summarise_tuning_parameters_analysis(input_path, 14)
 
@@ -1468,7 +1478,7 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
 
-    plot_nominal_cases_analysis_flag = True
+    plot_nominal_cases_analysis_flag = False
     if plot_nominal_cases_analysis_flag:
         input_directory = "./output/covariance_analysis/nominal_cases_analysis"
         time_stamp_folder = "2025.06.26.14.11.48"
