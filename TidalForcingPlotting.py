@@ -260,23 +260,78 @@ def perform_tidal_correction_verification_plotting(output_directory,
 
 def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
 
+    x_component_handle = mlines.Line2D(
+        [],
+        [],
+        color="blue",
+        linestyle="-",
+        label="x",
+    )
+    y_component_handle = mlines.Line2D(
+        [],
+        [],
+        color="red",
+        linestyle="--",
+        label="y",
+    )
+    z_component_handle = mlines.Line2D(
+        [],
+        [],
+        color="green",
+        linestyle="-.",
+        label="z",
+    )
+
     # Load drL_dh2 partials
+    counter = 0
+    fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(8, 11), constrained_layout=True)
     for lander_name in CovAnalysisConfig.lander_names:
         drL_dh2_corrected = np.loadtxt(os.path.join(output_directory, f"drL_dh2_corrected_history_{lander_name}_lander.dat"))
 
-        fig, ax = plt.subplots()
-        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 1], label="x", color="blue")
-        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 2], label="y", linestyle="--", color="red")
-        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 3], label="z", linestyle="-.", color="green")
-        ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
-        ax.set_ylabel(r"$\Delta \mathbf{r}_{L}$  [m]", fontsize=fontsize)
+        x_average = np.mean(drL_dh2_corrected[:, 1])
+        y_average = np.mean(drL_dh2_corrected[:, 2])
+        z_average = np.mean(drL_dh2_corrected[:, 3])
+
+        print(lander_name, x_average, y_average, z_average)
+
+        if lander_name == "L1":
+            ax = axes[0, 0]
+        elif lander_name == "L2":
+            ax = axes[0, 1]
+        elif lander_name == "L3":
+            ax = axes[1, 0]
+        elif lander_name == "L4":
+            ax = axes[1, 1]
+        elif lander_name == "L5":
+            ax = axes[2, 0]
+        elif lander_name == "L6":
+            ax = axes[2, 1]
+        elif lander_name == "L7":
+            ax = axes[3, 0]
+        elif lander_name == "L8":
+            ax = axes[3, 1]
+        elif lander_name == "L9":
+            ax = axes[4, 0]
+
+        #fig, ax = plt.subplots()
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 1], color="blue")
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 2], linestyle="--", color="red")
+        ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 3], linestyle="-.", color="green")
+
         ax.set_title(f"Lander {lander_name}", fontsize=fontsize)
-        ax.legend(fontsize=fontsize)
+        if counter % 2 == 0:
+            ax.set_ylabel(r"$\Delta \mathbf{r}$  [m]", fontsize=fontsize)
         ax.grid(True)
         ax.tick_params(labelsize=fontsize)
-        fig.tight_layout()
-        fig.savefig(os.path.join(output_directory, f"h2_partials_analysis_{lander_name}.pdf"))
-        plt.close(fig)
+        counter += 1
+
+    axes[4, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    axes[3, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    plt.delaxes(axes[4, 1])
+    fig.legend(handles=[x_component_handle, y_component_handle, z_component_handle], fontsize=fontsize, bbox_to_anchor=(0.85, 0.15))
+    fig.savefig(os.path.join(output_directory, f"lander_position_displacement_analysis.pdf"))
+    plt.close(fig)
+
 
 def main():
 
@@ -299,7 +354,7 @@ def main():
 
     perform_h2_partials_analysis_plotting_flag = True
     if perform_h2_partials_analysis_plotting_flag:
-        output_directory_partials = os.path.join(output_directory, "2025.06.20.16.38.50/h2_partials")
+        output_directory_partials = os.path.join(output_directory, "2025.06.20.16.53.11/h2_partials")
         perform_h2_partials_analysis_plotting(output_directory_partials, 14)
 
 if __name__ == "__main__":
