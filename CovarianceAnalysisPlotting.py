@@ -1013,6 +1013,9 @@ def summarise_tuning_parameters_analysis(input_path,
         label="Sine"
     )
 
+    ticks_aux = np.arange(0, len(configurations_list), 1)
+    ticks_lander_position_aux = np.arange(0, len(configurations_lander_position_list), 1)
+
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
         ax = fig.add_subplot(1, 1, 1)
@@ -1020,22 +1023,22 @@ def summarise_tuning_parameters_analysis(input_path,
         if (parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_position" or
                 parameter_key == "formal_error_pole_rate" or parameter_key == "rms_formal_error_degree_2"):
             for j in range(len(configurations_list)):
-                ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][0], color="blue")
-                ax.scatter(configurations_list[j], parameters_of_interest[parameter_key][j][1], color="red")
+                ax.scatter(ticks_aux[j], parameters_of_interest[parameter_key][j][0], color="blue")
+                ax.scatter(ticks_aux[j], parameters_of_interest[parameter_key][j][1], color="red")
 
         elif parameter_key == "rms_formal_error_lander_position":
             for j in range(len(configurations_lander_position_list)):
-                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][0],
+                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j][0],
                            color="blue")
-                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][1],
+                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j][1],
                            color="red")
-                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][2],
+                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j][2],
                            color="green")
-                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j][3],
+                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j][3],
                            color="black")
         elif parameter_key == "formal_error_radial_love_number":
             for j in range(len(configurations_lander_position_list)):
-                ax.scatter(configurations_lander_position_list[j], parameters_of_interest[parameter_key][j],
+                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j],
                            color="black")
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
@@ -1045,13 +1048,17 @@ def summarise_tuning_parameters_analysis(input_path,
         elif parameter_key == "formal_error_pole_position":
             ax.set_ylim(bottom=1e-7, top=1e-2)
         elif parameter_key == "formal_error_pole_rate":
-            ax.set_ylim(bottom=1e-13, top=1e-9)
+            ax.set_ylim(bottom=1e-13, top=2e-9)
         elif parameter_key == "rms_formal_error_lander_position":
             ax.set_ylim(bottom=1e-3, top=1e0)
         elif parameter_key == "formal_error_libration_amplitude":
             ax.set_ylim(bottom=1e-7, top=1e-2)
         elif parameter_key == "max_estimatable_degree_gravity_field":
             ax.set_ylim(bottom=6)
+        elif parameter_key == "rms_formal_error_degree_2":
+            ax.set_ylim(bottom=1e-9, top=2e-7)
+        elif parameter_key == "formal_error_radial_love_number":
+            ax.set_ylim(bottom=1e-4, top=2e-3)
 
         if parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
             ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
@@ -1063,13 +1070,20 @@ def summarise_tuning_parameters_analysis(input_path,
             ax.legend(handles=[cosine_terms_handle, sine_terms_handle], fontsize=fontsize)
         ax.set_xlabel("Configuration  [-]", fontsize=fontsize)
         ax.set_ylabel(parameters_of_interest_axis_labels[parameter_key], fontsize=fontsize)
-        ax.tick_params(axis="x", labelsize=10, rotation=90)
+        if parameter_key == "rms_formal_error_lander_position" or parameter_key == "formal_error_radial_love_number":
+            ax.set_xlim(left=-1, right=len(configurations_lander_position_list)+1)
+            ax.set_xticks(ticks_lander_position_aux, labels=configurations_lander_position_list)
+        else:
+            ax.set_xlim(left=-1, right=len(configurations_list)+1)
+            ax.set_xticks(ticks_aux, labels=configurations_list)
+        ax.tick_params(axis="x", labelsize=10.5, rotation=90)
         ax.tick_params(axis="y", labelsize=fontsize)
         ax.grid(True, which="both")
         fig.tight_layout()
         if (parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or
-                parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_rate" or
-                 parameter_key == "rms_formal_error_lander_position"):
+            parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_rate" or
+            parameter_key == "rms_formal_error_lander_position" or parameter_key == "rms_formal_error_degree_2" or
+            parameter_key == "formal_error_radial_love_number"):
             ax.set_yscale("log")
         fig.tight_layout()
         fig.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
@@ -1443,12 +1457,12 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = True
+    summarise_tuning_parameters_analysis_flag = False
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.07.01.17.51.42"
         input_path = os.path.join(input_directory, time_stamp_folder)
-        summarise_tuning_parameters_analysis(input_path, 14)
+        summarise_tuning_parameters_analysis(input_path, 16)
 
     plot_delta_tuning_parameters_analysis_flag = False
     if plot_delta_tuning_parameters_analysis_flag:
@@ -1478,10 +1492,10 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
 
-    plot_nominal_cases_analysis_flag = False
+    plot_nominal_cases_analysis_flag = True
     if plot_nominal_cases_analysis_flag:
         input_directory = "./output/covariance_analysis/nominal_cases_analysis"
-        time_stamp_folder = "2025.06.26.14.11.48"
+        time_stamp_folder = "2025.07.04.10.42.09"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_nominal_cases_analysis(input_path)
 
