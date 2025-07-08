@@ -144,6 +144,7 @@ def perform_tuning_parameters_analysis(time_stamp,
     a_priori_radiation_pressure_coefficient  = [np.infty, 0.1, 1e-10]
 
     parameters_to_tune = {
+        "tracking_arc_duration": tracking_arc_duration,
         "simulation_duration": simulation_durations,
         "initial_state_index": initial_state_indices,
         "arc_duration": arc_durations,
@@ -152,7 +153,6 @@ def perform_tuning_parameters_analysis(time_stamp,
         "a_priori_lander_position": a_priori_lander_position,
         "include_lander_range_observable_flag": include_lander_range_observable_flag,
         "empirical_accelerations_arc_duration": empirical_accelerations_arc_duration,
-        "tracking_arc_duration": tracking_arc_duration,
         "a_priori_rotation_pole_position": a_priori_rotation_pole_position,
         "a_priori_rotation_pole_rate": a_priori_rotation_pole_rate,
         "a_priori_radiation_pressure_coefficient": a_priori_radiation_pressure_coefficient
@@ -401,14 +401,14 @@ def main():
                                              save_covariance_results_flag)
 
     # Analyse parameters of interest varying one at a time
-    perform_tuning_parameters_analysis_flag = True
+    perform_tuning_parameters_analysis_flag = False
     if perform_tuning_parameters_analysis_flag:
         perform_tuning_parameters_analysis(time_stamp,
                                            save_simulation_results_flag,
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = False
+    perform_nominal_cases_analysis_flag = True
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,

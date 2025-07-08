@@ -139,7 +139,7 @@ tracking_delay_after_start_of_propagation_Enceladus_lander = 60
 # Length of the arc over which the empirical accelerations are estimated
 empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
 
-# Define observation simulation times for both Doppler and range observarbles
+# Define observation simulation times for both Doppler and range observables
 doppler_cadence = 60
 range_cadence = 300.0
 
