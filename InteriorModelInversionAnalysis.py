@@ -2,8 +2,8 @@
 Order of interior parameters:
  0. rho_shell
  1. mu_shell
- 2. rho_ocean
- 3. R_ocean
+ 2. R_ocean
+ 3. R_core
  4. mu_core
 
  Order of observations:
@@ -16,8 +16,48 @@ Order of interior parameters:
 # Files import
 from InteriorModelInversionObject import InteriorModelInversion
 
+# General imports
+import sys
+sys.path.append("/Users/mattiacontarini/miniconda3/envs/tudat-bundle-fork/lib/python3.11/site-packages")
+import datetime
+import os
+import numpy as np
 
-UDP = InteriorModelInversion.from_config()
-observations = UDP.compute_observations(x=1)
+def perform_interior_model_inversion(nb_walkers,
+                                     nb_steps,
+                                     seed,
+                                     convergence_tolerance,
+                                     output_path,
+                                     save_results_flag):
+    UDP = InteriorModelInversion.from_config()
 
+    final_chains_solutions, nb_iterations = UDP.run_mcmc(nb_walkers, nb_steps, seed, convergence_tolerance)
+    if save_results_flag:
+        solution_filename = os.path.join(output_path, "mcmc_final_chains_solutions")
+        np.savetxt(solution_filename, final_chains_solutions)
+        nb_iterations_filename = os.path.join(output_path, "mcmc_nb_iterations")
+        np.savetxt(nb_iterations_filename, [nb_iterations])
+
+def main():
+    # Retrieve current time stamp
+    time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
+
+    # Set output path
+    output_folder = "./output/interior_parameters_analysis/interior_model_inversion"
+    output_path = os.path.join(output_folder, time_stamp)
+    os.makedirs(output_path, exist_ok=True)
+
+    get_central_observation_values_flag = True
+    if get_central_observation_values_flag:
+        UDP = InteriorModelInversion.from_config()
+        observations = UDP.compute_observations(x=[920.0, 3.3e9, 229.0, 191.0, 1e9])
+        print(observations)
+
+    perform_interior_model_inversion_flag = False
+    if perform_interior_model_inversion_flag:
+        nb_walkers = 20
+        nb_steps = 1
+        seed = 1234
+        convergence_tolerance = 5 # %
+        perform_interior_model_inversion(nb_walkers, nb_steps, seed, convergence_tolerance, output_path, save_results_flag=True)
 

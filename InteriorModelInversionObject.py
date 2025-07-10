@@ -1,6 +1,7 @@
 
 # Files and variables import
 from auxiliary import InteriorModelInversionConfig as InteriorModelInvConfig
+from auxiliary.utilities import InterioriModelInversionUtilities as Util
 
 import src.lov3dpythonPackage.lov3d as lov3d
 
@@ -9,6 +10,7 @@ import src.lov3dpythonPackage.lov3d as lov3d
 import sys
 sys.path.append("/Users/mattiacontarini/miniconda3/envs/tudat-bundle-fork/lib/python3.11/site-packages")
 import numpy as np
+import emcee
 
 class InteriorModelInversion:
 
@@ -53,21 +55,25 @@ class InteriorModelInversion:
         # Auxiliary base layer (not core)
         interior_model_base_layer = InteriorModelInvConfig.nominal_interior_model_base_layer
 
+        rho_ocean = Util.get_ocean_density(x[3]*1e3, x[2]*1e3, x[0])
+        rho_core = Util.get_core_density(x[3]*1e3, x[2]*1e3, x[0], rho_ocean)
+        # print(rho_ocean, rho_core)
+
         # Core
         interior_model_core_layer = InteriorModelInvConfig.nominal_interior_model_core_layer
-        #interior_model_core_layer["R0"] = ...
-        #interior_model_core_layer["rho0"] = ...
-        #interior_model_core_layer["mu0"] = x[4]
+        interior_model_core_layer["R0"] = x[3]
+        interior_model_core_layer["rho0"] = rho_core
+        interior_model_core_layer["mu0"] = x[4]
 
         # Ocean
         interior_model_ocean_layer = InteriorModelInvConfig.nominal_interior_model_ocean_layer
-        #interior_model_ocean_layer["R0"] = x[3]
-        #interior_model_ocean_layer["rho0"] = x[2]
+        interior_model_ocean_layer["R0"] = x[2]
+        interior_model_ocean_layer["rho0"] = rho_ocean
 
         # Ice shell
         interior_model_shell_layer = InteriorModelInvConfig.nominal_interior_model_shell_layer
-        #interior_model_shell_layer["rho0"] = x[0]
-        #interior_model_shell_layer["mu0"] = x[1]
+        interior_model_shell_layer["rho0"] = x[0]
+        interior_model_shell_layer["mu0"] = x[1]
 
         interior_model = [interior_model_base_layer,
                           interior_model_core_layer,
@@ -76,12 +82,13 @@ class InteriorModelInversion:
         numerics = InteriorModelInvConfig.Numerics
         forcing = InteriorModelInvConfig.Forcing
 
-        k2, h2, libration = self.tidal_response(interior_model, numerics, forcing)
+        k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing)
+        libration = libration_dict#["amplitude_rad"][0][0]
         computed_observations = [k2.real, k2.imag, h2.real, libration]
 
         return computed_observations
 
-"""
+
     def probability(self, x):
         computed_observations = self.compute_observations(x)
         exponent = 0
@@ -102,7 +109,7 @@ class InteriorModelInversion:
 
         return interior_parameters_range_array
 
-    def run_mcmc(self, nb_walkers, nb_steps, seed):
+    def run_mcmc(self, nb_walkers, nb_steps, seed, convergence_tolerance):
 
         # Set seed
         np.random.seed(seed)
@@ -117,9 +124,15 @@ class InteriorModelInversion:
             for j in range(nb_interior_control_variables):
                 x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
-        # Initialise Ensemble Sampler
+        # Initialise Ensemble Sampler and iterate until convergence
         sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.probability)
-        state_out = sampler.run_mcmc(x0, nb_steps)
+        delta_final_solution = np.ones((nb_interior_control_variables,)) * 100
+        counter = 0
+        while (delta_final_solution > convergence_tolerance).any():
+            state_out = sampler.run_mcmc(x0, nb_steps)
+            delta_final_solution = (state_out - x0) / x0 * 100
+            x0 = state_out
+            counter += 1
 
-        return state_out
-"""
+        return state_out, counter
+
