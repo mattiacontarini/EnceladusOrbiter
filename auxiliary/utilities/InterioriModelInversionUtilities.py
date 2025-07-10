@@ -1,35 +1,26 @@
-def tidal_response(Interior_Model, Numerics, Forcing, eng=None):
-    """
-    Compute the tidal response of the moon.
-    Reference: Rovira-Navarro 2024.
+# Files import
+from auxiliary import InteriorModelInversionConfig as InteriorModelInvConfig
 
-    Parameters
-    ----------
-    Interior_Model : list of dict
-        List of dictionaries containing the parameters of the moon's interior.
-    Numerics : dict
-        Dictionary containing the numerical settings.
-    Forcing : list of dict
-        List of dictionaries containing the forcing parameters.
+# General imports
+import sys
+sys.path.append("/Users/mattiacontarini/miniconda3/envs/tudat-bundle-fork/lib/python3.11/site-packages")
+import numpy as np
 
-    Returns
-    -------
-    k2 : complex
-        Gravitational Love number of degree 2.
-    h2 : complex
-        radial displacement Love number of degree 2.
-    """
+def get_ocean_density(R_core, R_ocean, rho_shell):
+    rho_mean = InteriorModelInvConfig.M_Enceladus / (4/3 * np.pi * InteriorModelInvConfig.R_Enceladus**3)
 
-    quit = False
-    if eng is None:
-        eng = love3d.initialize()
-        quit = True
+    num_1 = InteriorModelInvConfig.MoI_Enceladus
+    num_2 = - 8/15*np.pi*R_core**2 * (rho_mean * InteriorModelInvConfig.R_Enceladus**3 - rho_shell * (InteriorModelInvConfig.R_Enceladus**3 - R_ocean**3))
+    num_3 = - 8/15*np.pi*rho_shell*(InteriorModelInvConfig.R_Enceladus**5 - R_ocean**5)
+    den = 8/15*np.pi*(R_ocean**5 - R_core**5 - R_core ** 2 * (R_ocean**3 - R_core**3))
 
-    LoveSpectra, y = eng.compute_Love(Interior_Model, Numerics, Forcing, nargout=2)
-    k2 = LoveSpectra["k"]
-    h2 = LoveSpectra["h"]
+    rho_ocean = (num_1 + num_2 + num_3) / den
+    return rho_ocean
 
-    if quit:
-        eng.quit()
+def get_core_density(R_core, R_ocean, rho_shell, rho_ocean):
+    rho_mean = InteriorModelInvConfig.M_Enceladus / (4/3 * np.pi * InteriorModelInvConfig.R_Enceladus**3)
 
-    return k2, h2
+    num = (rho_mean * InteriorModelInvConfig.R_Enceladus**3 - rho_ocean * (R_ocean**3 - R_core**3) -
+           rho_shell * (InteriorModelInvConfig.R_Enceladus**3 - R_ocean**3))
+    den = R_core ** 3
+    return num / den
