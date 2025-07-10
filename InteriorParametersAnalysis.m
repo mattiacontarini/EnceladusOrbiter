@@ -3,7 +3,7 @@ clc
 addpath("src/")
 
 %% Output directory
-output_directory = "output/interior_parameters_analysis";
+output_directory = "output/interior_parameters_analysis/preliminary_sensitivity_analysis";
 if ~exist("output_directory", 'dir')
     mkdir(output_directory)
 end

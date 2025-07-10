@@ -117,7 +117,7 @@ def main():
 
     perform_interior_parameters_analysis_flag = True
     if perform_interior_parameters_analysis_flag:
-        input_path = "./output/interior_parameters_analysis"
+        input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         perform_interior_parameters_analysis_plotting(input_path)
 
 
