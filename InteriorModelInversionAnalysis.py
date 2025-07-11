@@ -33,6 +33,7 @@ def perform_interior_model_inversion(nb_walkers,
 
     final_chains_solutions, nb_iterations = UDP.run_mcmc(nb_walkers, nb_steps, seed, convergence_tolerance)
     if save_results_flag:
+        os.makedirs(output_path, exist_ok=True)
         solution_filename = os.path.join(output_path, "mcmc_final_chains_solutions")
         np.savetxt(solution_filename, final_chains_solutions)
         nb_iterations_filename = os.path.join(output_path, "mcmc_nb_iterations")
@@ -45,12 +46,11 @@ def main():
     # Set output path
     output_folder = "./output/interior_parameters_analysis/interior_model_inversion"
     output_path = os.path.join(output_folder, time_stamp)
-    os.makedirs(output_path, exist_ok=True)
 
     get_central_observation_values_flag = True
     if get_central_observation_values_flag:
         UDP = InteriorModelInversion.from_config()
-        observations = UDP.compute_observations(x=[920.0, 3.3e9, 229.0, 191.0, 1e9])
+        observations = UDP.compute_observations(x=[920.0, 3.3e9, 191.0, 191.0, 1e9])
         print(observations)
 
     perform_interior_model_inversion_flag = False
@@ -59,5 +59,12 @@ def main():
         nb_steps = 1
         seed = 1234
         convergence_tolerance = 5 # %
-        perform_interior_model_inversion(nb_walkers, nb_steps, seed, convergence_tolerance, output_path, save_results_flag=True)
+        perform_interior_model_inversion(nb_walkers,
+                                         nb_steps,
+                                         seed,
+                                         convergence_tolerance,
+                                         output_path,
+                                         save_results_flag=False)
 
+if __name__ == "__main__":
+    main()

@@ -57,7 +57,7 @@ class InteriorModelInversion:
 
         rho_ocean = Util.get_ocean_density(x[3]*1e3, x[2]*1e3, x[0])
         rho_core = Util.get_core_density(x[3]*1e3, x[2]*1e3, x[0], rho_ocean)
-        # print(rho_ocean, rho_core)
+        print(rho_ocean, rho_core)
 
         # Core
         interior_model_core_layer = InteriorModelInvConfig.nominal_interior_model_core_layer
