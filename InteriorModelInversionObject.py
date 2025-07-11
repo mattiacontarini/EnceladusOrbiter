@@ -43,7 +43,7 @@ class InteriorModelInversion:
         k2 = LoveSpectra["k"]
         h2 = LoveSpectra["h"]
 
-        libration = eng.compute_Libration(Interior_Model, Numerics, Forcing)
+        libration = eng.compute_Libration(Interior_Model, Forcing)
 
         if quit:
             eng.quit()
