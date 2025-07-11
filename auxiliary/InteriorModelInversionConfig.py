@@ -3,11 +3,15 @@ import sys
 sys.path.append("/Users/mattiacontarini/miniconda3/envs/tudat-bundle-fork/lib/python3.11/site-packages")
 import numpy as np
 
+#######################################################################################################################
+### Observations and covariance results ###############################################################################
+#######################################################################################################################
+
 # Central value for gravitational Love number of Enceladus
 k2_real = 0.02 # Genova et al. (2024)
 k2_imag = 0.01 # Genova et al. (2024)
-k2_real_std = ...
-k2_imag_std = ...
+k2_real_std = 2.0e-5
+k2_imag_std = 2.1e-5
 
 # Central value for diurnal libration amplitude of Enceladus
 diurnal_libration_amplitude = np.deg2rad(-0.091) # Park et al. (2024)
@@ -17,15 +21,13 @@ diurnal_libration_amplitude_std = np.rad2deg(2e-6)
 h2 = ...
 h2_std = 5e-4
 
-# Nominal value for the mass of Enceladus
-mass = ...
-
-# Nominal value for the MoI of Enceladus
-moi = ...
-
 # Define set of observations
 observations = [k2_real, k2_imag, h2, diurnal_libration_amplitude]
 observations_std = [k2_real_std, k2_imag_std, h2_std, diurnal_libration_amplitude_std]
+
+#######################################################################################################################
+### Interior model inversion setup ####################################################################################
+#######################################################################################################################
 
 # Ranges for interior parameters
 interior_parameters_range = dict(
