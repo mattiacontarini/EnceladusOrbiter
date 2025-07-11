@@ -1354,7 +1354,7 @@ def plot_nominal_cases_analysis(input_path, fontsize=12):
                           label=f"K{initial_state_index}")
         )
 
-    fig, axes = plt.subplots(3, 2, figsize=(10, 8), constrained_layout=True)
+    fig, axes = plt.subplots(4, 2, figsize=(9, 11), constrained_layout=True)
     for initial_state_index in initial_state_indices:
         initial_state_input_path = os.path.join(input_path, f"initial_state_index_{initial_state_index}")
         for j in range(len(lander_to_include_list)):
@@ -1371,7 +1371,6 @@ def plot_nominal_cases_analysis(input_path, fontsize=12):
             formal_error_love_number = np.loadtxt(
                 os.path.join(input_path_covariance_results, "formal_error_love_number.dat")
             )
-            sigma_k2 = np.sqrt(formal_error_love_number[0]**2 + formal_error_love_number[1]**2)
             if lander != []:
                 formal_error_radial_love_number = np.loadtxt(
                     os.path.join(input_path_covariance_results, "formal_error_radial_love_number.dat")
@@ -1386,30 +1385,34 @@ def plot_nominal_cases_analysis(input_path, fontsize=12):
             axes[0, 0].scatter(nb_landers, max_estimatable_degree_gravity_field,
                                color=colors_initial_state_index[initial_state_index],
                                marker=markers_initial_state_index[initial_state_index])
-            axes[0, 1].scatter(nb_landers, sigma_k2,
-                               color=colors_initial_state_index[initial_state_index],
-                               marker=markers_initial_state_index[initial_state_index])
             if lander != []:
-                axes[1, 0].scatter(nb_landers, formal_error_radial_love_number,
+                axes[0, 1].scatter(nb_landers, formal_error_radial_love_number,
                                    color=colors_initial_state_index[initial_state_index],
                                    marker=markers_initial_state_index[initial_state_index])
-            axes[1, 1].scatter(nb_landers, np.rad2deg(formal_error_libration_amplitude),
+            axes[1, 0].scatter(nb_landers, formal_error_love_number[0],
                                color=colors_initial_state_index[initial_state_index],
                                marker=markers_initial_state_index[initial_state_index])
-            axes[2, 0].scatter(nb_landers, np.rad2deg(formal_error_pole_position[0]),
+            axes[1, 1].scatter(nb_landers, formal_error_love_number[1],
                                color=colors_initial_state_index[initial_state_index],
                                marker=markers_initial_state_index[initial_state_index])
-            axes[2, 1].scatter(nb_landers, np.rad2deg(formal_error_pole_position[1]),
+            axes[2, 0].scatter(nb_landers, np.rad2deg(formal_error_libration_amplitude),
                                color=colors_initial_state_index[initial_state_index],
                                marker=markers_initial_state_index[initial_state_index])
-    axes[2, 0].set_xlabel("Nb. landers  [-]", fontsize=fontsize)
+            axes[2, 1].scatter(nb_landers, np.rad2deg(formal_error_pole_position[0]),
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+            axes[3, 0].scatter(nb_landers, np.rad2deg(formal_error_pole_position[1]),
+                               color=colors_initial_state_index[initial_state_index],
+                               marker=markers_initial_state_index[initial_state_index])
+    axes[3, 0].set_xlabel("Nb. landers  [-]", fontsize=fontsize)
     axes[2, 1].set_xlabel("Nb. landers  [-]", fontsize=fontsize)
     axes[0, 0].set_ylabel("Max. deg. gravity  [-]", fontsize=fontsize)
-    axes[0, 1].set_ylabel(r"$\sigma$ $k_2$  [-]", fontsize=fontsize)
-    axes[1, 0].set_ylabel(r"$\sigma$ $h_2$  [-]", fontsize=fontsize)
-    axes[1, 1].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
-    axes[2, 0].set_ylabel(r"$\sigma$ pole RA  [deg]", fontsize=fontsize)
-    axes[2, 1].set_ylabel(r"$\sigma$ pole DE  [deg]", fontsize=fontsize)
+    axes[0, 1].set_ylabel(r"$\sigma$ $h_2$  [-]", fontsize=fontsize)
+    axes[1, 0].set_ylabel(r"$\sigma$ Re($k_2$)  [-]", fontsize=fontsize)
+    axes[1, 1].set_ylabel(r"$\sigma$ Im($k_2$)  [-]", fontsize=fontsize)
+    axes[2, 0].set_ylabel(r"$\sigma$ libration amplitude  [deg]", fontsize=fontsize)
+    axes[2, 1].set_ylabel(r"$\sigma$ pole RA  [deg]", fontsize=fontsize)
+    axes[3, 0].set_ylabel(r"$\sigma$ pole DE  [deg]", fontsize=fontsize)
 
     ticks = []
     ticks_labels = []
@@ -1420,24 +1423,27 @@ def plot_nominal_cases_analysis(input_path, fontsize=12):
         i+=1
 
     for ax in axes.flat:
-        if ax == axes[1, 0]:
+        if ax == axes[0, 1]:
             ax.set_xticks(ticks[:-1], ticks_labels[1:])
         else:
             ax.set_xticks(ticks, ticks_labels)
         ax.tick_params(labelsize=fontsize)
         ax.grid(True, which="both")
     axes[0, 1].set_yscale("log")
-    axes[0, 1].set_ylim(bottom=1e-5)
-    axes[1, 0].set_yscale("log")
-    axes[1, 0].set_ylim(bottom=1e-4, top=2e-3)
-    axes[1, 1].set_yscale("log")
-    axes[1, 1].set_ylim(bottom=1e-7)
+    axes[0, 1].set_ylim(bottom=1e-4, top=2e-3)
+    #axes[1, 0].set_yscale("log")
+    axes[1, 0].set_ylim(bottom=0.5e-5)
+    #axes[1, 1].set_yscale("log")
+    axes[1, 1].set_ylim(bottom=1e-5)
     axes[2, 0].set_yscale("log")
-    axes[2, 0].set_ylim(bottom=1e-6)
+    axes[2, 0].set_ylim(bottom=1e-7)
     axes[2, 1].set_yscale("log")
-    axes[2, 1].set_ylim(bottom=1e-7)
+    axes[2, 1].set_ylim(bottom=1e-6)
+    axes[3, 0].set_yscale("log")
+    axes[3, 0].set_ylim(bottom=1e-7)
+    plt.delaxes(axes[3, 1])
 
-    fig.legend(handles=initial_state_handles, fontsize=fontsize)
+    fig.legend(handles=initial_state_handles, fontsize=fontsize, bbox_to_anchor=(0.85, 0.2))
 
     fig.suptitle("Representative nominal cases", fontsize=fontsize)
     fig.savefig(os.path.join(input_path, "nominal_cases_analysis.pdf"))
