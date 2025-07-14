@@ -24,3 +24,26 @@ def get_core_density(R_core, R_ocean, rho_shell, rho_ocean):
            rho_shell * (InteriorModelInvConfig.R_Enceladus**3 - R_ocean**3))
     den = R_core ** 3
     return num / den
+
+def next_pow_two(n):
+    i = 1
+    while i < n:
+        i = i << 1
+    return i
+
+def compute_autocorr_func_1d(x, normalize=True):
+    x = np.atleast_1d(x)
+    if len(x.shape) != 1:
+        raise ValueError("invalid dimensions for 1D autocorrelation function")
+    n = next_pow_two(len(x))
+
+    # Compute the FFT and then (from that) the auto-correlation function
+    f = np.fft.fft(x - np.mean(x), n=2 * n)
+    acf = np.fft.ifft(f * np.conjugate(f))[: len(x)].real
+    acf /= 4 * n
+
+    # Optionally normalize
+    if normalize:
+        acf /= acf[0]
+
+    return acf

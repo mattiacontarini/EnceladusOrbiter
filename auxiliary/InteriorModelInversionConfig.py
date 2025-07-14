@@ -22,8 +22,18 @@ h2 =  0.029847374006950356
 h2_std = 5e-4
 
 # Define set of observations
-observations = [k2_real, k2_imag, h2, diurnal_libration_amplitude]
-observations_std = [k2_real_std, k2_imag_std, h2_std, diurnal_libration_amplitude_std]
+observations = {
+    "k2_real": k2_real,
+    "k2_imag": k2_imag,
+    "h2": h2,
+    "libration": diurnal_libration_amplitude,
+}
+observations_std = {
+    "k2_real": k2_real_std,
+    "k2_imag": k2_imag_std,
+    "h2": h2_std,
+    "libration": diurnal_libration_amplitude_std,
+}
 
 #######################################################################################################################
 ### Interior model inversion setup ####################################################################################
@@ -32,10 +42,10 @@ observations_std = [k2_real_std, k2_imag_std, h2_std, diurnal_libration_amplitud
 # Ranges for interior parameters
 interior_parameters_range = dict(
     rho_shell = [900.0, 1000.0],
-    rho_ocean = [1000.0, 1300.0],
-    R_ocean = [191.1, 291.0],
-    mu_core = [5.0e9, 70.0e9],
     mu_shell = [1.0e9, 4.5e9],
+    d_ocean = [5.0, 35.0],
+    R_core = [100, 210],
+    mu_core = [5.0e9, 70.0e9],
 )
 
 # Nominal values for the mass, MoI, radius of Enceladus
@@ -103,3 +113,8 @@ Forcing = {
     "F": 1.0,
     "eccen": 0.0047
 }
+
+#######################################################################################################################
+### MCMC algorithm parameters #########################################################################################
+#######################################################################################################################
+chains_burn_in_steps = 10

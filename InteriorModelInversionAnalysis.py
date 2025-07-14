@@ -2,7 +2,7 @@
 Order of interior parameters:
  0. rho_shell
  1. mu_shell
- 2. R_ocean
+ 2. d_ocean
  3. R_core
  4. mu_core
 
@@ -47,16 +47,16 @@ def main():
     output_folder = "./output/interior_parameters_analysis/interior_model_inversion"
     output_path = os.path.join(output_folder, time_stamp)
 
-    get_central_observation_values_flag = True
+    get_central_observation_values_flag = False
     if get_central_observation_values_flag:
         UDP = InteriorModelInversion.from_config()
-        observations = UDP.compute_observations(x=[920.0, 3.3e9, 191.0, 191.0, 1e9])
+        observations = UDP.compute_observations(x=[920.0, 3.3e9, 23.0, 198.0, 1e9])
         print(observations)
 
-    perform_interior_model_inversion_flag = False
+    perform_interior_model_inversion_flag = True
     if perform_interior_model_inversion_flag:
         nb_walkers = 20
-        nb_steps = 1
+        nb_steps = 20
         seed = 1234
         convergence_tolerance = 5 # %
         perform_interior_model_inversion(nb_walkers,

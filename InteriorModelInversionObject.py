@@ -17,20 +17,28 @@ class InteriorModelInversion:
     def __init__(self,
                  interior_parameters_range,
                  observations_central_value,
-                 observations_std
+                 observations_std,
+                 chains_burn_in,
+                 psrf_threshold,
                  ):
         self.interior_parameters_range = interior_parameters_range
         self.observations_std = observations_std
         self.observations_central_value = observations_central_value
+        self.chains_burn_in = chains_burn_in
+        self.psrf_threshold = psrf_threshold
 
     @classmethod
     def from_config(cls):
         observations_central_value = InteriorModelInvConfig.observations
         observations_std = InteriorModelInvConfig.observations_std
         interior_parameters_range = InteriorModelInvConfig.interior_parameters_range
+        chains_burn_in = InteriorModelInvConfig.chains_burn_in_steps
+        psrf_threshold = InteriorModelInvConfig.psrf_threshold
         return cls(interior_parameters_range,
                    observations_central_value,
-                   observations_std)
+                   observations_std,
+                   chains_burn_in,
+                   psrf_threshold)
 
     def tidal_response(self, Interior_Model, Numerics, Forcing, eng=None):
 
@@ -55,8 +63,10 @@ class InteriorModelInversion:
         # Auxiliary base layer (not core)
         interior_model_base_layer = InteriorModelInvConfig.nominal_interior_model_base_layer
 
-        rho_ocean = Util.get_ocean_density(x[3]*1e3, x[2]*1e3, x[0])
-        rho_core = Util.get_core_density(x[3]*1e3, x[2]*1e3, x[0], rho_ocean)
+        R_ocean = x[2] + x[3]
+
+        rho_ocean = Util.get_ocean_density(x[3]*1e3, R_ocean*1e3, x[0])
+        rho_core = Util.get_core_density(x[3]*1e3, R_ocean*1e3, x[0], rho_ocean)
         print(rho_ocean, rho_core)
 
         # Core
@@ -67,7 +77,7 @@ class InteriorModelInversion:
 
         # Ocean
         interior_model_ocean_layer = InteriorModelInvConfig.nominal_interior_model_ocean_layer
-        interior_model_ocean_layer["R0"] = x[2]
+        interior_model_ocean_layer["R0"] = R_ocean
         interior_model_ocean_layer["rho0"] = rho_ocean
 
         # Ice shell
@@ -79,25 +89,51 @@ class InteriorModelInversion:
                           interior_model_core_layer,
                           interior_model_ocean_layer,
                           interior_model_shell_layer]
+        print("Interior model:", interior_model)
         numerics = InteriorModelInvConfig.Numerics
         forcing = InteriorModelInvConfig.Forcing
 
+        print("x:", x)
+
         k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing)
-        libration = libration_dict#["amplitude_rad"][0][0]
-        computed_observations = [k2.real, k2.imag, h2.real, libration]
+        libration = libration_dict["amplitude_rad"][0][0]
+        if str(libration) == "nan":
+            libration = 0
+        computed_observations = {
+            "k2_real": k2.real,
+            "k2_imag": k2.imag,
+            "h2": h2.real,
+            "libration": libration,
+        }
 
         return computed_observations
 
 
-    def probability(self, x):
+    def log_probability_prior(self, x):
+
+        interior_parameters_labels = list(self.interior_parameters_range.keys())
+        prior = 0
+        for i in range(len(x)):
+            param = interior_parameters_labels[i]
+            if x[i] < self.interior_parameters_range[param][0] or x[i] > self.interior_parameters_range[param][1]:
+                prior = -np.inf
+                break
+
+        return prior
+
+
+    def log_probability(self, x):
         computed_observations = self.compute_observations(x)
         exponent = 0
-        for i in range(len(self.observations_central_value)):
-            delta = computed_observations[i] - self.observations_central_value[i]
-            exponent += delta ** 2 / self.observations_std[i] ** 2
+        for label in list(self.observations_central_value.keys()):
+            delta = computed_observations[label] - self.observations_central_value[label]
+            exponent += delta ** 2 / self.observations_std[label] ** 2
 
-        probability = np.exp(-0.5 * exponent)
-        return probability
+        log_prior_probability = self.log_probability_prior(x)
+        log_probability = -0.5 * exponent + log_prior_probability
+
+        print("log_probability:", log_probability, log_prior_probability, exponent)
+        return log_probability.real
 
     def arrange_interior_parameters_range(self):
         interior_parameters_label = list(self.interior_parameters_range.keys())
@@ -122,17 +158,31 @@ class InteriorModelInversion:
         x0 = np.zeros((nb_walkers, nb_interior_control_variables))
         for i in range(nb_walkers):
             for j in range(nb_interior_control_variables):
-                x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
+
+                # Sample core rigidity in log space
+                if list(self.interior_parameters_range.keys())[j] == "mu_core":
+                    log_sample = np.random.uniform(np.log10(interior_parameters_variability_range[0, j]), np.log10(interior_parameters_variability_range[1, j]))
+                    x0[i, j] = 10**log_sample
+                else:
+                    x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
         # Initialise Ensemble Sampler and iterate until convergence
-        sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.probability)
-        delta_final_solution = np.ones((nb_interior_control_variables,)) * 100
+        sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
         counter = 0
-        while (delta_final_solution > convergence_tolerance).any():
-            state_out = sampler.run_mcmc(x0, nb_steps)
-            delta_final_solution = (state_out - x0) / x0 * 100
-            x0 = state_out
-            counter += 1
+        convergence_check = False
+        #while not convergence_check:
+        output = sampler.run_mcmc(x0, nb_steps)
+        state_out = output[0]
+        log_prob_out = output[1]
+        autocorrelation_time = sampler.get_autocorr_time(discard=self.chains_burn_in)
+        print("autocorrelation_time:", autocorrelation_time)
+
+        print(output)
 
         return state_out, counter
+
+    #def check_convergence(self, counter):
+    #    if counter > self.chains_burn_in:
+
+
 
