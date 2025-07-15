@@ -372,14 +372,9 @@ def single_case_analysis(time_stamp,
     # Set flag for saving results
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
-    UDP.save_obs_times_of_vehicle_flag = False
-
-    UDP.include_lander_range_observable_flag = False
-    #UDP.lander_to_include = ["L3"]
-    #UDP.simulation_duration = 90.0 * constants.JULIAN_DAY
     UDP.use_station_position_consider_parameter_flag = True
-
     UDP.estimate_h2_love_number_flag = True
+    UDP.save_design_matrix_flag = True
 
     # Perform covariance analysis
     # UDP.save_problem_configuration(output_path)
@@ -408,14 +403,14 @@ def main():
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = True
+    perform_nominal_cases_analysis_flag = False
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,
                                        save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = False
+    perform_single_case_analysis_flag = True
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,

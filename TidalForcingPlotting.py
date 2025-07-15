@@ -333,6 +333,10 @@ def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
     plt.close(fig)
 
 
+    # Load dh/dh2 partials
+
+
+
 def main():
 
     # Set output directory
