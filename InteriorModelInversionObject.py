@@ -11,6 +11,9 @@ import sys
 sys.path.append("/Users/mattiacontarini/miniconda3/envs/tudat-bundle-fork/lib/python3.11/site-packages")
 import numpy as np
 import emcee
+import os
+import corner
+import matplotlib.pyplot as plt
 
 class InteriorModelInversion:
 
@@ -19,13 +22,13 @@ class InteriorModelInversion:
                  observations_central_value,
                  observations_std,
                  chains_burn_in,
-                 psrf_threshold,
+                 save_results_flag,
                  ):
         self.interior_parameters_range = interior_parameters_range
         self.observations_std = observations_std
         self.observations_central_value = observations_central_value
         self.chains_burn_in = chains_burn_in
-        self.psrf_threshold = psrf_threshold
+        self.save_results_flag = save_results_flag
 
     @classmethod
     def from_config(cls):
@@ -33,12 +36,12 @@ class InteriorModelInversion:
         observations_std = InteriorModelInvConfig.observations_std
         interior_parameters_range = InteriorModelInvConfig.interior_parameters_range
         chains_burn_in = InteriorModelInvConfig.chains_burn_in_steps
-        psrf_threshold = InteriorModelInvConfig.psrf_threshold
+        save_results_flag = True
         return cls(interior_parameters_range,
                    observations_central_value,
                    observations_std,
                    chains_burn_in,
-                   psrf_threshold)
+                   save_results_flag)
 
     def tidal_response(self, Interior_Model, Numerics, Forcing, eng=None):
 
@@ -67,7 +70,6 @@ class InteriorModelInversion:
 
         rho_ocean = Util.get_ocean_density(x[3]*1e3, R_ocean*1e3, x[0])
         rho_core = Util.get_core_density(x[3]*1e3, R_ocean*1e3, x[0], rho_ocean)
-        print(rho_ocean, rho_core)
 
         # Core
         interior_model_core_layer = InteriorModelInvConfig.nominal_interior_model_core_layer
@@ -89,11 +91,8 @@ class InteriorModelInversion:
                           interior_model_core_layer,
                           interior_model_ocean_layer,
                           interior_model_shell_layer]
-        print("Interior model:", interior_model)
         numerics = InteriorModelInvConfig.Numerics
         forcing = InteriorModelInvConfig.Forcing
-
-        print("x:", x)
 
         k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing)
         libration = libration_dict["amplitude_rad"][0][0]
@@ -132,7 +131,6 @@ class InteriorModelInversion:
         log_prior_probability = self.log_probability_prior(x)
         log_probability = -0.5 * exponent + log_prior_probability
 
-        print("log_probability:", log_probability, log_prior_probability, exponent)
         return log_probability.real
 
     def arrange_interior_parameters_range(self):
@@ -145,7 +143,7 @@ class InteriorModelInversion:
 
         return interior_parameters_range_array
 
-    def run_mcmc(self, nb_walkers, nb_steps, seed, convergence_tolerance):
+    def run_mcmc(self, nb_walkers, nb_steps, seed, output_path, labels):
 
         # Set seed
         np.random.seed(seed)
@@ -166,23 +164,36 @@ class InteriorModelInversion:
                 else:
                     x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
-        # Initialise Ensemble Sampler and iterate until convergence
+        # Initialise Ensemble Sampler
         sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
-        counter = 0
-        convergence_check = False
-        #while not convergence_check:
-        output = sampler.run_mcmc(x0, nb_steps)
+
+        # Run MCMC
+        output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in)
+
+        # Retrieve output
         state_out = output[0]
         log_prob_out = output[1]
+        samples = sampler.get_chain(discard=self.chains_burn_in)
+
+        # Retrieve autocorrelation time
         autocorrelation_time = sampler.get_autocorr_time(discard=self.chains_burn_in)
-        print("autocorrelation_time:", autocorrelation_time)
 
-        print(output)
+        # Save results and figures of merit to file
+        if self.save_results_flag:
+            os.makedirs(output_path, exist_ok=True)
+            solution_filename = os.path.join(output_path, "mcmc_state_out")
+            np.savetxt(solution_filename, state_out)
+            log_prob_out_filename = os.path.join(output_path, "mcmc_log_probability_out")
+            np.savetxt(log_prob_out_filename, log_prob_out)
+            samples_filename = os.path.join(output_path, "mcmc_samples_out")
+            np.savetxt(samples_filename, samples)
+            time_filename = os.path.join(output_path, "mcmc_autocorrelation_time")
+            np.savetxt(time_filename, autocorrelation_time)
 
-        return state_out, counter
-
-    #def check_convergence(self, counter):
-    #    if counter > self.chains_burn_in:
-
-
+            # Generate corner plot
+            flat_samples = sampler.get_chain(discard=self.chains_burn_in, thin=15, flat=True)
+            fig = corner.corner(
+                data=flat_samples, labels=labels, truths=InteriorModelInvConfig.control_variables_truth_values
+            )
+            plt.savefig(os.path.join(output_path, "corner_plot.pdf"))
 

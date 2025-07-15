@@ -30,14 +30,12 @@ def perform_interior_model_inversion(nb_walkers,
                                      output_path,
                                      save_results_flag):
     UDP = InteriorModelInversion.from_config()
+    UDP.save_results_flag = save_results_flag
+    UDP.run_mcmc(nb_walkers,
+                 nb_steps,
+                 seed,
+                 output_path)
 
-    final_chains_solutions, nb_iterations = UDP.run_mcmc(nb_walkers, nb_steps, seed, convergence_tolerance)
-    if save_results_flag:
-        os.makedirs(output_path, exist_ok=True)
-        solution_filename = os.path.join(output_path, "mcmc_final_chains_solutions")
-        np.savetxt(solution_filename, final_chains_solutions)
-        nb_iterations_filename = os.path.join(output_path, "mcmc_nb_iterations")
-        np.savetxt(nb_iterations_filename, [nb_iterations])
 
 def main():
     # Retrieve current time stamp
@@ -56,7 +54,7 @@ def main():
     perform_interior_model_inversion_flag = True
     if perform_interior_model_inversion_flag:
         nb_walkers = 20
-        nb_steps = 20
+        nb_steps = 1000
         seed = 1234
         convergence_tolerance = 5 # %
         perform_interior_model_inversion(nb_walkers,
@@ -64,7 +62,7 @@ def main():
                                          seed,
                                          convergence_tolerance,
                                          output_path,
-                                         save_results_flag=False)
+                                         save_results_flag=True)
 
 if __name__ == "__main__":
     main()

@@ -94,6 +94,12 @@ nominal_interior_model_shell_layer = {
     "ocean": 0,
 }
 
+control_variables_truth_values = [nominal_interior_model_shell_layer["rho0"],
+                                  nominal_interior_model_shell_layer["mu0"],
+                                  nominal_interior_model_ocean_layer["R0"] - nominal_interior_model_core_layer["R0"],
+                                  nominal_interior_model_core_layer["R0"],
+                                  nominal_interior_model_core_layer["mu0"]]
+
 # Input parameter necessary to compute the observations
 Numerics = {
     "Nlayers": 4,
@@ -117,4 +123,4 @@ Forcing = {
 #######################################################################################################################
 ### MCMC algorithm parameters #########################################################################################
 #######################################################################################################################
-chains_burn_in_steps = 10
+chains_burn_in_steps = 100
