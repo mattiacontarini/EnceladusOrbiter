@@ -26,7 +26,6 @@ import numpy as np
 def perform_interior_model_inversion(nb_walkers,
                                      nb_steps,
                                      seed,
-                                     convergence_tolerance,
                                      output_path,
                                      save_results_flag):
     UDP = InteriorModelInversion.from_config()
@@ -56,11 +55,9 @@ def main():
         nb_walkers = 20
         nb_steps = 1000
         seed = 1234
-        convergence_tolerance = 5 # %
         perform_interior_model_inversion(nb_walkers,
                                          nb_steps,
                                          seed,
-                                         convergence_tolerance,
                                          output_path,
                                          save_results_flag=True)
 
