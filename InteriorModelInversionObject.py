@@ -178,17 +178,35 @@ class InteriorModelInversion:
         # Retrieve autocorrelation time
         autocorrelation_time = sampler.get_autocorr_time(discard=self.chains_burn_in)
 
+        # Compute standard deviation of control variables
+        std_out = []
+        for i in range(nb_interior_control_variables):
+            data = state_out[:, i]
+            std_out.append(np.std(data))
+
         # Save results and figures of merit to file
         if self.save_results_flag:
+
+            # Save output solution
             os.makedirs(output_path, exist_ok=True)
             solution_filename = os.path.join(output_path, "mcmc_state_out")
             np.savetxt(solution_filename, state_out)
+
+            # Save log probability of output solution
             log_prob_out_filename = os.path.join(output_path, "mcmc_log_probability_out")
             np.savetxt(log_prob_out_filename, log_prob_out)
+
+            # Save samples history
             samples_filename = os.path.join(output_path, "mcmc_samples_out")
             np.savetxt(samples_filename, samples)
+
+            # Save autocorrelation time
             time_filename = os.path.join(output_path, "mcmc_autocorrelation_time")
             np.savetxt(time_filename, autocorrelation_time)
+
+            # Save standard deviation of output solution
+            std_out_filename = os.path.join(output_path, "mcmc_std_state_out")
+            np.savetxt(std_out_filename, std_out)
 
             # Generate corner plot
             flat_samples = sampler.get_chain(discard=self.chains_burn_in, thin=15, flat=True)
