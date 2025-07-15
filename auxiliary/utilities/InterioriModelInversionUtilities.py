@@ -31,7 +31,7 @@ def next_pow_two(n):
         i = i << 1
     return i
 
-def compute_autocorr_func_1d(x, normalize=True):
+def autocorr_func_1d(x, normalize=True):
     x = np.atleast_1d(x)
     if len(x.shape) != 1:
         raise ValueError("invalid dimensions for 1D autocorrelation function")
@@ -47,3 +47,26 @@ def compute_autocorr_func_1d(x, normalize=True):
         acf /= acf[0]
 
     return acf
+
+def autocorr_new(y, c=5.0):
+    f = np.zeros(y.shape[1])
+    for yy in y:
+        f += autocorr_func_1d(yy)
+    f /= len(y)
+    taus = 2.0 * np.cumsum(f) - 1.0
+    window = auto_window(taus, c)
+    return taus[window]
+
+# Automated windowing procedure following Sokal (1989)
+def auto_window(taus, c):
+    m = np.arange(len(taus)) < c * taus
+    if np.any(m):
+        return np.argmin(m)
+    return len(taus) - 1
+
+def check_convergence(tau, N):
+    if N > 50 * tau:
+        convergence_check = True
+    else:
+        convergence_check = False
+    return convergence_check
