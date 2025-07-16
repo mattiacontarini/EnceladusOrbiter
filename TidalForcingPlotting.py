@@ -339,9 +339,6 @@ def plot_h2_partials(input_directory, fontsize=12):
 
     # Load results
     dh_dh2_partials = np.loadtxt(results_path)
-    design_matrix = np.loadtxt(os.path.join(covariance_results_path, "partials_matrix.dat"))
-    #indices_lander_position = np.loadtxt(os.path.join(covariance_results_path, "indices_lander_position.dat"))
-
     average = np.mean(dh_dh2_partials[:, 1])
 
     # Plot partials
@@ -358,12 +355,6 @@ def plot_h2_partials(input_directory, fontsize=12):
     fig.tight_layout()
     fig.savefig(os.path.join(plots_path, "dh_dh2_partials.pdf"))
     plt.close(fig)
-
-    plt.scatter(dh_dh2_partials[:, 0]/constants.JULIAN_DAY,
-                design_matrix[:, 1214],
-                color="b", marker=".")
-    plt.show()
-
 
 
 def main():
