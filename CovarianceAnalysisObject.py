@@ -1442,6 +1442,9 @@ class CovarianceAnalysis:
             indices_estimation_parameters_filename = os.path.join(covariance_results_output_path, "indices_estimation_parameters.dat")
             np.savetxt(indices_estimation_parameters_filename, indices_estimation_parameters)
 
+            # Save indices of landers' position as estimation parameter
+            save2txt(indices_lander_position_dict, "indices_lander_position.dat", covariance_results_output_path)
+
             print("Covariance results saved.")
 
         if self.save_obs_times_of_vehicle_flag:
