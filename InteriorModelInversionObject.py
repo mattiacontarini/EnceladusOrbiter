@@ -19,12 +19,14 @@ class InteriorModelInversion:
 
     def __init__(self,
                  interior_parameters_range,
+                 interior_parameters_labels,
                  observations_central_value,
                  observations_std,
                  chains_burn_in,
                  save_results_flag,
                  ):
         self.interior_parameters_range = interior_parameters_range
+        self.interior_parameters_labels = interior_parameters_labels
         self.observations_std = observations_std
         self.observations_central_value = observations_central_value
         self.chains_burn_in = chains_burn_in
@@ -35,9 +37,11 @@ class InteriorModelInversion:
         observations_central_value = InteriorModelInvConfig.observations
         observations_std = InteriorModelInvConfig.observations_std
         interior_parameters_range = InteriorModelInvConfig.interior_parameters_range
+        interior_parameters_labels = InteriorModelInvConfig.interior_parameters_labels
         chains_burn_in = InteriorModelInvConfig.chains_burn_in_steps
         save_results_flag = True
         return cls(interior_parameters_range,
+                   interior_parameters_labels,
                    observations_central_value,
                    observations_std,
                    chains_burn_in,
@@ -143,7 +147,7 @@ class InteriorModelInversion:
 
         return interior_parameters_range_array
 
-    def run_mcmc(self, nb_walkers, nb_steps, seed, output_path, labels):
+    def run_mcmc(self, nb_walkers, nb_steps, seed, output_path):
 
         # Set seed
         np.random.seed(seed)
@@ -211,7 +215,7 @@ class InteriorModelInversion:
             # Generate corner plot
             flat_samples = sampler.get_chain(discard=self.chains_burn_in, thin=15, flat=True)
             fig = corner.corner(
-                data=flat_samples, labels=labels, truths=InteriorModelInvConfig.control_variables_truth_values
+                data=flat_samples, labels=self.interior_parameters_labels, truths=InteriorModelInvConfig.control_variables_truth_values
             )
             plt.savefig(os.path.join(output_path, "corner_plot.pdf"))
 
