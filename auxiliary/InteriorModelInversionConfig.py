@@ -48,6 +48,14 @@ interior_parameters_range = dict(
     mu_core = [5.0e9, 70.0e9],
 )
 
+interior_parameters_labels = dict(
+    rho_shell = r"$\rho_s$",
+    mu_shell = r"$\mu_s$",
+    d_ocean = r"$d_o$",
+    R_core = r"$R_c$",
+    mu_core = r"$\mu_c$",
+)
+
 # Nominal values for the mass, MoI, radius of Enceladus
 R_Enceladus = 252.1e3 # Porco et al. (2006)
 M_Enceladus = 1.08e20 # Flandes et al. (2023)
@@ -123,4 +131,4 @@ Forcing = {
 #######################################################################################################################
 ### MCMC algorithm parameters #########################################################################################
 #######################################################################################################################
-chains_burn_in_steps = 100
+chains_burn_in_steps = 10000
