@@ -53,7 +53,7 @@ def main():
     perform_interior_model_inversion_flag = True
     if perform_interior_model_inversion_flag:
         nb_walkers = 20
-        nb_steps = 1000
+        nb_steps = 50000
         seed = 1234
         perform_interior_model_inversion(nb_walkers,
                                          nb_steps,
