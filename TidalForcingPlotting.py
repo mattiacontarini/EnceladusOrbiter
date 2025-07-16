@@ -332,8 +332,37 @@ def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
     fig.savefig(os.path.join(output_directory, f"lander_position_displacement_analysis.pdf"))
     plt.close(fig)
 
+def plot_h2_partials(input_directory, fontsize=12):
+    covariance_results_path = os.path.join(input_directory, "covariance_results")
+    plots_path = os.path.join(input_directory, "plots")
+    results_path = os.path.join(covariance_results_path, "dh_dh2_partials.dat")
 
-    # Load dh/dh2 partials
+    # Load results
+    dh_dh2_partials = np.loadtxt(results_path)
+    design_matrix = np.loadtxt(os.path.join(covariance_results_path, "partials_matrix.dat"))
+    #indices_lander_position = np.loadtxt(os.path.join(covariance_results_path, "indices_lander_position.dat"))
+
+    average = np.mean(dh_dh2_partials[:, 1])
+
+    # Plot partials
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(dh_dh2_partials[:, 0]/constants.JULIAN_DAY, dh_dh2_partials[:, 1], color="b", marker=".")
+    ax.axhline(y=average, linestyle="--", color="red", linewidth=2, label="Average")
+    ax.set_title(f"Average: {average}", fontsize=fontsize)
+    ax.grid(True)
+    ax.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    ax.set_ylabel(r"$dh / dh_2$  [m/s]", fontsize=fontsize)
+    ax.legend(fontsize=fontsize)
+    ax.tick_params(labelsize=fontsize)
+    fig.tight_layout()
+    fig.savefig(os.path.join(plots_path, "dh_dh2_partials.pdf"))
+    plt.close(fig)
+
+    plt.scatter(dh_dh2_partials[:, 0]/constants.JULIAN_DAY,
+                design_matrix[:, 1214],
+                color="b", marker=".")
+    plt.show()
 
 
 
@@ -356,10 +385,15 @@ def main():
                                                        [(2, 0), (2, 1), (2, 2)],
                                                        14)
 
-    perform_h2_partials_analysis_plotting_flag = True
+    perform_h2_partials_analysis_plotting_flag = False
     if perform_h2_partials_analysis_plotting_flag:
         output_directory_partials = os.path.join(output_directory, "2025.06.20.16.53.11/h2_partials")
         perform_h2_partials_analysis_plotting(output_directory_partials, 14)
+
+    plot_h2_partials_flag = True
+    if plot_h2_partials_flag:
+        input_directory = "./output/covariance_analysis/single_case_analysis/2025.07.15.17.07.02"
+        plot_h2_partials(input_directory)
 
 if __name__ == "__main__":
     main()
