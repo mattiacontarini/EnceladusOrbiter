@@ -108,7 +108,7 @@ class InteriorModelInversion:
         numerics = InteriorModelInvConfig.Numerics
         forcing = InteriorModelInvConfig.Forcing
 
-        k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing)
+        k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing, eng=eng)
         libration = libration_dict["amplitude_rad"][0][0]
         if str(libration) == "nan":
             libration = 0
@@ -180,14 +180,14 @@ class InteriorModelInversion:
                 else:
                     x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
-        #with mp.get_context("fork").Pool(initializer=init_worker) as pool:
+        with mp.get_context("fork").Pool(initializer=init_worker) as pool:
 
-        # Initialise Ensemble Sampler
-        #sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability, pool=pool)
-        sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
+            # Initialise Ensemble Sampler
+            sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability, pool=pool)
+        #sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
 
-        # Run MCMC
-        output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in, progress=True)
+            # Run MCMC
+            output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in, progress=True)
 
         # Retrieve output
         state_out = output[0]
