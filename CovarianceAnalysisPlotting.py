@@ -807,7 +807,8 @@ def summarise_tuning_parameters_analysis(input_path,
         formal_error_pole_rate = [],
         rms_formal_error_lander_position = [],
         formal_error_radial_love_number = [],
-        rms_formal_error_degree_2 = []
+        rms_formal_error_degree_2 = [],
+        nb_observations_total = [],
     )
     parameters_of_interest_axis_labels = dict(
         max_estimatable_degree_gravity_field="Max. degree gravity field  [-]",
@@ -818,6 +819,7 @@ def summarise_tuning_parameters_analysis(input_path,
         rms_formal_error_lander_position = "RMS formal error lander position  [m]",
         formal_error_radial_love_number = r"$\sigma$ $h_2$ Love number  [-]",
         rms_formal_error_degree_2 = r"RMS($\sigma$) gravity degree 2  [-] ",
+        nb_observations_total = r"Total nb. of observations  [-]",
     )
 
     for lander_index in range(len(lander_to_include)):
@@ -855,6 +857,9 @@ def summarise_tuning_parameters_analysis(input_path,
                 )
                 rms_formal_error_degree_2 = np.loadtxt(
                     os.path.join(input_path_covariance_results, "rms_formal_error_degree_2.dat")
+                )
+                nb_observations_total = np.loadtxt(
+                    os.path.join(input_path_covariance_results, "nb_observations_total.dat")
                 )
                 if lander != [] and (parameter_key != "simulation_duration"
                                      or lander != ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]):
@@ -915,6 +920,7 @@ def summarise_tuning_parameters_analysis(input_path,
                 parameters_of_interest["formal_error_pole_position"].append(np.rad2deg(formal_error_pole_position))
                 parameters_of_interest["formal_error_pole_rate"].append(np.rad2deg(formal_error_pole_rate))
                 parameters_of_interest["rms_formal_error_degree_2"].append(rms_formal_error_degree_2)
+                parameters_of_interest["nb_observations_total"].append(nb_observations_total)
                 if plot_formal_error_radial_love_number:
                     parameters_of_interest["formal_error_radial_love_number"].append(formal_error_radial_love_number)
 
@@ -1248,6 +1254,20 @@ def plot_lander_location_analysis(input_path, fontsize=12):
         rms_formal_error_degree_2=r"RMS($\sigma$)   [-]",
     )
 
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(1, 1, 1)
+    for i in range(len(latitudes_range)):
+        for j in range(len(longitudes_range)):
+            ax2.scatter(np.rad2deg(longitudes_range[j]), np.rad2deg(latitudes_range[len_lat_range-i]), color="black", marker="o")
+    ax2.set_xlabel("Longitude [deg]", fontsize=fontsize)
+    ax2.set_ylabel("Latitude [deg]", fontsize=fontsize)
+    plt.yticks(ticks=np.rad2deg(latitudes_range), labels=latitudes_range_labels, fontsize=fontsize)
+    plt.xticks(ticks=np.rad2deg(longitudes_range), labels=longitudes_range_labels, fontsize=fontsize)
+    ax2.grid(True)
+    fig2.tight_layout()
+    fig2.savefig(os.path.join(input_path, "investigated_locations.pdf"))
+    plt.close(fig2)
+
     for i in range(len(latitudes_range)):
         latitude_case_path = os.path.join(input_path, f"latitude_case_{len_lat_range - i}")
         for j in range(len(longitudes_range)):
@@ -1484,7 +1504,7 @@ def main():
         plot_tuning_parameters_refinement_analysis(input_directory,
                                                    no_configurations)
 
-    plot_lander_location_analysis_flag = False
+    plot_lander_location_analysis_flag = True
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
         time_stamp_folder = "2025.06.20.17.01.29"
@@ -1498,7 +1518,7 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
 
-    plot_nominal_cases_analysis_flag = True
+    plot_nominal_cases_analysis_flag = False
     if plot_nominal_cases_analysis_flag:
         input_directory = "./output/covariance_analysis/nominal_cases_analysis"
         time_stamp_folder = "2025.07.04.10.42.09"
