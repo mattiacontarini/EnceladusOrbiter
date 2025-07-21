@@ -172,7 +172,7 @@ class InteriorModelInversion:
         sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
 
         # Run MCMC
-        output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in)
+        output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in, progress=True)
 
         # Retrieve output
         state_out = output[0]
