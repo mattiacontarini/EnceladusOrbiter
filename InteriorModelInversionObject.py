@@ -14,6 +14,16 @@ import emcee
 import os
 import corner
 import matplotlib.pyplot as plt
+import multiprocessing as mp
+
+eng = None
+
+def init_worker():
+    global eng
+    eng = lov3d.initialize()
+    print("MATLAB Engine initialized in worker")
+    with open("worker_log.txt", "a") as f:
+        f.write(f"Worker initialized (pid={os.getpid()})\n")
 
 class InteriorModelInversion:
 
@@ -65,7 +75,7 @@ class InteriorModelInversion:
 
         return k2, h2, libration
 
-    def compute_observations(self, x):
+    def compute_observations(self, x, eng=None):
 
         # Auxiliary base layer (not core)
         interior_model_base_layer = InteriorModelInvConfig.nominal_interior_model_base_layer
@@ -126,7 +136,9 @@ class InteriorModelInversion:
 
 
     def log_probability(self, x):
-        computed_observations = self.compute_observations(x)
+        global eng
+
+        computed_observations = self.compute_observations(x, eng)
         exponent = 0
         for label in list(self.observations_central_value.keys()):
             delta = computed_observations[label] - self.observations_central_value[label]
@@ -168,7 +180,10 @@ class InteriorModelInversion:
                 else:
                     x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
+        #with mp.get_context("fork").Pool(initializer=init_worker) as pool:
+
         # Initialise Ensemble Sampler
+        #sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability, pool=pool)
         sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
 
         # Run MCMC
