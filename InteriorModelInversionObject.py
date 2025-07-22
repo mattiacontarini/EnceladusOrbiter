@@ -14,16 +14,16 @@ import emcee
 import os
 import corner
 import matplotlib.pyplot as plt
-import multiprocessing as mp
+#import multiprocessing as mp
 
-eng = None
+#eng = None
 
-def init_worker():
-    global eng
-    eng = lov3d.initialize()
-    print("MATLAB Engine initialized in worker")
-    with open("worker_log.txt", "a") as f:
-        f.write(f"Worker initialized (pid={os.getpid()})\n")
+#def init_worker():
+#    global eng
+#    eng = lov3d.initialize()
+#    print("MATLAB Engine initialized in worker")
+#    with open("worker_log.txt", "a") as f:
+#        f.write(f"Worker initialized (pid={os.getpid()})\n")
 
 class InteriorModelInversion:
 
@@ -108,7 +108,7 @@ class InteriorModelInversion:
         numerics = InteriorModelInvConfig.Numerics
         forcing = InteriorModelInvConfig.Forcing
 
-        k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing, eng=eng)
+        k2, h2, libration_dict = self.tidal_response(interior_model, numerics, forcing)
         libration = libration_dict["amplitude_rad"][0][0]
         if str(libration) == "nan":
             libration = 0
@@ -136,9 +136,10 @@ class InteriorModelInversion:
 
 
     def log_probability(self, x):
-        global eng
+        #global eng
 
-        computed_observations = self.compute_observations(x, eng)
+        #computed_observations = self.compute_observations(x, eng)
+        computed_observations = self.compute_observations(x)
         exponent = 0
         for label in list(self.observations_central_value.keys()):
             delta = computed_observations[label] - self.observations_central_value[label]
@@ -180,14 +181,14 @@ class InteriorModelInversion:
                 else:
                     x0[i, j] = np.random.uniform(interior_parameters_variability_range[0, j], interior_parameters_variability_range[1, j])
 
-        with mp.get_context("fork").Pool(initializer=init_worker) as pool:
+        #with mp.get_context("fork").Pool(initializer=init_worker) as pool:
 
-            # Initialise Ensemble Sampler
-            sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability, pool=pool)
-        #sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
+        # Initialise Ensemble Sampler
+        #sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability, pool=pool)
+        sampler = emcee.EnsembleSampler(nb_walkers, nb_interior_control_variables, self.log_probability)
 
-            # Run MCMC
-            output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in, progress=True)
+        # Run MCMC
+        output = sampler.run_mcmc(x0, nb_steps + self.chains_burn_in, progress=True)
 
         # Retrieve output
         state_out = output[0]
