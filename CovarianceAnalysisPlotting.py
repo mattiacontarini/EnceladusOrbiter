@@ -1235,6 +1235,7 @@ def plot_lander_location_analysis(input_path, fontsize=12):
     formal_error_pole_RA_store = np.zeros((len(latitudes_range), len(longitudes_range)))
     formal_error_pole_DE_store = np.zeros((len(latitudes_range), len(longitudes_range)))
     rms_formal_error_degree_2_cosine_store = np.zeros((len(latitudes_range), len(longitudes_range)))
+    nb_observations_store = np.zeros((len(latitudes_range), len(longitudes_range)))
 
     parameters_of_interest_store = dict()
     parameters_of_interest_store_labels = dict(
@@ -1244,6 +1245,7 @@ def plot_lander_location_analysis(input_path, fontsize=12):
         formal_error_pole_RA="Formal error pole RA",
         formal_error_pole_DE="Formal error pole DE",
         rms_formal_error_degree_2="RMS formal error gravity degree 2",
+        nb_observations="Nb. observations",
     )
     parameters_of_interest_store_axis_labels = dict(
         max_estimatable_degree_gravity_field="Max degree  [-]",
@@ -1252,18 +1254,25 @@ def plot_lander_location_analysis(input_path, fontsize=12):
         formal_error_pole_RA=r"$\sigma$   [deg]",
         formal_error_pole_DE=r"$\sigma$   [deg]",
         rms_formal_error_degree_2=r"RMS($\sigma$)   [-]",
+        nb_observations="Nb. observations [-]",
     )
 
+    # Plot considered locations
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(1, 1, 1)
+    ticks_lat_aux = []
+    ticks_lat_labels_aux = []
     for i in range(len(latitudes_range)):
+        ticks_lat_aux.append(latitudes_range[i])
+        ticks_lat_labels_aux.append(latitudes_range_labels[len_lat_range - i])
         for j in range(len(longitudes_range)):
-            ax2.scatter(np.rad2deg(longitudes_range[j]), np.rad2deg(latitudes_range[len_lat_range-i]), color="black", marker="o")
+            ax2.scatter(longitudes_range[j], latitudes_range[len_lat_range-i], color="black", marker="o")
     ax2.set_xlabel("Longitude [deg]", fontsize=fontsize)
     ax2.set_ylabel("Latitude [deg]", fontsize=fontsize)
-    plt.yticks(ticks=np.rad2deg(latitudes_range), labels=latitudes_range_labels, fontsize=fontsize)
-    plt.xticks(ticks=np.rad2deg(longitudes_range), labels=longitudes_range_labels, fontsize=fontsize)
+    plt.yticks(ticks=ticks_lat_aux, labels=ticks_lat_labels_aux, fontsize=fontsize)
+    plt.xticks(ticks=longitudes_range, labels=longitudes_range_labels, fontsize=fontsize)
     ax2.grid(True)
+    #ax2.set_title("Investigated locations", fontsize=fontsize)
     fig2.tight_layout()
     fig2.savefig(os.path.join(input_path, "investigated_locations.pdf"))
     plt.close(fig2)
@@ -1290,6 +1299,9 @@ def plot_lander_location_analysis(input_path, fontsize=12):
             rms_formal_error_degree_2 = np.loadtxt(
                 os.path.join(covariance_results_path, "rms_formal_error_degree_2.dat")
             )
+            nb_observations = np.loadtxt(
+                os.path.join(covariance_results_path, "nb_observations_total.dat")
+            )
 
             max_estimatable_degree_gravity_field_store[i, j] = max_estimatable_degree_gravity_field
             formal_error_love_number_store[i, j] = np.sqrt(formal_error_love_number[0] ** 2 + formal_error_love_number[1] ** 2)
@@ -1297,6 +1309,7 @@ def plot_lander_location_analysis(input_path, fontsize=12):
             formal_error_pole_RA_store[i, j] = np.rad2deg(formal_error_pole_position[0])
             formal_error_pole_DE_store[i, j] = np.rad2deg(formal_error_pole_position[1])
             rms_formal_error_degree_2_cosine_store[i, j] = rms_formal_error_degree_2[0]
+            nb_observations_store[i, j] = nb_observations
 
     parameters_of_interest_store["max_estimatable_degree_gravity_field"]=(max_estimatable_degree_gravity_field_store)
     parameters_of_interest_store["formal_error_love_number"]=formal_error_love_number_store
@@ -1304,6 +1317,7 @@ def plot_lander_location_analysis(input_path, fontsize=12):
     parameters_of_interest_store["formal_error_pole_RA"]=formal_error_pole_RA_store
     parameters_of_interest_store["formal_error_pole_DE"]=formal_error_pole_DE_store
     parameters_of_interest_store["rms_formal_error_degree_2"]=rms_formal_error_degree_2_cosine_store
+    parameters_of_interest_store["nb_observations"]=nb_observations_store
 
     # Plot figures of merit
     parameters_keys = list(parameters_of_interest_store.keys())
