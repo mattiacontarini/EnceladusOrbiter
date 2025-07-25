@@ -103,8 +103,6 @@ for i = 1:nb_simulations
         samples(j) = 10^unifrnd(log10(bottom), log10(top));
     end
     samples_store(i, :) = samples;
-    samples(1) = 198e3;
-    samples(2) = 26e3;
 
     % Setup interior model with the given samples
     Interior_Model = setup_interior_model(samples);
@@ -112,15 +110,15 @@ for i = 1:nb_simulations
 
     % Compute shell libration
     [libration] = get_libration(Interior_Model, Forcing_Enceladus);
-    shell_libration = libration.amplitude_rad(1);
+    shell_libration = real(libration.amplitude_rad(1));
     
     % Compute Love numbers
     [Numerics, Interior_Model] = set_boundary_indices(Numerics_Enceladus, Interior_Model);
     Interior_Model = get_rheology(Interior_Model, Numerics, Forcing_Enceladus);
     [Love_Spectra, y_rad] = get_Love(Interior_Model, Forcing_Enceladus, Numerics);
     iforcing=find(Love_Spectra.n==Forcing_Enceladus.n & Love_Spectra.m==Forcing_Enceladus.m);
-    k2 = Love_Spectra.k(iforcing);
-    h2 = Love_Spectra.h(iforcing);
+    k2 = real(Love_Spectra.k(iforcing));
+    h2 = real(Love_Spectra.h(iforcing));
     
     output_store(i, 1) = shell_libration;
     output_store(i, 2) = k2;
@@ -131,14 +129,17 @@ toc
 
 % Save results to file
 if save_results_flag
-    output_filepath = fullfile(output_path, "observations.txt");
+    output_filepath = fullfile(output_path, "observations.dat");
     writematrix(output_store, output_filepath)
 
-    samples_filepath = fullfile(output_path, "samples.txt");
+    samples_filepath = fullfile(output_path, "samples.dat");
     writematrix(samples_store, samples_filepath)
 
-    interior_model_filepath = fullfile(output_path, "interior_models.txt");
+    interior_model_filepath = fullfile(output_path, "interior_models.dat");
     writematrix(interior_model_store, interior_model_filepath)
+
+    nb_simulations_filepath = fullfile(output_path, "nb_simulations.dat");
+    writematrix(nb_simulations, nb_simulations_filepath)
 
 end
 

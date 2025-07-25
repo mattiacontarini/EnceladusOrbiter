@@ -23,6 +23,16 @@ classdef InteriorModelInversionUtilities
 
         end
 
+        function ocean_radius = get_ocean_radius(MoI, R_core, rho_ocean, rho_shell)
+            num1 = 15/8 * pi * MoI;
+            num2 = -(rho_core - rho_ocean)*R_core^5;
+            num3 = -rho_shell * R_Enceladus ^ 5;
+            
+            den = rho_ocean - rho_shell;
+
+            ocean_radius = (num1 + num2 + num3) / den;
+        end
+
         function interior_model_array = convert_interior_model_to_array(interior_model_struct)
             nb_layers = length(interior_model_struct);
             interior_model_array = [];
