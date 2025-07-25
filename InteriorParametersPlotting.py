@@ -4,7 +4,7 @@ import os
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
 
-def perform_interior_parameters_analysis_plotting(input_path, fontsize=12):
+def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
 
     layers = ["core", "ocean", "shell"]
     interior_parameters = ["R0", "rho0", "mu0", "eta0", "Ks0"]
@@ -112,13 +112,106 @@ def perform_interior_parameters_analysis_plotting(input_path, fontsize=12):
         plt.close(fig)
 
 
+def plot_monte_carlo_interior_parameters_analysis(input_path, fontsize=12):
+
+    layers = ["core", "ocean", "shell"]
+
+    interior_parameters_labels = [r"$R_{c}$  [km]", r"$\rho_{c}$  [kg m$^{-3}$]", r"$\mu_{c}$  [Pa]", r"$\eta_{c}$  [Pa s]", r"$K_{c}$  [Pa]",
+                                  r"$R_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]", r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
+                                  r"$R_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
+
+    # Load results
+    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+
+    filtered_parameters, filtered_observations = filter_parameters_and_observations(interior_models, observations)
+
+    for i in range(len(layers)):
+        layer = layers[i]
+        parameters = filtered_parameters[:, 5*i:5*i+5]
+        fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
+        fig2, axes2 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
+        fig3, axes3 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
+        for j in range(parameters.shape[1]):
+
+            if j == 0:
+                ax = axes[0, 0]
+                ax2 = axes2[0, 0]
+                ax3 = axes3[0, 0]
+            elif j == 1:
+                ax = axes[0, 1]
+                ax2 = axes2[0, 1]
+                ax3 = axes3[0, 1]
+            elif j == 2:
+                ax = axes[1, 0]
+                ax2 = axes2[1, 0]
+                ax3 = axes3[1, 0]
+            elif j == 3:
+                ax = axes[1, 1]
+                ax2 = axes2[1, 1]
+                ax3 = axes3[1, 1]
+            elif j == 4:
+                ax = axes[2, 0]
+                ax2 = axes2[2, 0]
+                ax3 = axes3[2, 0]
+
+            ax.scatter(filtered_parameters[:, j], filtered_observations[:, 0], color="black")
+            ax2.scatter(filtered_parameters[:, j], filtered_observations[:, 2], color="black")
+            ax3.scatter(filtered_parameters[:, j], filtered_observations[:, 1], color="black")
+            ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
+            ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
+            ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
+            if j % 2 == 0:
+                ax.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
+                ax2.set_ylabel(r"$\phi$  [-]", fontsize=fontsize)
+                ax3.set_ylabel(r"$h_2$ Love number  [-]", fontsize=fontsize)
+            ax.grid(True)
+            ax2.grid(True)
+            ax3.grid(True)
+        fig.delaxes(axes[2, 1])
+        fig2.delaxes(axes2[2, 1])
+        fig3.delaxes(axes3[2, 1])
+        fig.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
+        fig2.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
+        fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
+        fig.savefig(os.path.join(input_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
+        fig2.savefig(os.path.join(input_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+        fig3.savefig(os.path.join(input_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
+
+
+def filter_parameters_and_observations(parameters, observations):
+    nb_simulations = parameters.shape[0]
+
+    counter = 0
+    filtered_parameters = np.copy(parameters)
+    filtered_observations = np.copy(observations)
+    for i in range(nb_simulations):
+        core_density = parameters[i, 1]
+        ocean_density = parameters[i, 6]
+
+        if core_density <= 2000.0 or core_density >= 3000.0 or ocean_density <= 1000.0 or ocean_density >= 1300.0:
+            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
+            filtered_observations = np.delete(filtered_observations, i - counter, 0)
+            counter += 1
+
+    print("Nb. of invalid simulations: ", counter)
+    return filtered_parameters, filtered_observations
+
 
 def main():
 
-    perform_interior_parameters_analysis_flag = True
-    if perform_interior_parameters_analysis_flag:
+    plot_one_at_a_time_interior_parameters_analysis_flag = False
+    if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
-        perform_interior_parameters_analysis_plotting(input_path)
+        plot_one_at_a_time_interior_parameters_analysis(input_path)
+
+    plot_monte_carlo_interior_parameters_analysis_flag = True
+    if plot_monte_carlo_interior_parameters_analysis_flag:
+        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
+        time_stamp = "2025.07.25.16.09.56"
+        input_path = os.path.join(input_path, time_stamp)
+        plot_monte_carlo_interior_parameters_analysis(input_path)
+
 
 
 if __name__ == "__main__":
