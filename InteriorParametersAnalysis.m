@@ -165,7 +165,7 @@ for i = 2:Numerics_Enceladus.Nlayers
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
  
-                [libration] = compute_librations(Interior_Model_Enceladus,Forcing_Enceladus);
+                [libration] = get_libration(Interior_Model_Enceladus,Forcing_Enceladus);
                 
                 Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).R0.interior_parameter, points(l)];
@@ -191,7 +191,7 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
-                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+                [libration] = get_libration(Interior_Model_Enceladus, Forcing_Enceladus);
                 
                 Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).rho0.interior_parameter, points(l)];
@@ -217,7 +217,7 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
-                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+                [libration] = get_libration(Interior_Model_Enceladus, Forcing_Enceladus);
 
                 Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter, points(l)];
@@ -243,7 +243,7 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
-                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+                [libration] = get_libration(Interior_Model_Enceladus, Forcing_Enceladus);
 
                 Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter, points(l)];
@@ -269,7 +269,7 @@ for i = 2:Numerics_Enceladus.Nlayers
 
                 k2_Enceladus=Love_Spectra_Enceladus.k(iforcing); 
                 h2_Enceladus=Love_Spectra_Enceladus.h(iforcing);
-                [libration] = compute_librations(Interior_Model_Enceladus, Forcing_Enceladus);
+                [libration] = get_libration(Interior_Model_Enceladus, Forcing_Enceladus);
 
                 Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter = [
                     Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter, points(l)];
