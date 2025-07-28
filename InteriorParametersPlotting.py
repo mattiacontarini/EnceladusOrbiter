@@ -208,7 +208,7 @@ def main():
     plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.07.25.16.09.56"
+        time_stamp = "2025.07.25.17.36.01"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis(input_path)
 

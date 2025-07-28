@@ -48,7 +48,7 @@ interior_parameters_to_vary_bottom("eta_shell") = 0.5e18; % 1.0e12;
 interior_parameters_to_vary_bottom("K_shell") = 1.0e10; % 1.0e9;
 
 % Set number of samples per variable
-nb_samples_per_variables = 1000;
+nb_samples_per_variables = 100000;
 
 % Set seed
 seed = 1702;
@@ -152,6 +152,12 @@ global M_Enceladus R_Enceladus MoI_Enceladus
 
 rho_ocean = InteriorModelInversionUtilities.get_ocean_density(M_Enceladus, MoI_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9));
 rho_core = InteriorModelInversionUtilities.get_core_density(M_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9), rho_ocean);
+
+disp(samples(1))
+disp(samples(5))
+disp(R_ocean)
+disp(rho_core)
+disp(rho_ocean)
 
 InteriorModel(1).R0 = 5;
 InteriorModel(1).rho0 = 5000;
