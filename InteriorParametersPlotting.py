@@ -194,6 +194,8 @@ def filter_parameters_and_observations(parameters, observations):
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
 
+        print(i)
+
     print("Nb. of invalid simulations: ", counter)
     return filtered_parameters, filtered_observations
 
