@@ -319,7 +319,7 @@ def perform_lander_location_analysis(time_stamp,
 
     lander_to_include = CovAnalysisConfig.lander_names[0]
     latitudes_range = np.deg2rad(np.arange(-90, 90 + 15, 15))
-    longitudes_range = np.deg2rad(np.arange(0, 360 + 45, 45))
+    longitudes_range = np.deg2rad(np.arange(0, 360 + 20, 20))
     np.savetxt(os.path.join(output_path, "latitudes_range.txt"), latitudes_range)
     np.savetxt(os.path.join(output_path, "longitudes_range.txt"), longitudes_range)
 
@@ -337,7 +337,6 @@ def perform_lander_location_analysis(time_stamp,
             UDP.initial_state_index = initial_state_index
             UDP.lander_to_include = [lander_to_include]
             UDP.lander_coordinates[UDP.lander_to_include[0]] = [0.0, latitudes_range[i], longitudes_range[j]]
-            UDP.estimate_h2_love_number_flag = True
             UDP.save_simulation_results_flag = save_simulation_results_flag
             UDP.save_covariance_results_flag = save_covariance_results_flag
 
@@ -410,16 +409,16 @@ def main():
                                        save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = True
+    perform_single_case_analysis_flag = False
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
                              save_covariance_results_flag)
 
     # Study the effect of changing the location of the landers
-    perform_landers_location_analysis_flag = False
+    perform_landers_location_analysis_flag = True
     if perform_landers_location_analysis_flag:
-        initial_state_index = 2
+        initial_state_index = 1
         perform_lander_location_analysis(time_stamp,
                                          initial_state_index,
                                          save_simulation_results_flag,
