@@ -112,7 +112,7 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
         plt.close(fig)
 
 
-def plot_monte_carlo_interior_parameters_analysis(input_path, fontsize=12):
+def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_flag, fontsize=12):
 
     layers = ["core", "ocean", "shell"]
 
@@ -121,10 +121,15 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, fontsize=12):
                                   r"$R_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
 
     # Load results
-    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
-    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
-
-    filtered_parameters, filtered_observations = filter_parameters_and_observations(interior_models, observations)
+    if filter_parameters_flag:
+        observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+        interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+        filtered_parameters, filtered_observations = filter_parameters_and_observations(interior_models, observations)
+        np.savetxt(os.path.join(input_path, "filtered_parameters.dat"), filtered_parameters)
+        np.savetxt(os.path.join(input_path, "filtered_observations.dat"), filtered_observations)
+    else:
+        filtered_parameters = np.loadtxt(os.path.join(input_path, "filtered_parameters.dat"))
+        filtered_observations = np.loadtxt(os.path.join(input_path, "filtered_observations.dat"))
 
     for i in range(len(layers)):
         layer = layers[i]
@@ -155,9 +160,24 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, fontsize=12):
                 ax2 = axes2[2, 0]
                 ax3 = axes3[2, 0]
 
-            ax.scatter(filtered_parameters[:, j], filtered_observations[:, 0], color="black")
-            ax2.scatter(filtered_parameters[:, j], filtered_observations[:, 2], color="black")
-            ax3.scatter(filtered_parameters[:, j], filtered_observations[:, 1], color="black")
+            if j == 0:
+                if layer == "ocean":
+                    ax.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 0], color="black")
+                    ax2.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 1], color="black")
+                    ax3.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 2], color="black")
+                elif layer == "shell":
+                    ax.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 0], color="black")
+                    ax2.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 1], color="black")
+                    ax3.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 2], color="black")
+                else:
+                    ax.scatter(parameters[:, j], filtered_observations[:, 0], color="black")
+                    ax2.scatter(filtered_parameters[:, j], filtered_observations[:, 1], color="black")
+                    ax3.scatter(filtered_parameters[:, j], filtered_observations[:, 2], color="black")
+            else:
+                ax.scatter(parameters[:, j], filtered_observations[:, 0], color="black")
+                ax2.scatter(parameters[:, j], filtered_observations[:, 1], color="black")
+                ax3.scatter(parameters[:, j], filtered_observations[:, 2], color="black")
+
             ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
@@ -171,11 +191,11 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, fontsize=12):
         fig.delaxes(axes[2, 1])
         fig2.delaxes(axes2[2, 1])
         fig3.delaxes(axes3[2, 1])
-        fig.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
-        fig2.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
+        fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
+        fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
         fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
-        fig.savefig(os.path.join(input_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
-        fig2.savefig(os.path.join(input_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+        fig.savefig(os.path.join(input_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+        fig2.savefig(os.path.join(input_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
         fig3.savefig(os.path.join(input_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
 
 
@@ -212,7 +232,8 @@ def main():
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
         time_stamp = "2025.07.26.10.33.59"
         input_path = os.path.join(input_path, time_stamp)
-        plot_monte_carlo_interior_parameters_analysis(input_path)
+        plot_monte_carlo_interior_parameters_analysis(input_path,
+                                                      filter_parameters_flag=True)
 
 
 
