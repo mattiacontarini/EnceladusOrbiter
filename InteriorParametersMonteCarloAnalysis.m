@@ -34,7 +34,7 @@ interior_parameters_to_vary_top("eta_shell") = 1.5e18; % 1.0e16;
 interior_parameters_to_vary_top("K_shell") = 5.0e10; % 1.0e11;
 
 interior_parameters_to_vary_bottom = dictionary;
-interior_parameters_to_vary_bottom("R_core") = 150.0e3;  % [m]
+interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 5.0e9; 
 interior_parameters_to_vary_bottom("eta_core") = 0.5e20;%1.0e16;
 interior_parameters_to_vary_bottom("K_core") = 0.7e10;%1.0e10;
