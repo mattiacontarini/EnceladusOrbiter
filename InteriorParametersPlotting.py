@@ -117,8 +117,8 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_
     layers = ["core", "ocean", "shell"]
 
     interior_parameters_labels = [r"$R_{c}$  [km]", r"$\rho_{c}$  [kg m$^{-3}$]", r"$\mu_{c}$  [Pa]", r"$\eta_{c}$  [Pa s]", r"$K_{c}$  [Pa]",
-                                  r"$R_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]", r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
-                                  r"$R_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
+                                  r"$d_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]", r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
+                                  r"$d_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
 
     # Load results
     if filter_parameters_flag:
@@ -182,8 +182,8 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             if j % 2 == 0:
-                ax.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
-                ax2.set_ylabel(r"$\phi$  [-]", fontsize=fontsize)
+                ax.set_ylabel(r"$\phi$  [-]", fontsize=fontsize)
+                ax2.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
                 ax3.set_ylabel(r"$h_2$ Love number  [-]", fontsize=fontsize)
             ax.grid(True)
             ax2.grid(True)
@@ -233,7 +233,7 @@ def main():
         time_stamp = "2025.07.26.10.33.59"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis(input_path,
-                                                      filter_parameters_flag=True)
+                                                      filter_parameters_flag=False)
 
 
 
