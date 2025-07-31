@@ -20,35 +20,35 @@ end
 
 % Setup variables to tune through MC analysis
 interior_parameters_to_vary_top = dictionary;
-interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
-interior_parameters_to_vary_top("mu_core") = 70.0e9; 
-interior_parameters_to_vary_top("eta_core") = 1.5e20; %1.0e22;
-interior_parameters_to_vary_top("K_core") = 1.3e10;%1.0e11;
-interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
+interior_parameters_to_vary_top("R_core") = 213.0e3;  % [m]
+interior_parameters_to_vary_top("mu_core") = 80.0e9; 
+interior_parameters_to_vary_top("eta_core") = 1.0e22;
+interior_parameters_to_vary_top("K_core") = 1.0e11;
+interior_parameters_to_vary_top("d_ocean") = 35.0e3;  % [m]
 interior_parameters_to_vary_top("mu_ocean") = 1.0;
 interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
-interior_parameters_to_vary_top("K_ocean") = 3.5e9; %1.0e10;
+interior_parameters_to_vary_top("K_ocean") = 1.0e10; %1.0e10;
 interior_parameters_to_vary_top("rho_shell") = 1000.0;
-interior_parameters_to_vary_top("mu_shell") = 4.5e9;
-interior_parameters_to_vary_top("eta_shell") = 1.5e18; % 1.0e16;
-interior_parameters_to_vary_top("K_shell") = 5.0e10; % 1.0e11;
+interior_parameters_to_vary_top("mu_shell") = 5.0e9;
+interior_parameters_to_vary_top("eta_shell") = 1.0e20;
+interior_parameters_to_vary_top("K_shell") = 1.0e11;
 
 interior_parameters_to_vary_bottom = dictionary;
 interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
-interior_parameters_to_vary_bottom("mu_core") = 5.0e9; 
-interior_parameters_to_vary_bottom("eta_core") = 0.5e20;%1.0e16;
-interior_parameters_to_vary_bottom("K_core") = 0.7e10;%1.0e10;
+interior_parameters_to_vary_bottom("mu_core") = 4.0e9; 
+interior_parameters_to_vary_bottom("eta_core") = 1.0e11;
+interior_parameters_to_vary_bottom("K_core") = 1.0e9;
 interior_parameters_to_vary_bottom("d_ocean") = 5.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_ocean") = 0.1;
 interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-4;
 interior_parameters_to_vary_bottom("K_ocean") = 1.0e9; % 1.0e8;
 interior_parameters_to_vary_bottom("rho_shell") = 800.0;
 interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
-interior_parameters_to_vary_bottom("eta_shell") = 0.5e18; % 1.0e12;
-interior_parameters_to_vary_bottom("K_shell") = 1.0e10; % 1.0e9;
+interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;
+interior_parameters_to_vary_bottom("K_shell") = 1.0e9;
 
 % Set number of samples per variable
-nb_samples_per_variables = 100000;
+nb_samples_per_variables = 10000;
 
 % Set seed
 seed = 1702;
