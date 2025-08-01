@@ -112,7 +112,11 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
         plt.close(fig)
 
 
-def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_flag, fontsize=12):
+def plot_monte_carlo_interior_parameters_analysis(input_path,
+                                                  filter_parameters_flag,
+                                                  filter_observations_flag,
+                                                  use_filtered_observations_flag,
+                                                  fontsize=12):
 
     layers = ["core", "ocean", "shell"]
 
@@ -120,16 +124,39 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_
                                   r"$d_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]", r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
                                   r"$d_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
 
+    nominal_observations_dissipative_shell = [0.120, 0.0317, 0.0848]  # Thomas et al. (2016), Bagheri et al. (2025)
+    std_observations_dissipative_shell = [0.007, 0.0130, 0.0359]  # Thomas et al. (2016), Bagheri et al. (2025)
+    dissipative_shell = np.zeros((2, 3))
+    dissipative_shell[0, :] = nominal_observations_dissipative_shell
+    dissipative_shell[1, :] = std_observations_dissipative_shell
+
     # Load results
     if filter_parameters_flag:
         observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
         interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
-        filtered_parameters, filtered_observations = filter_parameters_and_observations(interior_models, observations)
+        filtered_parameters_feasibility, filtered_observations_feasibility = filter_parameters(interior_models, observations)
+        np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
+        np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+    else:
+        filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"))
+        filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_feasibility.dat"))
+
+    # Apply absolute value to libration amplitude
+    filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
+
+    if filter_observations_flag:
+        filtered_parameters, filtered_observations = filter_observations(filtered_parameters_feasibility,
+                                                                         filtered_observations_feasibility,
+                                                                         dissipative_shell)
         np.savetxt(os.path.join(input_path, "filtered_parameters.dat"), filtered_parameters)
         np.savetxt(os.path.join(input_path, "filtered_observations.dat"), filtered_observations)
     else:
         filtered_parameters = np.loadtxt(os.path.join(input_path, "filtered_parameters.dat"))
         filtered_observations = np.loadtxt(os.path.join(input_path, "filtered_observations.dat"))
+
+    if not use_filtered_observations_flag:
+        filtered_parameters = filtered_parameters_feasibility
+        filtered_observations = filtered_observations_feasibility
 
     for i in range(len(layers)):
         layer = layers[i]
@@ -185,6 +212,10 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_
                 ax.set_ylabel(r"$\phi$  [-]", fontsize=fontsize)
                 ax2.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
                 ax3.set_ylabel(r"$h_2$ Love number  [-]", fontsize=fontsize)
+            if j > 1:
+                ax.set_xscale("log")
+                ax2.set_xscale("log")
+                ax3.set_xscale("log")
             ax.grid(True)
             ax2.grid(True)
             ax3.grid(True)
@@ -199,7 +230,7 @@ def plot_monte_carlo_interior_parameters_analysis(input_path, filter_parameters_
         fig3.savefig(os.path.join(input_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
 
 
-def filter_parameters_and_observations(parameters, observations):
+def filter_parameters(parameters, observations):
     nb_simulations = parameters.shape[0]
 
     counter = 0
@@ -220,6 +251,32 @@ def filter_parameters_and_observations(parameters, observations):
     return filtered_parameters, filtered_observations
 
 
+def filter_observations(parameters, observations, nominal_observations):
+    nb_simulations = parameters.shape[0]
+    nb_observations = observations.shape[1]
+    counter = 0
+
+    filtered_parameters = np.copy(parameters)
+    filtered_observations = np.copy(observations)
+    for i in range(nb_simulations):
+
+        delete_flag = False
+        for j in range(nb_observations):
+            if (observations[i, j] <= nominal_observations[0, j] - 3*nominal_observations[1, j] or
+                observations[i, j] >= nominal_observations[0, j] + 3*nominal_observations[1, j]):
+                delete_flag = True
+                break
+
+        if delete_flag:
+            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
+            filtered_observations = np.delete(filtered_observations, i - counter, 0)
+            counter += 1
+
+        print(i)
+
+    print("Nb. of invalid simulations: ", counter)
+    return filtered_parameters, filtered_observations
+
 def main():
 
     plot_one_at_a_time_interior_parameters_analysis_flag = False
@@ -230,12 +287,13 @@ def main():
     plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.07.26.10.33.59"
+        time_stamp = "2025.07.31.15.03.20"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis(input_path,
-                                                      filter_parameters_flag=False)
-
-
+                                                      filter_parameters_flag=False,
+                                                      filter_observations_flag=False,
+                                                      use_filtered_observations_flag=False
+                                                      )
 
 if __name__ == "__main__":
     main()
