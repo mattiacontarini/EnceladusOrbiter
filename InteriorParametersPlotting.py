@@ -134,6 +134,11 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
     if filter_parameters_flag:
         observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
         interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+
+        # Convert libration amplitude to deg
+        observations[:, 0] = np.rad2deg(observations[:, 0])
+
+        # Filter parameter and observations based on the feasibility of the interior model
         filtered_parameters_feasibility, filtered_observations_feasibility = filter_parameters(interior_models, observations)
         np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
         np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
@@ -205,11 +210,104 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                 ax2.scatter(parameters[:, j], filtered_observations[:, 1], color="black")
                 ax3.scatter(parameters[:, j], filtered_observations[:, 2], color="black")
 
+            if not use_filtered_observations_flag:
+                ax.axhline(y=dissipative_shell[0, 0] + dissipative_shell[1, 0], color="red")
+                ax2.axhline(y=dissipative_shell[0, 1] + dissipative_shell[1, 1], color="red")
+                ax3.axhline(y=dissipative_shell[0, 2] + dissipative_shell[1, 2], color="red")
+                if j == 0:
+                    if layer == "ocean":
+                        ax.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            max(filtered_observations[:, 0]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            max(filtered_observations[:, 1]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            max(filtered_observations[:, 2]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                    elif layer == "shell":
+                        ax.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            max(filtered_observations[:, 0]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            max(filtered_observations[:, 1]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            max(filtered_observations[:, 2]),
+                            color="red",
+                        )
+                    else:
+                        ax.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            max(filtered_observations[:, 0]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            max(filtered_observations[:, 1]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            max(filtered_observations[:, 2]),
+                            color="red",
+                            alpha=0.5,
+                        )
+                else:
+                    ax.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                        max(filtered_observations[:, 0]),
+                        color="red",
+                        alpha=0.5,
+                    )
+                    ax2.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                        max(filtered_observations[:, 1]),
+                        color="red",
+                        alpha=0.5,
+                    )
+                    ax3.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                        max(filtered_observations[:, 2]),
+                        color="red",
+                        alpha=0.5,
+                    )
+
             ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             if j % 2 == 0:
-                ax.set_ylabel(r"$\phi$  [-]", fontsize=fontsize)
+                ax.set_ylabel(r"$\phi$  [deg]", fontsize=fontsize)
                 ax2.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
                 ax3.set_ylabel(r"$h_2$ Love number  [-]", fontsize=fontsize)
             if j > 1:
@@ -245,8 +343,6 @@ def filter_parameters(parameters, observations):
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
 
-        print(i)
-
     print("Nb. of invalid simulations: ", counter)
     return filtered_parameters, filtered_observations
 
@@ -262,8 +358,7 @@ def filter_observations(parameters, observations, nominal_observations):
 
         delete_flag = False
         for j in range(nb_observations):
-            if (observations[i, j] <= nominal_observations[0, j] - 3*nominal_observations[1, j] or
-                observations[i, j] >= nominal_observations[0, j] + 3*nominal_observations[1, j]):
+            if (observations[i, j] >= nominal_observations[0, j] + 3*nominal_observations[1, j]):
                 delete_flag = True
                 break
 
@@ -271,8 +366,6 @@ def filter_observations(parameters, observations, nominal_observations):
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
-
-        print(i)
 
     print("Nb. of invalid simulations: ", counter)
     return filtered_parameters, filtered_observations
@@ -290,8 +383,8 @@ def main():
         time_stamp = "2025.07.31.15.03.20"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis(input_path,
-                                                      filter_parameters_flag=False,
-                                                      filter_observations_flag=False,
+                                                      filter_parameters_flag=True,
+                                                      filter_observations_flag=True,
                                                       use_filtered_observations_flag=False
                                                       )
 
