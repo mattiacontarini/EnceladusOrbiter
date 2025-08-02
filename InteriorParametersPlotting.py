@@ -113,10 +113,15 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
 
 
 def plot_monte_carlo_interior_parameters_analysis(input_path,
+                                                  nominal_observations_dissipative_shell,
+                                                  std_observations_dissipative_shell,
                                                   filter_parameters_flag,
                                                   filter_observations_flag,
                                                   use_filtered_observations_flag,
                                                   fontsize=12):
+
+    plots_path = os.path.join(input_path, "plots")
+    os.makedirs(plots_path, exist_ok=True)
 
     layers = ["core", "ocean", "shell"]
 
@@ -124,8 +129,6 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                                   r"$d_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]", r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
                                   r"$d_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]", r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
 
-    nominal_observations_dissipative_shell = [0.120, 0.0317, 0.0848]  # Thomas et al. (2016), Bagheri et al. (2025)
-    std_observations_dissipative_shell = [0.007, 0.0130, 0.0359]  # Thomas et al. (2016), Bagheri et al. (2025)
     dissipative_shell = np.zeros((2, 3))
     dissipative_shell[0, :] = nominal_observations_dissipative_shell
     dissipative_shell[1, :] = std_observations_dissipative_shell
@@ -139,9 +142,10 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
         observations[:, 0] = np.rad2deg(observations[:, 0])
 
         # Filter parameter and observations based on the feasibility of the interior model
-        filtered_parameters_feasibility, filtered_observations_feasibility = filter_parameters(interior_models, observations)
+        filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = filter_parameters(interior_models, observations)
         np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
         np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+        np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
     else:
         filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"))
         filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_feasibility.dat"))
@@ -150,11 +154,12 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
     if filter_observations_flag:
-        filtered_parameters, filtered_observations = filter_observations(filtered_parameters_feasibility,
+        filtered_parameters, filtered_observations, nb_valid_models = filter_observations(filtered_parameters_feasibility,
                                                                          filtered_observations_feasibility,
                                                                          dissipative_shell)
         np.savetxt(os.path.join(input_path, "filtered_parameters.dat"), filtered_parameters)
         np.savetxt(os.path.join(input_path, "filtered_observations.dat"), filtered_observations)
+        np.savetxt(os.path.join(input_path, "nb_valid_models.dat"), [nb_valid_models])
     else:
         filtered_parameters = np.loadtxt(os.path.join(input_path, "filtered_parameters.dat"))
         filtered_observations = np.loadtxt(os.path.join(input_path, "filtered_observations.dat"))
@@ -302,14 +307,108 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                         color="red",
                         alpha=0.5,
                     )
+            else:
+                ax.axhline(y=dissipative_shell[0, 0], color="lime")
+                ax2.axhline(y=dissipative_shell[0, 1], color="lime")
+                ax3.axhline(y=dissipative_shell[0, 2], color="lime")
+
+                if j == 0:
+                    if layer == "ocean":
+                        ax.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                    elif layer == "shell":
+                        ax.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                    else:
+                        ax.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax2.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                        ax3.fill_between(
+                            [min(parameters[:, j]), max(parameters[:, j])],
+                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                            color="lime",
+                            alpha=0.7,
+                        )
+                else:
+                    ax.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                        dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                        color="lime",
+                        alpha=0.7,
+                    )
+                    ax2.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                        dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                        color="lime",
+                        alpha=0.7,
+                    )
+                    ax3.fill_between(
+                        [min(parameters[:, j]), max(parameters[:, j])],
+                        dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                        dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                        color="lime",
+                        alpha=0.7,
+                    )
 
             ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             if j % 2 == 0:
                 ax.set_ylabel(r"$\phi$  [deg]", fontsize=fontsize)
-                ax2.set_ylabel(r"$k_2$ Love number  [-]", fontsize=fontsize)
-                ax3.set_ylabel(r"$h_2$ Love number  [-]", fontsize=fontsize)
+                ax2.set_ylabel(r"$k_2$  [-]", fontsize=fontsize)
+                ax3.set_ylabel(r"$h_2$  [-]", fontsize=fontsize)
             if j > 1:
                 ax.set_xscale("log")
                 ax2.set_xscale("log")
@@ -323,9 +422,14 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
         fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
         fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
         fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
-        fig.savefig(os.path.join(input_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
-        fig2.savefig(os.path.join(input_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
-        fig3.savefig(os.path.join(input_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
+        if use_filtered_observations_flag:
+            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}_filtered.pdf"))
+            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}_filtered.pdf"))
+            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}_filtered.pdf"))
+        else:
+            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
+            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
 
 
 def filter_parameters(parameters, observations):
@@ -344,7 +448,7 @@ def filter_parameters(parameters, observations):
             counter += 1
 
     print("Nb. of invalid simulations: ", counter)
-    return filtered_parameters, filtered_observations
+    return filtered_parameters, filtered_observations, nb_simulations-counter
 
 
 def filter_observations(parameters, observations, nominal_observations):
@@ -358,7 +462,7 @@ def filter_observations(parameters, observations, nominal_observations):
 
         delete_flag = False
         for j in range(nb_observations):
-            if (observations[i, j] >= nominal_observations[0, j] + 3*nominal_observations[1, j]):
+            if (observations[i, j] >= nominal_observations[0, j] + nominal_observations[1, j]):
                 delete_flag = True
                 break
 
@@ -368,7 +472,7 @@ def filter_observations(parameters, observations, nominal_observations):
             counter += 1
 
     print("Nb. of invalid simulations: ", counter)
-    return filtered_parameters, filtered_observations
+    return filtered_parameters, filtered_observations, nb_simulations-counter
 
 def main():
 
@@ -380,12 +484,16 @@ def main():
     plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.07.31.15.03.20"
+        time_stamp = "2025.08.01.08.44.44"
         input_path = os.path.join(input_path, time_stamp)
+        nominal_observations_dissipative_shell = [0.091, 0.0317, 0.0848]  # Park et al. (2024), Bagheri et al. (2025)
+        std_observations_dissipative_shell = [0.009, 0.0130, 0.0359]  # Park et al. (2024), Bagheri et al. (2025)
         plot_monte_carlo_interior_parameters_analysis(input_path,
-                                                      filter_parameters_flag=True,
-                                                      filter_observations_flag=True,
-                                                      use_filtered_observations_flag=False
+                                                      nominal_observations_dissipative_shell,
+                                                      std_observations_dissipative_shell,
+                                                      filter_parameters_flag=False,
+                                                      filter_observations_flag=False,
+                                                      use_filtered_observations_flag=True
                                                       )
 
 if __name__ == "__main__":
