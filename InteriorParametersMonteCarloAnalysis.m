@@ -20,11 +20,11 @@ end
 
 % Setup variables to tune through MC analysis
 interior_parameters_to_vary_top = dictionary;
-interior_parameters_to_vary_top("R_core") = 213.0e3;  % [m]
+interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e22;
 interior_parameters_to_vary_top("K_core") = 1.0e11;
-interior_parameters_to_vary_top("d_ocean") = 35.0e3;  % [m]
+interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
 interior_parameters_to_vary_top("mu_ocean") = 1.0;
 interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
 interior_parameters_to_vary_top("K_ocean") = 1.0e10; %1.0e10;
@@ -48,7 +48,7 @@ interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;
 interior_parameters_to_vary_bottom("K_shell") = 1.0e9;
 
 % Set number of samples per variable
-nb_samples_per_variables = 10000;
+nb_samples_per_variables = 30000;
 
 % Set seed
 seed = 1702;
@@ -57,7 +57,7 @@ seed = 1702;
 global R_Enceladus M_Enceladus MoI_Enceladus
 R_Enceladus = 252.1e3; % Porco et al. (2006)
 M_Enceladus = 1.08e20; % Flandes et al. (2023)
-MoI_Enceladus = 0.338 * M_Enceladus * R_Enceladus^2; % Iess et al. (2014)
+MoI_Enceladus = 0.338 * M_Enceladus * R_Enceladus^2;
 
 % Forcing
 Forcing_Enceladus(1).Td=33*3600; 
@@ -82,6 +82,7 @@ Numerics_Enceladus.perturbation_order = 2;
 control_variables_names = keys(interior_parameters_to_vary_top);
 nb_variables = length(control_variables_names);
 nb_simulations = nb_variables * nb_samples_per_variables;
+fprintf("Total nb. of simulations: %d\n", nb_simulations)
 
 % Set random number generator
 rng(seed);
@@ -152,12 +153,6 @@ global M_Enceladus R_Enceladus MoI_Enceladus
 
 rho_ocean = InteriorModelInversionUtilities.get_ocean_density(M_Enceladus, MoI_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9));
 rho_core = InteriorModelInversionUtilities.get_core_density(M_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9), rho_ocean);
-
-disp(samples(1))
-disp(samples(5))
-disp(R_ocean)
-disp(rho_core)
-disp(rho_ocean)
 
 InteriorModel(1).R0 = 5;
 InteriorModel(1).rho0 = 5000;
