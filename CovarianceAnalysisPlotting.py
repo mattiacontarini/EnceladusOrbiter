@@ -1214,7 +1214,7 @@ def plot_tuning_parameters_refinement_analysis(input_path,
         plt.close(fig)
 
 
-def plot_lander_location_analysis(input_path, fontsize=12):
+def plot_lander_location_analysis(input_path, orbit_label, fontsize=12):
 
     # Load latitudes and longitudes range
     latitudes_range = np.rad2deg(np.loadtxt(os.path.join(input_path, "latitudes_range.txt")))
@@ -1258,7 +1258,7 @@ def plot_lander_location_analysis(input_path, fontsize=12):
     )
 
     # Plot considered locations
-    fig2 = plt.figure()
+    fig2 = plt.figure(figsize=(8, 5))
     ax2 = fig2.add_subplot(1, 1, 1)
     ticks_lat_aux = []
     ticks_lat_labels_aux = []
@@ -1272,7 +1272,6 @@ def plot_lander_location_analysis(input_path, fontsize=12):
     plt.yticks(ticks=ticks_lat_aux, labels=ticks_lat_labels_aux, fontsize=fontsize)
     plt.xticks(ticks=longitudes_range, labels=longitudes_range_labels, fontsize=fontsize)
     ax2.grid(True)
-    #ax2.set_title("Investigated locations", fontsize=fontsize)
     fig2.tight_layout()
     fig2.savefig(os.path.join(input_path, "investigated_locations.pdf"))
     plt.close(fig2)
@@ -1324,13 +1323,14 @@ def plot_lander_location_analysis(input_path, fontsize=12):
     for i in range(len(parameters_keys)):
         parameter_key = parameters_keys[i]
 
+        plt.figure(figsize=(9, 5))
         plt.imshow(parameters_of_interest_store[parameter_key], aspect='auto', interpolation="auto")
         plt.colorbar(label=parameters_of_interest_store_axis_labels[parameter_key])
         plt.yticks(ticks=np.arange(0.0, len(latitudes_range), 1.0), labels=latitudes_range_labels, fontsize=fontsize)
         plt.xticks(ticks=np.arange(0.0, len(longitudes_range), 1.0), labels=longitudes_range_labels, fontsize=fontsize)
         plt.ylabel("Latitude  [deg]", fontsize=fontsize)
         plt.xlabel("Longitude  [deg]", fontsize=fontsize)
-        plt.title(parameters_of_interest_store_labels[parameter_key], fontsize=fontsize)
+        plt.title(parameters_of_interest_store_labels[parameter_key] + ". Orbit: " + orbit_label, fontsize=fontsize)
         plt.tight_layout()
         plt.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
         plt.close()
@@ -1521,9 +1521,9 @@ def main():
     plot_lander_location_analysis_flag = True
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
-        time_stamp_folder = "2025.06.20.17.01.29"
+        time_stamp_folder = "2025.07.30.08.25.59"
         input_path = os.path.join(input_directory, time_stamp_folder)
-        plot_lander_location_analysis(input_path)
+        plot_lander_location_analysis(input_path, "K1", fontsize=12)
 
     plot_h2_love_number_partials_flag = False
     if plot_h2_love_number_partials_flag:
