@@ -263,36 +263,41 @@ def perform_nominal_cases_analysis(time_stamp,
                               ["L3"],
                               ["L1", "L2", "L3", "L4", "L5", "L6", "L7", "L8", "L9"]]
 
+    # Set list of arc durations to consider
+    arc_durations = [1.0*constants.JULIAN_DAY, 7.0*constants.JULIAN_DAY]
+
     for initial_state_index in initial_state_indices:
         orbit_solution_path = os.path.join(output_path, f"initial_state_index_{initial_state_index}")
         for j in range(len(lander_to_include_list)):
             lander_to_include_path = os.path.join(orbit_solution_path, f"lander_to_include_case_{j}")
-            os.makedirs(lander_to_include_path, exist_ok=True)
+            for k in range(len(arc_durations)):
+                arc_duration_path = os.path.join(lander_to_include_path, f"arc_duration_case_{k}")
+                os.makedirs(arc_duration_path, exist_ok=True)
 
-            print(f"Analysing lander to include case {j} of initial state K{initial_state_index}.")
+                print(f"Analysing arc duration case {k}, lander to include case {j}, initial state K{initial_state_index}.")
 
-            # Setup problem
-            UDP = CovarianceAnalysis.from_config()
-            UDP.initial_state_index = initial_state_index
-            UDP.lander_to_include = lander_to_include_list[j]
-            UDP.arc_duration = 7.0 * constants.JULIAN_DAY
-            UDP.simulation_duration = 28.0 * constants.JULIAN_DAY
-            UDP.kaula_constraint_multiplier = 4e-4
-            UDP.a_priori_empirical_accelerations = 1e-9
-            UDP.a_priori_lander_position = 1e2
-            UDP.empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
-            UDP.tracking_arc_duration_Earth_GS = 8.0 * 3600.0
-            UDP.a_priori_rotation_pole_position = np.array([np.infty, np.infty])
-            UDP.a_priori_rotation_pole_rate = np.array([np.infty, np.inf])
-            UDP.a_priori_radiation_pressure_coefficient = 1e-10
-            if lander_to_include_list[j] != []:
-                UDP.estimate_h2_love_number_flag = True
-            UDP.save_simulation_results_flag = save_simulation_results_flag
-            UDP.save_covariance_results_flag = save_covariance_results_flag
+                # Setup problem
+                UDP = CovarianceAnalysis.from_config()
+                UDP.initial_state_index = initial_state_index
+                UDP.lander_to_include = lander_to_include_list[j]
+                UDP.arc_duration = arc_durations[k]
+                UDP.simulation_duration = 28.0 * constants.JULIAN_DAY
+                UDP.kaula_constraint_multiplier = 4e-4
+                UDP.a_priori_empirical_accelerations = 1e-9
+                UDP.a_priori_lander_position = 1e2
+                UDP.empirical_accelerations_arc_duration = 1.0 * constants.JULIAN_DAY
+                UDP.tracking_arc_duration_Earth_GS = 8.0 * 3600.0
+                UDP.a_priori_rotation_pole_position = np.array([np.infty, np.infty])
+                UDP.a_priori_rotation_pole_rate = np.array([np.infty, np.inf])
+                UDP.a_priori_radiation_pressure_coefficient = 1e-10
+                if lander_to_include_list[j] != []:
+                    UDP.estimate_h2_love_number_flag = True
+                UDP.save_simulation_results_flag = save_simulation_results_flag
+                UDP.save_covariance_results_flag = save_covariance_results_flag
 
-            # Run covariance analysis
-            UDP.save_problem_configuration(lander_to_include_path)
-            UDP.perform_covariance_analysis(lander_to_include_path)
+                # Run covariance analysis
+                UDP.save_problem_configuration(lander_to_include_path)
+                UDP.perform_covariance_analysis(lander_to_include_path)
 
 
 def perform_lander_location_analysis(time_stamp,
@@ -402,7 +407,7 @@ def main():
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = False
+    perform_nominal_cases_analysis_flag = True
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,
