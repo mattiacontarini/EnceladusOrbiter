@@ -32,8 +32,8 @@ classdef InteriorModelInversionUtilities
                 rho0 = interior_model_struct(i).rho0;
                 mu0 = interior_model_struct(i).mu0;
                 eta0 = interior_model_struct(i).eta0;
-                Ks0 = interior_model_struct(i).Ks0; 
-
+                Ks0 = interior_model_struct(i).Ks0;
+                
                 interior_model_array = [interior_model_array, R0, rho0, mu0, eta0, Ks0];
             end
         end

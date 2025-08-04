@@ -19,36 +19,64 @@ end
 
 
 % Setup variables to tune through MC analysis
+%interior_parameters_to_vary_top = dictionary;
+%interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
+%interior_parameters_to_vary_top("mu_core") = 80.0e9; 
+%interior_parameters_to_vary_top("eta_core") = 1.0e22;
+%interior_parameters_to_vary_top("K_core") = 1.0e11;
+%interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
+%interior_parameters_to_vary_top("mu_ocean") = 1.0;
+%interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
+%interior_parameters_to_vary_top("K_ocean") = 1.0e10; %1.0e10;
+%interior_parameters_to_vary_top("rho_shell") = 1000.0;
+%interior_parameters_to_vary_top("mu_shell") = 5.0e9;
+%interior_parameters_to_vary_top("eta_shell") = 1.0e20;
+%interior_parameters_to_vary_top("K_shell") = 1.0e11;
+
+%interior_parameters_to_vary_bottom = dictionary;
+%interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
+%interior_parameters_to_vary_bottom("mu_core") = 4.0e9; 
+%interior_parameters_to_vary_bottom("eta_core") = 1.0e11;
+%interior_parameters_to_vary_bottom("K_core") = 1.0e9;
+%interior_parameters_to_vary_bottom("d_ocean") = 5.0e3;  % [m]
+%interior_parameters_to_vary_bottom("mu_ocean") = 0.1;
+%interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-4;
+%interior_parameters_to_vary_bottom("K_ocean") = 1.0e9; % 1.0e8;
+%interior_parameters_to_vary_bottom("rho_shell") = 800.0;
+%interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
+%interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;
+%interior_parameters_to_vary_bottom("K_shell") = 1.0e9;
+
 interior_parameters_to_vary_top = dictionary;
 interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e22;
-interior_parameters_to_vary_top("K_core") = 1.0e11;
+interior_parameters_to_vary_top("K_core") = 5.0e10;
 interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
 interior_parameters_to_vary_top("mu_ocean") = 1.0;
 interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
-interior_parameters_to_vary_top("K_ocean") = 1.0e10; %1.0e10;
+interior_parameters_to_vary_top("K_ocean") = 1.0e10;
 interior_parameters_to_vary_top("rho_shell") = 1000.0;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
-interior_parameters_to_vary_top("eta_shell") = 1.0e20;
+interior_parameters_to_vary_top("eta_shell") = 1.0e19;
 interior_parameters_to_vary_top("K_shell") = 1.0e11;
 
 interior_parameters_to_vary_bottom = dictionary;
 interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 4.0e9; 
 interior_parameters_to_vary_bottom("eta_core") = 1.0e11;
-interior_parameters_to_vary_bottom("K_core") = 1.0e9;
+interior_parameters_to_vary_bottom("K_core") = 5.0e9;
 interior_parameters_to_vary_bottom("d_ocean") = 5.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_ocean") = 0.1;
-interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-4;
-interior_parameters_to_vary_bottom("K_ocean") = 1.0e9; % 1.0e8;
+interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-3;
+interior_parameters_to_vary_bottom("K_ocean") = 1.0e9;
 interior_parameters_to_vary_bottom("rho_shell") = 800.0;
 interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
-interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;
-interior_parameters_to_vary_bottom("K_shell") = 1.0e9;
+interior_parameters_to_vary_bottom("eta_shell") = 1.0e17;
+interior_parameters_to_vary_bottom("K_shell") = 1.0e10;
 
 % Set number of samples per variable
-nb_samples_per_variables = 30000;
+nb_samples_per_variables = 10000;
 
 % Set seed
 seed = 1702;
@@ -92,7 +120,7 @@ samples_store = zeros(nb_simulations, nb_variables);
 output_store = zeros(nb_simulations, 3);
 interior_model_store = zeros(nb_simulations, nb_variables + 3);
 tic
-for i = 1:nb_simulations
+for i=1:nb_simulations
     fprintf("Running simulation nb. %d\n", i)
 
     % Generate random samples for control variables
@@ -112,7 +140,7 @@ for i = 1:nb_simulations
     % Compute shell libration
     [libration] = get_libration(Interior_Model, Forcing_Enceladus);
     shell_libration = real(libration.amplitude_rad(1));
-    
+
     % Compute Love numbers
     [Numerics, Interior_Model] = set_boundary_indices(Numerics_Enceladus, Interior_Model);
     Interior_Model = get_rheology(Interior_Model, Numerics, Forcing_Enceladus);
@@ -121,7 +149,7 @@ for i = 1:nb_simulations
     k2 = real(Love_Spectra.k(iforcing));
     h2 = real(Love_Spectra.h(iforcing));
     
-    output_store(i, 1) = shell_libration;
+    output_store(i, :) = shell_libration;
     output_store(i, 2) = k2;
     output_store(i, 3) = h2;
 
@@ -154,24 +182,24 @@ global M_Enceladus R_Enceladus MoI_Enceladus
 rho_ocean = InteriorModelInversionUtilities.get_ocean_density(M_Enceladus, MoI_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9));
 rho_core = InteriorModelInversionUtilities.get_core_density(M_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9), rho_ocean);
 
-InteriorModel(1).R0 = 5;
-InteriorModel(1).rho0 = 5000;
+InteriorModel(1).R0 = 5.0;
+InteriorModel(1).rho0 = 5000.0;
 
-InteriorModel(2).R0 = samples(1) * 1e-3;
+InteriorModel(2).R0 = samples(1) * 1.0e-3;
 InteriorModel(2).rho0 = rho_core;
 InteriorModel(2).ocean=0;
 InteriorModel(2).mu0=samples(2);
 InteriorModel(2).eta0=samples(3);
 InteriorModel(2).Ks0 = samples(4); 
 
-InteriorModel(3).R0=R_ocean * 1e-3; 
+InteriorModel(3).R0=R_ocean * 1.0e-3; 
 InteriorModel(3).rho0=rho_ocean; 
 InteriorModel(3).ocean=1; 
 InteriorModel(3).mu0=samples(6); 
 InteriorModel(3).eta0=samples(7); 
 InteriorModel(3).Ks0=samples(8);
 
-InteriorModel(4).R0 = R_Enceladus * 1e-3;  
+InteriorModel(4).R0 = R_Enceladus * 1.0e-3;  
 InteriorModel(4).rho0=samples(9);
 InteriorModel(4).ocean=0;
 InteriorModel(4).mu0=samples(10);  
