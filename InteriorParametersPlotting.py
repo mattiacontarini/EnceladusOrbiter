@@ -262,6 +262,7 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                             dissipative_shell[0, 2] + dissipative_shell[1, 2],
                             max(filtered_observations[:, 2]),
                             color="red",
+                            alpha=0.5
                         )
                     else:
                         ax.fill_between(
@@ -493,7 +494,7 @@ def main():
                                                       std_observations_dissipative_shell,
                                                       filter_parameters_flag=False,
                                                       filter_observations_flag=False,
-                                                      use_filtered_observations_flag=True
+                                                      use_filtered_observations_flag=False
                                                       )
 
 if __name__ == "__main__":
