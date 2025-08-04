@@ -2,6 +2,9 @@
 ### Import statements #################################################################################################
 #######################################################################################################################
 
+# Files import
+from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
+
 # Tudat import
 from tudatpy import constants
 
