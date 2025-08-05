@@ -485,7 +485,7 @@ def main():
     plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.01.08.44.44"
+        time_stamp = "2025.08.04.15.14.47"
         input_path = os.path.join(input_path, time_stamp)
         nominal_observations_dissipative_shell = [0.091, 0.0317, 0.0848]  # Park et al. (2024), Bagheri et al. (2025)
         std_observations_dissipative_shell = [0.009, 0.0130, 0.0359]  # Park et al. (2024), Bagheri et al. (2025)
@@ -494,7 +494,7 @@ def main():
                                                       std_observations_dissipative_shell,
                                                       filter_parameters_flag=False,
                                                       filter_observations_flag=False,
-                                                      use_filtered_observations_flag=False
+                                                      use_filtered_observations_flag=True
                                                       )
 
 if __name__ == "__main__":

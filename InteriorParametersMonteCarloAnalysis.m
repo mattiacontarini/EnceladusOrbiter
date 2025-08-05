@@ -58,21 +58,21 @@ interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
 interior_parameters_to_vary_top("K_ocean") = 1.0e10;
 interior_parameters_to_vary_top("rho_shell") = 1000.0;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
-interior_parameters_to_vary_top("eta_shell") = 1.0e19;
+interior_parameters_to_vary_top("eta_shell") = 1.0e16;
 interior_parameters_to_vary_top("K_shell") = 1.0e11;
 
 interior_parameters_to_vary_bottom = dictionary;
 interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 4.0e9; 
-interior_parameters_to_vary_bottom("eta_core") = 1.0e11;
+interior_parameters_to_vary_bottom("eta_core") = 1.0e16;
 interior_parameters_to_vary_bottom("K_core") = 5.0e9;
 interior_parameters_to_vary_bottom("d_ocean") = 5.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_ocean") = 0.1;
 interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-3;
 interior_parameters_to_vary_bottom("K_ocean") = 1.0e9;
 interior_parameters_to_vary_bottom("rho_shell") = 800.0;
-interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
-interior_parameters_to_vary_bottom("eta_shell") = 1.0e17;
+interior_parameters_to_vary_bottom("mu_shell") = 2.0e9;
+interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;
 interior_parameters_to_vary_bottom("K_shell") = 1.0e10;
 
 % Set number of samples per variable
@@ -82,10 +82,13 @@ nb_samples_per_variables = 10000;
 seed = 1702;
 
 % Nominal values for the mass, MoI, radius of Enceladus
-global R_Enceladus M_Enceladus MoI_Enceladus
+global R_Enceladus M_Enceladus MoI_Enceladus %mu_ocean eta_ocean K_ocean 
 R_Enceladus = 252.1e3; % Porco et al. (2006)
 M_Enceladus = 1.08e20; % Flandes et al. (2023)
 MoI_Enceladus = 0.338 * M_Enceladus * R_Enceladus^2;
+%mu_ocean = 0.1;
+%eta_ocean = 1.9e-3;
+%K_ocean = 2.2e9;
 
 % Forcing
 Forcing_Enceladus(1).Td=33*3600; 
@@ -118,7 +121,7 @@ rng(seed);
 % Generate random samples for each interior parameter
 samples_store = zeros(nb_simulations, nb_variables);
 output_store = zeros(nb_simulations, 3);
-interior_model_store = zeros(nb_simulations, nb_variables + 3);
+interior_model_store = zeros(nb_simulations, 15);
 tic
 for i=1:nb_simulations
     fprintf("Running simulation nb. %d\n", i)
@@ -177,7 +180,7 @@ function InteriorModel = setup_interior_model(samples)
 
 R_ocean = samples(1) + samples(5);
 
-global M_Enceladus R_Enceladus MoI_Enceladus
+global M_Enceladus R_Enceladus MoI_Enceladus %mu_ocean eta_ocean K_ocean
 
 rho_ocean = InteriorModelInversionUtilities.get_ocean_density(M_Enceladus, MoI_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9));
 rho_core = InteriorModelInversionUtilities.get_core_density(M_Enceladus, R_Enceladus, samples(1), R_ocean, samples(9), rho_ocean);
@@ -195,9 +198,9 @@ InteriorModel(2).Ks0 = samples(4);
 InteriorModel(3).R0=R_ocean * 1.0e-3; 
 InteriorModel(3).rho0=rho_ocean; 
 InteriorModel(3).ocean=1; 
-InteriorModel(3).mu0=samples(6); 
-InteriorModel(3).eta0=samples(7); 
-InteriorModel(3).Ks0=samples(8);
+InteriorModel(3).mu0=samples(6);%mu_ocean; 
+InteriorModel(3).eta0=samples(7); %eta_ocean; 
+InteriorModel(3).Ks0=samples(8); %K_ocean;
 
 InteriorModel(4).R0 = R_Enceladus * 1.0e-3;  
 InteriorModel(4).rho0=samples(9);
