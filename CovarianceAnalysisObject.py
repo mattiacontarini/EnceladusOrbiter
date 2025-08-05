@@ -1183,14 +1183,14 @@ class CovarianceAnalysis:
         # Compute number of observation epochs per station
         doppler_obs_times_GS = []
         for i in range(len(CovAnalysisConfig.ground_station_names)):
-            doppler_obs_times_GS.append([(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+            doppler_obs_times_GS.append([(t - CovAnalysisConfig.simulation_start_epoch) for t in
                                              sorted_observations[observation.n_way_averaged_doppler_type][i][0].observation_times])
         nb_observations_per_GS = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_GS,
                                                                                      CovAnalysisConfig.ground_station_names)
         if self.lander_to_include != []:
             doppler_obs_times_lander = []
             for i in range(len(self.lander_to_include)):
-                doppler_obs_times_lander.append([(t - CovAnalysisConfig.simulation_start_epoch) / 3600.0 for t in
+                doppler_obs_times_lander.append([(t - CovAnalysisConfig.simulation_start_epoch) for t in
                                              sorted_observations[observation.n_way_averaged_doppler_type][i +
                                                 len(CovAnalysisConfig.ground_station_names)][0].observation_times])
             nb_observations_per_lander = CovUtil.get_number_of_observations_per_station_type(doppler_obs_times_lander,
@@ -1449,20 +1449,26 @@ class CovarianceAnalysis:
 
         if self.save_obs_times_of_vehicle_flag:
 
-            # Plot Earth observation times for the entire mission
-            PlottingUtil.plot_observation_times("entire mission",
-                                                plots_output_path,
-                                                "observation_times_Earth_GS_entire_mission.pdf",
-                                                doppler_obs_times_GS,
-                                                ['New Norcia', 'Cebreros', 'Malargue'])
+            # Build output paths
+            observation_times_output_path = os.path.join(output_path, "observation_times")
+            os.makedirs(observation_times_output_path, exist_ok=True)
 
-            # Plot lander observation times for the entire mission
+            # Save GS observation times
+            for i in range(len(CovAnalysisConfig.ground_station_names)):
+                np.savetxt(
+                    os.path.join(observation_times_output_path,
+                                 f"observation_times_{CovAnalysisConfig.ground_station_names[i]}.dat"),
+                    doppler_obs_times_GS[i])
+
+            # Save lander observation times
             if self.lander_to_include != [ ]:
-                PlottingUtil.plot_observation_times("entire mission",
-                                                    plots_output_path,
-                                                    "observation_times_Enceladus_lander_entire_mission.pdf",
-                                                    doppler_obs_times_lander,
-                                                    self.lander_to_include)
+                for i in range(len(self.lander_to_include)):
+                    np.savetxt(
+                        os.path.join(observation_times_output_path,
+                                     f"observation_times_{self.lander_to_include[i]}.dat"),
+                        doppler_obs_times_lander[i])
+
+            print("Observation epochs saved.")
 
         if self.save_simulation_results_flag:
 
@@ -1470,22 +1476,14 @@ class CovarianceAnalysis:
             os.makedirs(simulation_results_output_path, exist_ok=True)
             os.makedirs(plots_output_path, exist_ok=True)
 
+            # Save number of arcs
+            np.savetxt(os.path.join(simulation_results_output_path, "nb_arcs.dat"),[nb_arcs])
+
             # Save simulation results for every arc
             for i in range(nb_arcs):
                 simulation_results_current_arc = simulation_results[i]
                 state_history_current_arc = simulation_results_current_arc.state_history
                 dependent_variable_history_current_arc = simulation_results_current_arc.dependent_variable_history
-
-                dependent_variable_history_current_arc_array = result2array(dependent_variable_history_current_arc)
-                dim = dependent_variable_history_current_arc_array.shape
-                longitude_history = np.zeros((dim[0], 2))
-                latitude_history = np.zeros((dim[0], 2))
-                longitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
-                latitude_history[:, 0] = dependent_variable_history_current_arc_array[:, 0]
-                longitude_history[:, 1] = dependent_variable_history_current_arc_array[:,
-                                          CovAnalysisConfig.indices_dependent_variables["longitude"][0]]
-                latitude_history[:, 1] = dependent_variable_history_current_arc_array[:,
-                                         CovAnalysisConfig.indices_dependent_variables["latitude"][0]]
 
                 save2txt(state_history_current_arc,
                          f"state_history_arc_{i}.dat",
@@ -1494,22 +1492,20 @@ class CovarianceAnalysis:
                          f"dependent_variable_history_arc_{i}.dat",
                          simulation_results_output_path)
 
-                # Plot 3D trajectory of current arc
-                PlottingUtil.plot_trajectory(state_history_current_arc,
-                                             plots_output_path,
-                                             f"trajectory_3d_arc_{i}.pdf",
-                                             f"Arc {i}",
-                                             "red")
+            # Save target angles and range for every station
+            for lander in self.lander_to_include:
+                target_angles_and_range = numerical_simulation.estimation.compute_target_angles_and_range(
+                    bodies,
+                    ("Enceladus", lander),
+                    "Vehicle",
+                    doppler_obs_times_lander[self.lander_to_include.index(lander)],
+                    False
+                )
+                save2txt(target_angles_and_range,
+                         f"target_angles_and_range_{lander}.dat",
+                         simulation_results_output_path)
 
-                # Plot ground track of current arc
-                PlottingUtil.plot_ground_track(latitude_history,
-                                               longitude_history,
-                                               plots_output_path,
-                                               f"ground_track_arc_{i}.pdf",
-                                               f"Arc {i}",
-                                               "red")
-
-                print("Simulation results saved.")
+            print("Simulation results saved.")
 
 
         print("Run terminated successfully!")
