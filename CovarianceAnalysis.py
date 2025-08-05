@@ -352,7 +352,8 @@ def perform_lander_location_analysis(time_stamp,
 
 def single_case_analysis(time_stamp,
                          save_simulation_results_flag,
-                         save_covariance_results_flag):
+                         save_covariance_results_flag,
+                         save_obs_times_of_vehicle_flag):
     # Load SPICE kernels for simulation
     spice.load_standard_kernels()
     kernels_to_load = [
@@ -376,12 +377,11 @@ def single_case_analysis(time_stamp,
     # Set flag for saving results
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
-    UDP.use_station_position_consider_parameter_flag = True
-    UDP.estimate_h2_love_number_flag = True
-    UDP.save_design_matrix_flag = True
+    UDP.save_obs_times_of_vehicle_flag = save_obs_times_of_vehicle_flag
+    UDP.estimate_h2_love_number_flag = False
 
     # Perform covariance analysis
-    # UDP.save_problem_configuration(output_path)
+    UDP.save_problem_configuration(output_path)
     UDP.perform_covariance_analysis(output_path)
 
 
@@ -390,8 +390,9 @@ def main():
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     # Set whether the results of the covariance analysis should be saved
-    save_simulation_results_flag = False
+    save_simulation_results_flag = True
     save_covariance_results_flag = True
+    save_obs_times_of_vehicle_flag = True
 
     # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
@@ -407,21 +408,22 @@ def main():
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = True
+    perform_nominal_cases_analysis_flag = False
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,
                                        save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = False
+    perform_single_case_analysis_flag = True
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,
-                             save_covariance_results_flag)
+                             save_covariance_results_flag,
+                             save_obs_times_of_vehicle_flag)
 
     # Study the effect of changing the location of the landers
-    perform_landers_location_analysis_flag = True
+    perform_landers_location_analysis_flag = False
     if perform_landers_location_analysis_flag:
         initial_state_index = 1
         perform_lander_location_analysis(time_stamp,
