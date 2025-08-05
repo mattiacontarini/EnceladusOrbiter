@@ -70,7 +70,8 @@ dependent_variables_to_save = [
     numerical_simulation.propagation_setup.dependent_variable.longitude("Vehicle", "Enceladus"),
     numerical_simulation.propagation_setup.dependent_variable.total_acceleration("Vehicle"),
     numerical_simulation.propagation_setup.dependent_variable.rsw_to_inertial_rotation_matrix("Vehicle", "Enceladus"),
-    numerical_simulation.propagation_setup.dependent_variable.inertial_to_body_fixed_rotation_frame("Enceladus")
+    numerical_simulation.propagation_setup.dependent_variable.inertial_to_body_fixed_rotation_frame("Enceladus"),
+    numerical_simulation.propagation_setup.dependent_variable.relative_position("Vehicle", "Enceladus"),
 ]
 
 indices_dependent_variables = dict(
@@ -78,7 +79,9 @@ indices_dependent_variables = dict(
     latitude=[2, 3],
     longitude=[3, 4],
     total_acceleration=[4, 7],
-    rsw_to_inertial_rotation_matrix=[7, 16]
+    rsw_to_inertial_rotation_matrix=[7, 16],
+    inertial_to_body_fixed_rotation_frame=[16, 25],
+    relative_position=[25, 28],
 )
 
 #######################################################################################################################
