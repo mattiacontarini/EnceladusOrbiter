@@ -72,7 +72,7 @@ interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-3;
 interior_parameters_to_vary_bottom("K_ocean") = 1.0e9;
 interior_parameters_to_vary_bottom("rho_shell") = 800.0;
 interior_parameters_to_vary_bottom("mu_shell") = 2.0e9;
-interior_parameters_to_vary_bottom("eta_shell") = 0.5e18;%1.0e12;
+interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;%0.5e18;%1.0e12;
 interior_parameters_to_vary_bottom("K_shell") = 1.0e10;
 
 % Set number of samples per variable
