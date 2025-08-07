@@ -116,8 +116,6 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                                                   nominal_observations_dissipative_shell,
                                                   std_observations_dissipative_shell,
                                                   filter_parameters_flag,
-                                                  filter_observations_flag,
-                                                  use_filtered_observations_flag,
                                                   fontsize=12):
 
     plots_path = os.path.join(input_path, "plots")
@@ -153,24 +151,10 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
     # Apply absolute value to libration amplitude
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
-    if filter_observations_flag:
-        filtered_parameters, filtered_observations, nb_valid_models = filter_observations(filtered_parameters_feasibility,
-                                                                         filtered_observations_feasibility,
-                                                                         dissipative_shell)
-        np.savetxt(os.path.join(input_path, "filtered_parameters.dat"), filtered_parameters)
-        np.savetxt(os.path.join(input_path, "filtered_observations.dat"), filtered_observations)
-        np.savetxt(os.path.join(input_path, "nb_valid_models.dat"), [nb_valid_models])
-    else:
-        filtered_parameters = np.loadtxt(os.path.join(input_path, "filtered_parameters.dat"))
-        filtered_observations = np.loadtxt(os.path.join(input_path, "filtered_observations.dat"))
-
-    if not use_filtered_observations_flag:
-        filtered_parameters = filtered_parameters_feasibility
-        filtered_observations = filtered_observations_feasibility
 
     for i in range(len(layers)):
         layer = layers[i]
-        parameters = filtered_parameters[:, 5*i:5*i+5]
+        parameters = filtered_parameters_feasibility[:, 5*i:5*i+5]
         fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
         fig2, axes2 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
         fig3, axes3 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 10))
@@ -199,187 +183,72 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
 
             if j == 0:
                 if layer == "ocean":
-                    ax.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 0], color="black")
-                    ax2.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 1], color="black")
-                    ax3.scatter(parameters[:, j] - filtered_parameters[:, 0], filtered_observations[:, 2], color="black")
+                    ax.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 0], filtered_observations_feasibility[:, 0], color="black")
+                    ax2.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 0], filtered_observations_feasibility[:, 1], color="black")
+                    ax3.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 0], filtered_observations_feasibility[:, 2], color="black")
                 elif layer == "shell":
-                    ax.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 0], color="black")
-                    ax2.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 1], color="black")
-                    ax3.scatter(parameters[:, j] - filtered_parameters[:, 5], filtered_observations[:, 2], color="black")
+                    ax.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 5], filtered_observations_feasibility[:, 0], color="black")
+                    ax2.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 5], filtered_observations_feasibility[:, 1], color="black")
+                    ax3.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 5], filtered_observations_feasibility[:, 2], color="black")
                 else:
-                    ax.scatter(parameters[:, j], filtered_observations[:, 0], color="black")
-                    ax2.scatter(filtered_parameters[:, j], filtered_observations[:, 1], color="black")
-                    ax3.scatter(filtered_parameters[:, j], filtered_observations[:, 2], color="black")
+                    ax.scatter(parameters[:, j], filtered_observations_feasibility[:, 0], color="black")
+                    ax2.scatter(filtered_parameters_feasibility[:, j], filtered_observations_feasibility[:, 1], color="black")
+                    ax3.scatter(filtered_parameters_feasibility[:, j], filtered_observations_feasibility[:, 2], color="black")
             else:
-                ax.scatter(parameters[:, j], filtered_observations[:, 0], color="black")
-                ax2.scatter(parameters[:, j], filtered_observations[:, 1], color="black")
-                ax3.scatter(parameters[:, j], filtered_observations[:, 2], color="black")
+                ax.scatter(parameters[:, j], filtered_observations_feasibility[:, 0], color="black")
+                ax2.scatter(parameters[:, j], filtered_observations_feasibility[:, 1], color="black")
+                ax3.scatter(parameters[:, j], filtered_observations_feasibility[:, 2], color="black")
 
-            if not use_filtered_observations_flag:
-                ax.axhline(y=dissipative_shell[0, 0] + dissipative_shell[1, 0], color="red")
-                ax2.axhline(y=dissipative_shell[0, 1] + dissipative_shell[1, 1], color="red")
-                ax3.axhline(y=dissipative_shell[0, 2] + dissipative_shell[1, 2], color="red")
-                if j == 0:
-                    if layer == "ocean":
-                        ax.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            max(filtered_observations[:, 0]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            max(filtered_observations[:, 1]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            max(filtered_observations[:, 2]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                    elif layer == "shell":
-                        ax.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            max(filtered_observations[:, 0]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            max(filtered_observations[:, 1]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            max(filtered_observations[:, 2]),
-                            color="red",
-                            alpha=0.5
-                        )
-                    else:
-                        ax.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            max(filtered_observations[:, 0]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            max(filtered_observations[:, 1]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            max(filtered_observations[:, 2]),
-                            color="red",
-                            alpha=0.5,
-                        )
-                else:
+
+            ax.axhline(y=dissipative_shell[0, 0], color="lime")
+            ax2.axhline(y=dissipative_shell[0, 1], color="lime")
+            ax3.axhline(y=dissipative_shell[0, 2], color="lime")
+
+            if j == 0:
+                if layer == "ocean":
                     ax.fill_between(
-                        [min(parameters[:, j]), max(parameters[:, j])],
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 0]), max(parameters[:, j] - filtered_parameters_feasibility[:, 0])],
                         dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                        max(filtered_observations[:, 0]),
-                        color="red",
-                        alpha=0.5,
+                        dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                        color="lime",
+                        alpha=0.7,
                     )
                     ax2.fill_between(
-                        [min(parameters[:, j]), max(parameters[:, j])],
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 0]), max(parameters[:, j] - filtered_parameters_feasibility[:, 0])],
                         dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                        max(filtered_observations[:, 1]),
-                        color="red",
-                        alpha=0.5,
+                        dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                        color="lime",
+                        alpha=0.7,
                     )
                     ax3.fill_between(
-                        [min(parameters[:, j]), max(parameters[:, j])],
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 0]), max(parameters[:, j] - filtered_parameters_feasibility[:, 0])],
                         dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                        max(filtered_observations[:, 2]),
-                        color="red",
-                        alpha=0.5,
+                        dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                        color="lime",
+                        alpha=0.7,
                     )
-            else:
-                ax.axhline(y=dissipative_shell[0, 0], color="lime")
-                ax2.axhline(y=dissipative_shell[0, 1], color="lime")
-                ax3.axhline(y=dissipative_shell[0, 2], color="lime")
-
-                if j == 0:
-                    if layer == "ocean":
-                        ax.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 0]), max(parameters[:, j] - filtered_parameters[:, 0])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                    elif layer == "shell":
-                        ax.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j] - filtered_parameters[:, 5]), max(parameters[:, j] - filtered_parameters[:, 5])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                    else:
-                        ax.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 0] + dissipative_shell[1, 0],
-                            dissipative_shell[0, 0] - dissipative_shell[1, 0],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax2.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 1] + dissipative_shell[1, 1],
-                            dissipative_shell[0, 1] - dissipative_shell[1, 1],
-                            color="lime",
-                            alpha=0.7,
-                        )
-                        ax3.fill_between(
-                            [min(parameters[:, j]), max(parameters[:, j])],
-                            dissipative_shell[0, 2] + dissipative_shell[1, 2],
-                            dissipative_shell[0, 2] - dissipative_shell[1, 2],
-                            color="lime",
-                            alpha=0.7,
-                        )
+                elif layer == "shell":
+                    ax.fill_between(
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 5]), max(parameters[:, j] - filtered_parameters_feasibility[:, 5])],
+                        dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                        dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                        color="lime",
+                        alpha=0.7,
+                    )
+                    ax2.fill_between(
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 5]), max(parameters[:, j] - filtered_parameters_feasibility[:, 5])],
+                        dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                        dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                        color="lime",
+                        alpha=0.7,
+                    )
+                    ax3.fill_between(
+                        [min(parameters[:, j] - filtered_parameters_feasibility[:, 5]), max(parameters[:, j] - filtered_parameters_feasibility[:, 5])],
+                        dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                        dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                        color="lime",
+                        alpha=0.7,
+                    )
                 else:
                     ax.fill_between(
                         [min(parameters[:, j]), max(parameters[:, j])],
@@ -402,6 +271,28 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
                         color="lime",
                         alpha=0.7,
                     )
+            else:
+                ax.fill_between(
+                    [min(parameters[:, j]), max(parameters[:, j])],
+                    dissipative_shell[0, 0] + dissipative_shell[1, 0],
+                    dissipative_shell[0, 0] - dissipative_shell[1, 0],
+                    color="lime",
+                    alpha=0.7,
+                )
+                ax2.fill_between(
+                    [min(parameters[:, j]), max(parameters[:, j])],
+                    dissipative_shell[0, 1] + dissipative_shell[1, 1],
+                    dissipative_shell[0, 1] - dissipative_shell[1, 1],
+                    color="lime",
+                    alpha=0.7,
+                )
+                ax3.fill_between(
+                    [min(parameters[:, j]), max(parameters[:, j])],
+                    dissipative_shell[0, 2] + dissipative_shell[1, 2],
+                    dissipative_shell[0, 2] - dissipative_shell[1, 2],
+                    color="lime",
+                    alpha=0.7,
+                )
 
             ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
@@ -423,14 +314,9 @@ def plot_monte_carlo_interior_parameters_analysis(input_path,
         fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
         fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
         fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
-        if use_filtered_observations_flag:
-            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}_filtered.pdf"))
-            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}_filtered.pdf"))
-            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}_filtered.pdf"))
-        else:
-            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
-            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
-            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
+        fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+        fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
+        fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
 
 
 def filter_parameters(parameters, observations):
@@ -485,16 +371,14 @@ def main():
     plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.05.18.29.34"
+        time_stamp = "2025.08.06.08.16.27"
         input_path = os.path.join(input_path, time_stamp)
         nominal_observations_dissipative_shell = [0.091, 0.0317, 0.0848]  # Park et al. (2024), Bagheri et al. (2025)
         std_observations_dissipative_shell = [0.009, 0.0130, 0.0359]  # Park et al. (2024), Bagheri et al. (2025)
         plot_monte_carlo_interior_parameters_analysis(input_path,
                                                       nominal_observations_dissipative_shell,
                                                       std_observations_dissipative_shell,
-                                                      filter_parameters_flag=False,
-                                                      filter_observations_flag=False,
-                                                      use_filtered_observations_flag=True
+                                                      filter_parameters_flag=False
                                                       )
 
 if __name__ == "__main__":
