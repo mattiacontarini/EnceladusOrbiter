@@ -390,7 +390,7 @@ def main():
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     # Set whether the results of the covariance analysis should be saved
-    save_simulation_results_flag = True
+    save_simulation_results_flag = False
     save_covariance_results_flag = True
     save_obs_times_of_vehicle_flag = True
 
@@ -408,14 +408,14 @@ def main():
                                            save_covariance_results_flag)
 
     # Perform the covariance analysis for the selected nominal cases
-    perform_nominal_cases_analysis_flag = False
+    perform_nominal_cases_analysis_flag = True
     if perform_nominal_cases_analysis_flag:
         perform_nominal_cases_analysis(time_stamp,
                                        save_simulation_results_flag,
                                        save_covariance_results_flag)
 
     # Perform the covariance analysis for only one base set
-    perform_single_case_analysis_flag = True
+    perform_single_case_analysis_flag = False
     if perform_single_case_analysis_flag:
         single_case_analysis(time_stamp,
                              save_simulation_results_flag,

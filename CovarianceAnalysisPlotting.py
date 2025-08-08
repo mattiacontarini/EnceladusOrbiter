@@ -1524,9 +1524,9 @@ def main():
     plot_lander_location_analysis_flag = True
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
-        time_stamp_folder = "2025.08.01.22.46.30"
+        time_stamp_folder = "2025.08.04.11.26.49"
         input_path = os.path.join(input_directory, time_stamp_folder)
-        plot_lander_location_analysis(input_path, "K2", fontsize=12)
+        plot_lander_location_analysis(input_path, "K3", fontsize=12)
 
     plot_h2_love_number_partials_flag = False
     if plot_h2_love_number_partials_flag:
