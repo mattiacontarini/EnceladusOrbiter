@@ -42,9 +42,9 @@ observations_std = {
 # Ranges for interior parameters
 interior_parameters_range = dict(
     rho_shell = [900.0, 1000.0],
-    mu_shell = [1.0e9, 4.5e9],
-    d_ocean = [5.0, 35.0],
-    R_core = [100, 210],
+    mu_shell = [1.0e9, 5.0e9],
+    d_ocean = [5.0, 40.0],
+    R_core = [180, 210],
     mu_core = [5.0e9, 70.0e9],
 )
 
