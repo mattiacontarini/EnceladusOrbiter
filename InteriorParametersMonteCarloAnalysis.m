@@ -58,7 +58,7 @@ interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
 interior_parameters_to_vary_top("K_ocean") = 1.0e10;
 interior_parameters_to_vary_top("rho_shell") = 1000.0;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
-interior_parameters_to_vary_top("eta_shell") = 1.0e18;
+interior_parameters_to_vary_top("eta_shell") = 1.0e20;
 interior_parameters_to_vary_top("K_shell") = 1.0e11;
 
 interior_parameters_to_vary_bottom = dictionary;
@@ -72,7 +72,7 @@ interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-3;
 interior_parameters_to_vary_bottom("K_ocean") = 1.0e9;
 interior_parameters_to_vary_bottom("rho_shell") = 800.0;
 interior_parameters_to_vary_bottom("mu_shell") = 2.0e9;
-interior_parameters_to_vary_bottom("eta_shell") = 1.0e12;%0.5e18;%1.0e12;
+interior_parameters_to_vary_bottom("eta_shell") = 1.0e14;%0.5e18;%1.0e12;
 interior_parameters_to_vary_bottom("K_shell") = 1.0e10;
 
 % Set number of samples per variable
