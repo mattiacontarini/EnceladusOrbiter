@@ -1443,7 +1443,8 @@ class CovarianceAnalysis:
             np.savetxt(indices_estimation_parameters_filename, indices_estimation_parameters)
 
             # Save indices of landers' position as estimation parameter
-            save2txt(indices_lander_position_dict, "indices_lander_position.dat", covariance_results_output_path)
+            if self.lander_to_include != [ ]:
+                save2txt(indices_lander_position_dict, "indices_lander_position.dat", covariance_results_output_path)
 
             print("Covariance results saved.")
 
