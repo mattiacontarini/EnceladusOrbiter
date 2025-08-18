@@ -23,13 +23,30 @@ os.makedirs(plots_path, exist_ok=True)
 fontsize=12
 
 # Plot elevation angle history
+fig, axes = plt.subplots(5, 2, figsize=(8, 10))
 for lander in CovAnalysisConfig.lander_names:
     target_angles_and_range = np.loadtxt(os.path.join(simulation_results_path, f"target_angles_and_range_{lander}.dat"))
     epochs = target_angles_and_range[:, 0]
     elevation_angle = target_angles_and_range[:, 1]
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    if lander == CovAnalysisConfig.lander_names[0]:
+        ax = axes[0, 0]
+    elif lander == CovAnalysisConfig.lander_names[1]:
+        ax = axes[0, 1]
+    elif lander == CovAnalysisConfig.lander_names[2]:
+        ax = axes[1, 0]
+    elif lander == CovAnalysisConfig.lander_names[3]:
+        ax = axes[1, 1]
+    elif lander == CovAnalysisConfig.lander_names[4]:
+        ax = axes[2, 0]
+    elif lander == CovAnalysisConfig.lander_names[5]:
+        ax = axes[2, 1]
+    elif lander == CovAnalysisConfig.lander_names[6]:
+        ax = axes[3, 0]
+    elif lander == CovAnalysisConfig.lander_names[7]:
+        ax = axes[3, 1]
+    elif lander == CovAnalysisConfig.lander_names[8]:
+        ax = axes[4, 0]
     ax.scatter(epochs / constants.JULIAN_DAY, np.rad2deg(elevation_angle), marker=".", color="black")
     ax.axhline(y=np.rad2deg(CovAnalysisConfig.minimum_elevation_angle_visibility),
                color="red")
@@ -37,8 +54,10 @@ for lander in CovAnalysisConfig.lander_names:
     ax.set_ylabel(r"$\delta$  [deg]", fontsize=fontsize)
     ax.grid(True)
     ax.tick_params(labelsize=fontsize)
-    fig.savefig(os.path.join(plots_path, f"elevation_angle_{lander}.pdf"))
-    plt.close(fig)
+    ax.set_title(f"Lander: {lander}", fontsize=fontsize)
+plt.delaxes(axes[4, 1])
+fig.savefig(os.path.join(plots_path, f"elevation_angle_analysis.pdf"))
+plt.close(fig)
 
 # Load dependent variables history
 nb_arcs = np.loadtxt(os.path.join(simulation_results_path, "nb_arcs.dat"))
