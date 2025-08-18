@@ -296,8 +296,8 @@ def perform_nominal_cases_analysis(time_stamp,
                 UDP.save_covariance_results_flag = save_covariance_results_flag
 
                 # Run covariance analysis
-                UDP.save_problem_configuration(lander_to_include_path)
-                UDP.perform_covariance_analysis(lander_to_include_path)
+                UDP.save_problem_configuration(arc_duration_path)
+                UDP.perform_covariance_analysis(arc_duration_path)
 
 
 def perform_lander_location_analysis(time_stamp,
