@@ -115,8 +115,12 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
 
 
 def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
-                                                  filter_parameters_flag,
-                                                  fontsize=12):
+                                                              filter_parameters_flag,
+                                                              filter_libration_amplitude_flag,
+                                                              filter_tidal_heating_flag,
+                                                              tidal_heating_range,
+                                                              nominal_libration_amplitude,
+                                                              fontsize=12):
 
     plots_path = os.path.join(input_path, "plots")
     os.makedirs(plots_path, exist_ok=True)
@@ -147,6 +151,19 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
     # Apply absolute value to libration amplitude
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
+    # Filter data based on libration amplitude and tidal heating observations
+    if filter_libration_amplitude_flag:
+        filtered_parameters, filtered_observations, nb_feasible_libration_models = filter_libration_amplitude(
+            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+        filtered_parameters_feasibility = filtered_parameters
+        filtered_observations_feasibility = filtered_observations
+
+    if filter_tidal_heating_flag:
+        filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = filter_tidal_heating(
+            filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+        )
+        filtered_parameters_feasibility = filtered_parameters
+        filtered_observations_feasibility = filtered_observations
 
     for i in range(len(layers)):
         layer = layers[i]
@@ -188,8 +205,8 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                     ax3.scatter(parameters[:, j] - filtered_parameters_feasibility[:, 5], filtered_observations_feasibility[:, 2], color="black")
                 else:
                     ax.scatter(parameters[:, j], filtered_observations_feasibility[:, 0], color="black")
-                    ax2.scatter(filtered_parameters_feasibility[:, j], filtered_observations_feasibility[:, 1], color="black")
-                    ax3.scatter(filtered_parameters_feasibility[:, j], filtered_observations_feasibility[:, 2], color="black")
+                    ax2.scatter(parameters[:, j], filtered_observations_feasibility[:, 1], color="black")
+                    ax3.scatter(parameters[:, j], filtered_observations_feasibility[:, 2], color="black")
             else:
                 ax.scatter(parameters[:, j], filtered_observations_feasibility[:, 0], color="black")
                 ax2.scatter(parameters[:, j], filtered_observations_feasibility[:, 1], color="black")
@@ -215,14 +232,22 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
         fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
         fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
         fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
-        fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
-        fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
-        fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
+        if filter_libration_amplitude_flag:
+            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}_observations_filtered.pdf"))
+            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}_observations_filtered.pdf"))
+            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}_observations_filtered.pdf"))
+        else:
+            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
+            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
+            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}.pdf"))
 
 
 def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                parameters_grid_step,
                                                                observable_grid_step,
+                                                               filter_observations_flag,
+                                                               tidal_heating_range,
+                                                               nominal_libration_amplitude,
                                                                fontsize=12):
 
     plots_path = os.path.join(input_path, "plots")
@@ -250,6 +275,17 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
     # Apply absolute value to libration amplitude
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
+    if filter_observations_flag:
+        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = filter_libration_amplitude(
+            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+        #filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = filter_tidal_heating(
+        #    filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
+        #)
+        #filtered_parameters_feasibility = filtered_parameters_heating
+        #filtered_observations_feasibility = filtered_observations_heating
+        filtered_parameters_feasibility = filtered_parameters_libration
+        filtered_observations_feasibility = filtered_observations_libration
+
     nb_observables = filtered_observations_feasibility.shape[1]
 
     # Produce density plots
@@ -267,7 +303,8 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
             if layer == "ocean" and j == 0:
                 parameters[:, j] = parameters[:, j] - filtered_parameters_feasibility[:, 0]
             elif layer == "shell" and j == 0:
-                parameters[:, j] = parameters[:, j] - filtered_parameters_feasibility[:, 5]
+                aux = np.loadtxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"))
+                parameters[:, j] = parameters[:, j] - aux[:, 5]
 
             for k in range(nb_observables):
 
@@ -347,6 +384,7 @@ def get_parameter_number_density(parameter_index, parameters, observable, parame
                                 parameters_grid_step[layer][parameters_labels[parameter_index]]))
         #print(nb_parameters_grid_steps, max(parameters[:, parameter_index]), min(parameters[:, parameter_index]))
 
+        print(layer, parameter_index, min(parameters[:, parameter_index]), max(parameters[:, parameter_index]))
         parameter_grid_vec = np.linspace(min(parameters[:, parameter_index]),
                                          max(parameters[:, parameter_index]),
                                          nb_parameters_grid_steps + 1)
@@ -394,22 +432,30 @@ def get_parameter_number_density(parameter_index, parameters, observable, parame
     return density_matrix, parameter_grid_vec_labels, observable_grid_vec_labels
 
 
-def filter_observations(parameters, observations, nominal_observations):
+def filter_libration_amplitude(parameters, observations, nominal_libration,):
     nb_simulations = parameters.shape[0]
-    nb_observations = observations.shape[1]
     counter = 0
 
     filtered_parameters = np.copy(parameters)
     filtered_observations = np.copy(observations)
     for i in range(nb_simulations):
 
-        delete_flag = False
-        for j in range(nb_observations):
-            if (observations[i, j] >= nominal_observations[0, j] + nominal_observations[1, j]):
-                delete_flag = True
-                break
+        if ((observations[i, 0] >= nominal_libration[0] + nominal_libration[1]) or
+            observations[i, 0] <= nominal_libration[0] - nominal_libration[1]):
+            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
+            filtered_observations = np.delete(filtered_observations, i - counter, 0)
+            counter += 1
 
-        if delete_flag:
+    return filtered_parameters, filtered_observations, nb_simulations-counter
+
+
+def filter_tidal_heating(parameters, observations, tidal_heating_range,):
+    nb_simulations = parameters.shape[0]
+    counter = 0
+    filtered_parameters = np.copy(parameters)
+    filtered_observations = np.copy(observations)
+    for i in range(nb_simulations):
+        if (observations[i, 3] > tidal_heating_range[1] or observations[i, 3] < tidal_heating_range[0]):
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
@@ -423,6 +469,9 @@ def format_e(n):
 
 def main():
 
+    nominal_libration_amplitude = [0.120, 0.021]  # [deg]
+    tidal_heating_range = [25, 40]  # [GW]
+
     plot_one_at_a_time_interior_parameters_analysis_flag = False
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
@@ -430,10 +479,19 @@ def main():
 
     plot_monte_carlo_interior_parameters_analysis_flag = False
     if plot_monte_carlo_interior_parameters_analysis_flag:
+        filter_parameters_flag = True
+        filter_libration_amplitude_flag = True
+        filter_tidal_heating_flag = True
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.19.17.42.19"
+        time_stamp = "2025.08.27.10.00.10"
         input_path = os.path.join(input_path, time_stamp)
-        plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path, filter_parameters_flag=True)
+        plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
+                                                                  filter_parameters_flag,
+                                                                  filter_libration_amplitude_flag,
+                                                                  filter_tidal_heating_flag,
+                                                                  nominal_libration_amplitude,
+                                                                  tidal_heating_range,
+                                                                  )
 
 
     plot_monte_carlo_interior_parameters_analysis_density_plot_flag = True
@@ -466,11 +524,14 @@ def main():
             phi = 0.01,
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.19.17.42.19"
+        time_stamp = "2025.08.27.10.00.10"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
-                                                                   observable_grid_step)
+                                                                   observable_grid_step,
+                                                                   True,
+                                                                   nominal_libration_amplitude,
+                                                                   tidal_heating_range)
 
 if __name__ == "__main__":
     main()
