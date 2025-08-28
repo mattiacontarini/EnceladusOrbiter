@@ -3,7 +3,9 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-from sympy import ceiling
+
+# Files import
+from auxiliary.utilities import InteriorParametersPlottingUtilities as Util
 
 
 def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
@@ -140,7 +142,7 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
         observations[:, 0] = np.rad2deg(observations[:, 0])
 
         # Filter parameter and observations based on the feasibility of the interior model
-        filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = filter_parameters(interior_models, observations)
+        filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(interior_models, observations)
         np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
         np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
         np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
@@ -153,13 +155,13 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
 
     # Filter data based on libration amplitude and tidal heating observations
     if filter_libration_amplitude_flag:
-        filtered_parameters, filtered_observations, nb_feasible_libration_models = filter_libration_amplitude(
+        filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
             filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
         filtered_parameters_feasibility = filtered_parameters
         filtered_observations_feasibility = filtered_observations
 
     if filter_tidal_heating_flag:
-        filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = filter_tidal_heating(
+        filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
             filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
         )
         filtered_parameters_feasibility = filtered_parameters
@@ -267,7 +269,7 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
     observations[:, 0] = np.rad2deg(observations[:, 0])
 
     # Filter parameter and observations based on the feasibility of the interior model
-    filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = filter_parameters(interior_models, observations)
+    filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(interior_models, observations)
     np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
     np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
     np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
@@ -276,7 +278,7 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
     if filter_observations_flag:
-        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = filter_libration_amplitude(
+        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
             filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
         #filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = filter_tidal_heating(
         #    filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
@@ -315,9 +317,10 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                 elif k == 2:
                     obs_label = "h2"
 
-                density_matrix, parameter_grid_vec, observable_grid_vec = get_parameter_number_density(j, parameters,
+                density_matrix, parameter_grid_vec, observable_grid_vec = Util.get_parameter_number_density(j, parameters,
                     filtered_observations_feasibility[:, k], parameters_grid_step, observable_grid_step[obs_label], layer)
                 density_matrix = density_matrix.T
+                density_matrix = Util.flip_rows(density_matrix)
                 if j == 2:
                     fig = plt.figure(figsize=(13, 5))
                 else:
@@ -326,7 +329,7 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                 plt.imshow(density_matrix, aspect='auto', interpolation="auto")
                 plt.colorbar(label="Count")
                 ax.set_xticks(ticks=np.arange(-0.5, density_matrix.shape[1], 1), labels=parameter_grid_vec, fontsize=8)
-                ax.set_yticks(ticks=np.arange(-0.5, density_matrix.shape[0], 1), labels=observable_grid_vec, fontsize=fontsize)
+                ax.set_yticks(ticks=np.arange(-0.5, density_matrix.shape[0], 1), labels=np.flip(observable_grid_vec), fontsize=fontsize)
                 plt.grid(True)
                 ax.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
 
@@ -344,128 +347,71 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                     plt.savefig(os.path.join(plots_path, f"density_plot_h2_Love_number_{layer}_{interior_parameters_labels[5 * i + j]}.pdf"))
                 plt.close()
 
-def filter_parameters(parameters, observations):
-    nb_simulations = parameters.shape[0]
 
-    counter = 0
-    filtered_parameters = np.copy(parameters)
-    filtered_observations = np.copy(observations)
-    for i in range(nb_simulations):
-        core_density = parameters[i, 1]
-        ocean_density = parameters[i, 6]
-        shell_bulk_modulus = parameters[i, 14]
-        shell_shear_modulus = parameters[i, 12]
-        poisson_ratio = (3*shell_bulk_modulus - 2*shell_shear_modulus)/(6*shell_bulk_modulus + 2*shell_shear_modulus)
+def plot_monte_carlo_analysis_observables_histogram(input_path,
+                                                    observables_to_study,
+                                                    grid_steps,
+                                                    filter_observations_flag,
+                                                    nominal_libration_amplitude,
+                                                    tidal_heating_range,
+                                                    fontsize=12):
+    plots_path = os.path.join(input_path, "plots")
+    os.makedirs(plots_path, exist_ok=True)
 
-        if core_density <= 2000.0 or core_density >= 3000.0 or ocean_density <= 1000.0 or ocean_density >= 1300.0 or poisson_ratio <=0.3:
-            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
-            filtered_observations = np.delete(filtered_observations, i - counter, 0)
-            counter += 1
+    # Load results
+    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
 
-    return filtered_parameters, filtered_observations, nb_simulations-counter
+    # Convert libration amplitude to deg
+    observations[:, 0] = np.rad2deg(observations[:, 0])
 
+    # Filter parameters and observations based on the feasibility of the interior model
+    filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(
+        interior_models, observations)
+    np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
+    np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+    np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
 
-def get_parameter_number_density(parameter_index, parameters, observable, parameters_grid_step, observable_grid_step, layer):
+    # Apply absolute value to libration amplitude
+    filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
-    parameters_labels = list(parameters_grid_step[layer].keys())
+    # Filter parameters and observations based on libration amplitude and tidal heating observations
+    if filter_observations_flag:
+        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
+            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+        # filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = filter_tidal_heating(
+        #    filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
+        # )
+        # filtered_parameters_feasibility = filtered_parameters_heating
+        # filtered_observations_feasibility = filtered_observations_heating
+        filtered_parameters_feasibility = filtered_parameters_libration
+        filtered_observations_feasibility = filtered_observations_libration
 
-    label = parameters_labels[parameter_index]
+    # Set axis label of observables
+    observables_label = [r"$\phi$", r"$Re(k_2)$", r"$Re(h_2)$", r"$\dot{E}$", r"$Re(k_2)$", r"$Im(h_2)$"]
 
-    if (label == "mu" or label == "eta" or label == "K") and parameters_grid_step[layer][label] == 10:
-        num = min(parameters[:, parameter_index])
-        parameter_grid_vec = [num]
-        while num < max(parameters[:, parameter_index]):
-            num = num*10
-            parameter_grid_vec.append(num)
-        nb_parameters_grid_steps = len(parameter_grid_vec) - 1
+    for i in range(len(observables_to_study)):
+        observable_label = observables_to_study[i]
+        if observable_label == "k2_real":
+            obs_index = 1
+        else:
+            raise ValueError("Observable not recognized.")
 
-    else:
-        nb_parameters_grid_steps = int(ceiling((max(parameters[:, parameter_index]) - min(parameters[:, parameter_index])) /
-                                parameters_grid_step[layer][parameters_labels[parameter_index]]))
-        #print(nb_parameters_grid_steps, max(parameters[:, parameter_index]), min(parameters[:, parameter_index]))
+        #nb_bins = round((max(filtered_observations_feasibility[:, obs_index]) -
+        #           min(filtered_observations_feasibility[:, obs_index])) / grid_steps[i])
+        #print(nb_bins)
+        grid = np.arange(min(filtered_observations_feasibility[:, obs_index]), max(filtered_observations_feasibility[:, obs_index]), grid_steps[i])
 
-        print(layer, parameter_index, min(parameters[:, parameter_index]), max(parameters[:, parameter_index]))
-        parameter_grid_vec = np.linspace(min(parameters[:, parameter_index]),
-                                         max(parameters[:, parameter_index]),
-                                         nb_parameters_grid_steps + 1)
-
-    nb_observable_grid_steps = int(ceiling((max(observable) - min(observable)) / observable_grid_step))
-    observable_grid_vec = np.linspace(min(observable), max(observable), nb_observable_grid_steps + 1)
-
-    nb_simulations = parameters.shape[0]
-    density_matrix = np.zeros((nb_parameters_grid_steps, nb_observable_grid_steps))
-    parameter_vec = parameters[:, parameter_index]
-    for i in range(nb_simulations):
-
-        density_matrix_row = None
-        for l in range(nb_parameters_grid_steps-1):
-
-            if parameter_grid_vec[l] <= parameter_vec[i] < parameter_grid_vec[l+1]:
-                density_matrix_row = l
-                break
-        if density_matrix_row is None:
-
-            density_matrix_row = nb_parameters_grid_steps - 1
-
-        density_matrix_col = None
-        for m in range(nb_observable_grid_steps-1):
-            if observable_grid_vec[m] <= observable[i] < observable_grid_vec[m+1]:
-                density_matrix_col = m
-                break
-        if density_matrix_col is None:
-            density_matrix_col = nb_observable_grid_steps - 1
-
-        density_matrix[density_matrix_row, density_matrix_col] += 1
-
-    parameter_grid_vec_labels = []
-    if label == "mu" or label == "eta" or label == "K":
-        for n in range(len(parameter_grid_vec)):
-            parameter_grid_vec_labels.append(format_e(parameter_grid_vec[n]))
-    else:
-        for n in range(len(parameter_grid_vec)):
-            parameter_grid_vec_labels.append(str(int(parameter_grid_vec[n])))
-
-    observable_grid_vec_labels = []
-    for n in range(len(observable_grid_vec)):
-        observable_grid_vec_labels.append(str(observable_grid_vec[n])[:5])
-
-    return density_matrix, parameter_grid_vec_labels, observable_grid_vec_labels
-
-
-def filter_libration_amplitude(parameters, observations, nominal_libration,):
-    nb_simulations = parameters.shape[0]
-    counter = 0
-
-    filtered_parameters = np.copy(parameters)
-    filtered_observations = np.copy(observations)
-    for i in range(nb_simulations):
-
-        if ((observations[i, 0] >= nominal_libration[0] + nominal_libration[1]) or
-            observations[i, 0] <= nominal_libration[0] - nominal_libration[1]):
-            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
-            filtered_observations = np.delete(filtered_observations, i - counter, 0)
-            counter += 1
-
-    return filtered_parameters, filtered_observations, nb_simulations-counter
-
-
-def filter_tidal_heating(parameters, observations, tidal_heating_range,):
-    nb_simulations = parameters.shape[0]
-    counter = 0
-    filtered_parameters = np.copy(parameters)
-    filtered_observations = np.copy(observations)
-    for i in range(nb_simulations):
-        if (observations[i, 3] > tidal_heating_range[1] or observations[i, 3] < tidal_heating_range[0]):
-            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
-            filtered_observations = np.delete(filtered_observations, i - counter, 0)
-            counter += 1
-
-    return filtered_parameters, filtered_observations, nb_simulations-counter
-
-
-def format_e(n):
-    a = '%E' % n
-    return a.split('E')[0][:3].rstrip('0').rstrip('.') + 'e' + a.split('E')[1]
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.hist(filtered_observations_feasibility[:, obs_index], grid, histtype="bar")
+        ax.set_xlabel(observables_label[obs_index], fontsize=fontsize)
+        ax.set_ylabel("Count", fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
+        # ax.grid(True)
+        fig.tight_layout()
+        fig.savefig(os.path.join(plots_path, f"observables_histogram_{observable_label}.pdf"))
+        plt.close(fig)
 
 def main():
 
@@ -494,7 +440,7 @@ def main():
                                                                   )
 
 
-    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = True
+    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = False
     if plot_monte_carlo_interior_parameters_analysis_density_plot_flag:
         parameters_grid_step = dict()
         parameters_grid_step["core"] = dict(
@@ -532,6 +478,20 @@ def main():
                                                                    True,
                                                                    nominal_libration_amplitude,
                                                                    tidal_heating_range)
+
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
+    if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
+        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
+        time_stamp = "2025.08.27.10.00.10"
+        input_path = os.path.join(input_path, time_stamp)
+        plot_monte_carlo_analysis_observables_histogram(input_path,
+                                                        ["k2_real"],
+                                                        [0.0005],
+                                                        True,
+                                                        nominal_libration_amplitude,
+                                                        tidal_heating_range
+                                                        )
+
 
 if __name__ == "__main__":
     main()
