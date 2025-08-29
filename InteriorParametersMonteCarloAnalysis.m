@@ -20,11 +20,11 @@ end
 
 % Setup variables to tune through MC analysis
 interior_parameters_to_vary_top = dictionary;
-interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
+interior_parameters_to_vary_top("R_core") = 220.0e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e22;
-interior_parameters_to_vary_top("K_core") = 1.0e11;%1.3e10; %5.0e10;
-interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
+interior_parameters_to_vary_top("K_core") = 1.0e12;%1.3e10; %5.0e10;
+interior_parameters_to_vary_top("d_ocean") = 130.0e3;  % [m]
 %interior_parameters_to_vary_top("mu_ocean") = 1.0;
 %interior_parameters_to_vary_top("eta_ocean")= 1.0e-2;
 %interior_parameters_to_vary_top("K_ocean") = 1.0e10;
@@ -35,11 +35,11 @@ interior_parameters_to_vary_top("eta_shell") = 1.0e25;
 interior_parameters_to_vary_top("poisson_shell") = 0.5;
 
 interior_parameters_to_vary_bottom = dictionary;
-interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
+interior_parameters_to_vary_bottom("R_core") = 120.0e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 4.0e9; 
 interior_parameters_to_vary_bottom("eta_core") = 1.0e9;
 interior_parameters_to_vary_bottom("K_core") = 1.0e9;%0.7e10;%5.0e9;
-interior_parameters_to_vary_bottom("d_ocean") = 5.0e3;  % [m]
+interior_parameters_to_vary_bottom("d_ocean") = 1.0e3;  % [m]
 %interior_parameters_to_vary_bottom("mu_ocean") = 0.1;
 %interior_parameters_to_vary_bottom("eta_ocean")= 1.0e-3;
 %interior_parameters_to_vary_bottom("K_ocean") = 1.0e9;
@@ -50,7 +50,7 @@ interior_parameters_to_vary_bottom("eta_shell") = 1.0e10;%0.5e18;%1.0e12;
 interior_parameters_to_vary_bottom("poisson_shell") = 0.3;
 
 % Set number of samples per variable
-nb_samples_per_variables = 1000;
+nb_samples_per_variables = 20000;
 
 % Set seed
 seed = 1702;
