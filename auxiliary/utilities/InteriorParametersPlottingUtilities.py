@@ -118,6 +118,22 @@ def filter_tidal_heating(parameters, observations, tidal_heating_range,):
     return filtered_parameters, filtered_observations, nb_simulations-counter
 
 
+def filter_observable(parameters, observations, observable_std, observable_index):
+    nb_simulations = parameters.shape[0]
+    counter = 0
+    filtered_parameters = np.copy(parameters)
+    filtered_observations = np.copy(observations)
+
+    observable_mean = np.mean(observations[:, observable_index])
+    for i in range(nb_simulations):
+        if (observations[i, observable_index] >= observable_mean + 3*observable_std or
+                observations[i, observable_index] <= observable_mean - 3*observable_std):
+            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
+            filtered_observations = np.delete(filtered_observations, i - counter, 0)
+            counter += 1
+
+    return filtered_parameters, filtered_observations, nb_simulations-counter
+
 def format_e(n):
     a = '%E' % n
     return a.split('E')[0][:3].rstrip('0').rstrip('.') + 'e' + a.split('E')[1]
