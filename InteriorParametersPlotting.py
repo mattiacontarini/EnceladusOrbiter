@@ -280,9 +280,9 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
     if filter_observations_flag:
         filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
             filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        #filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = filter_tidal_heating(
-        #    filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
-        #)
+        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
+            filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
+        )
         #filtered_parameters_feasibility = filtered_parameters_heating
         #filtered_observations_feasibility = filtered_observations_heating
         filtered_parameters_feasibility = filtered_parameters_libration
@@ -379,11 +379,11 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
     if filter_observations_flag:
         filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
             filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        # filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = filter_tidal_heating(
-        #    filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
-        # )
-        # filtered_parameters_feasibility = filtered_parameters_heating
-        # filtered_observations_feasibility = filtered_observations_heating
+        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
+            filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
+        )
+        #filtered_parameters_feasibility = filtered_parameters_heating
+        #filtered_observations_feasibility = filtered_observations_heating
         filtered_parameters_feasibility = filtered_parameters_libration
         filtered_observations_feasibility = filtered_observations_libration
 
@@ -397,9 +397,9 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
         else:
             raise ValueError("Observable not recognized.")
 
-        #nb_bins = round((max(filtered_observations_feasibility[:, obs_index]) -
-        #           min(filtered_observations_feasibility[:, obs_index])) / grid_steps[i])
-        #print(nb_bins)
+        mean = np.mean(filtered_observations_feasibility[:, obs_index])
+        std = np.std(filtered_observations_feasibility[:, obs_index])
+
         grid = np.arange(min(filtered_observations_feasibility[:, obs_index]), max(filtered_observations_feasibility[:, obs_index]), grid_steps[i])
 
         fig = plt.figure()
@@ -409,27 +409,157 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
         ax.set_ylabel("Count", fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
         # ax.grid(True)
+
+        ax.axvline(x=mean, color="red")
+        ax.text(0.025, 115, f"Mean: {str(mean)[:5]}; std: {str(std)[:5]}", fontsize=fontsize)
         fig.tight_layout()
         fig.savefig(os.path.join(plots_path, f"observables_histogram_{observable_label}.pdf"))
         plt.close(fig)
 
+
+def plot_histogram_filtered_parameters_from_observables(input_path,
+                                                        filter_observations_flag,
+                                                        observables_to_study: dict,
+                                                        parameters_to_study,
+                                                        parameters_grid_steps,
+                                                        nominal_libration_amplitude,
+                                                        tidal_heating_range,
+                                                        fontsize=12):
+    plots_path = os.path.join(input_path, "plots")
+    os.makedirs(plots_path, exist_ok=True)
+
+    # Load results
+    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+
+    # Convert libration amplitude to deg
+    observations[:, 0] = np.rad2deg(observations[:, 0])
+
+    # Filter parameters and observations based on the feasibility of the interior model
+    filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(
+        interior_models, observations)
+    np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
+    np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+    np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
+
+    # Apply absolute value to libration amplitude
+    filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
+
+    # Filter parameters and observations based on libration amplitude and tidal heating observations
+    if filter_observations_flag:
+        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
+            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
+            filtered_parameters_libration, filtered_observations_libration, tidal_heating_range
+        )
+        # filtered_parameters_feasibility = filtered_parameters_heating
+        # filtered_observations_feasibility = filtered_observations_heating
+        filtered_parameters_feasibility = filtered_parameters_libration
+        filtered_observations_feasibility = filtered_observations_libration
+
+    filtered_parameters = filtered_parameters_feasibility
+    filtered_observations = filtered_observations_feasibility
+
+    observables_to_study_labels = list(observables_to_study.keys())
+    for current_observable in observables_to_study_labels:
+        if current_observable == "k2_real":
+            obs_index = 1
+        elif current_observable == "h2_real":
+            obs_index = 2
+        elif current_observable == "k2_imag":
+            obs_index = 3
+        elif current_observable == "h2_imag":
+            obs_index = 4
+
+        filtered_parameters, filtered_observations, nb_viable_simulations = Util.filter_parameters(
+            filtered_parameters,
+            filtered_observations,
+            observables_to_study[current_observable],
+            obs_index
+        )
+
+    for current_parameter in parameters_to_study:
+        if current_parameter == "d_core":
+            param_index = 0
+        elif current_parameter == "rho_core":
+            param_index = 1
+        elif current_parameter == "mu_core":
+            param_index = 2
+        elif current_parameter == "eta_core":
+            param_index = 3
+        elif current_parameter == "k_core":
+            param_index = 4
+        elif current_parameter == "d_ocean":
+            param_index = 5
+        elif current_parameter == "rho_ocean":
+            param_index = 6
+        elif current_parameter == "mu_ocean":
+            param_index = 7
+        elif current_parameter == "eta_ocean":
+            param_index = 8
+        elif current_parameter == "k_ocean":
+            param_index = 9
+        elif current_parameter == "d_shell":
+            param_index = 10
+        elif current_parameter == "rho_shell":
+            param_index = 11
+        elif current_parameter == "mu_shell":
+            param_index = 12
+        elif current_parameter == "eta_shell":
+            param_index = 13
+        elif current_parameter == "k_shell":
+            param_index = 14
+
+        mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
+        std_old = np.std(filtered_parameters_feasibility[:, param_index])
+
+        grid_old = np.arange(min(filtered_observations_feasibility[:, param_index]),
+                         max(filtered_observations_feasibility[:, param_index]),
+                         parameters_grid_steps[current_parameter][0])
+
+        mean_new = np.mean(filtered_parameters[:, param_index])
+        std_new = np.std(filtered_parameters[:, param_index])
+
+        grid_new = np.arange(min(filtered_parameters[:, param_index]),
+                         max(filtered_parameters[:, param_index]),
+                         parameters_grid_steps[current_parameter][1])
+
+        # Plot histogram of parameter distribution before and after filtering the observables
+        fig, axes = plt.subplots(1, 2, figsize=(8, 5), constrained_layout=True)
+        axes[0].hist(filtered_parameters_feasibility[:, param_index], grid_old)
+        axes[0].axvline(mean_old, color='red')
+        axes[0].set_title(f"Before filtering. Mean: {mean_old:.2f}, Std: {std_old:.2f}")
+        axes[1].hist(filtered_parameters[:, param_index], grid_new)
+        axes[1].axvline(mean_new, color='red')
+        axes[1].set_title(f"After filtering. Mean: {mean_new:.2f}, Std: {std_new:.2f}")
+
+        axes[0].set_xlabel(current_parameter, fontsize=fontsize)
+        axes[1].set_xlabel(current_parameter, fontsize=fontsize)
+        axes[0].set_ylabel("Count", fontsize=fontsize)
+        axes[0].tick_params(labelsize=fontsize)
+        axes[1].tick_params(labelsize=fontsize)
+
+        fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}.pdf"))
+        plt.close(fig)
+
+
 def main():
 
-    nominal_libration_amplitude = [0.120, 0.021]  # [deg]
-    tidal_heating_range = [25, 40]  # [GW]
+    nominal_libration_amplitude = [0.120, 0.021]  # [deg] - Thomas et al. (2016)
+    tidal_heating_range = [15, 40]  # [GW] - Bagheri et al. (2025), page 17
 
     plot_one_at_a_time_interior_parameters_analysis_flag = False
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
 
-    plot_monte_carlo_interior_parameters_analysis_flag = False
+    plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         filter_parameters_flag = True
         filter_libration_amplitude_flag = True
-        filter_tidal_heating_flag = True
+        filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.27.10.00.10"
+        time_stamp = "2025.08.29.10.18.16"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                                   filter_parameters_flag,
@@ -470,7 +600,7 @@ def main():
             phi = 0.01,
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.27.10.00.10"
+        time_stamp = "2025.08.29.09.11.50"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
@@ -479,10 +609,10 @@ def main():
                                                                    nominal_libration_amplitude,
                                                                    tidal_heating_range)
 
-    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = False
     if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.08.27.10.00.10"
+        time_stamp = "2025.08.29.09.11.50"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
                                                         ["k2_real"],
@@ -491,6 +621,30 @@ def main():
                                                         nominal_libration_amplitude,
                                                         tidal_heating_range
                                                         )
+
+    plot_histogram_filtered_parameters_from_observables_flag = False
+    if plot_histogram_filtered_parameters_from_observables_flag:
+        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
+        time_stamp = "2025.08.28.17.56.15"
+        input_path = os.path.join(input_path, time_stamp)
+
+        observables_to_study = dict(
+            k2_real = 1e-4
+        )
+
+        parameters_to_study = ["d_shell"]
+        parameters_grid_steps = dict(
+            d_shell = [5, 1]
+        )
+
+        plot_histogram_filtered_parameters_from_observables(
+            input_path,
+            True,
+            observables_to_study,
+            parameters_to_study,
+            parameters_grid_steps,
+            nominal_libration_amplitude,
+            tidal_heating_range,)
 
 
 if __name__ == "__main__":
