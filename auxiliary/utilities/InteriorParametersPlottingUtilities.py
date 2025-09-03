@@ -11,16 +11,41 @@ def filter_parameters(parameters, observations):
     for i in range(nb_simulations):
         core_density = parameters[i, 1]
         ocean_density = parameters[i, 6]
-        shell_bulk_modulus = parameters[i, 14]
-        shell_shear_modulus = parameters[i, 12]
-        poisson_ratio = (3*shell_bulk_modulus - 2*shell_shear_modulus)/(6*shell_bulk_modulus + 2*shell_shear_modulus)
+        shell_thickness = parameters[i, 10] - parameters[i, 5]
 
-        if core_density <= 2000.0 or core_density >= 3000.0 or ocean_density <= 1000.0 or ocean_density >= 1300.0 or poisson_ratio <=0.3:
+        if core_density <= 2000.0 or core_density >= 3000.0 or ocean_density <= 1000.0 or ocean_density >= 1300.0 or shell_thickness <= 0.0:
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
 
     return filtered_parameters, filtered_observations, nb_simulations-counter
+
+
+def get_parameter_grid_vec(parameter_index, parameters, observable, parameters_grid_step, parameters_intervals,
+                           observable_grid_step, layer):
+
+    parameters_labels = list(parameters_grid_step[layer].keys())
+
+    label = parameters_labels[parameter_index]
+
+    if (label == "mu" or label == "eta" or label == "K"):
+        parameter_grid_vec = np.logspace(np.log10(parameters_intervals[layer][label][0]),
+                                         np.log10(parameters_intervals[layer][label][1]),
+                                         parameters_grid_step[layer][parameters_labels[parameter_index]])
+
+
+    else:
+        nb_parameters_grid_steps = int(
+            ceiling((parameters_intervals[layer][label][1] - parameters_intervals[layer][label][0]) /
+                    parameters_grid_step[layer][parameters_labels[parameter_index]]))
+        parameter_grid_vec = np.linspace(parameters_intervals[layer][label][0],
+                                         parameters_intervals[layer][label][1],
+                                         nb_parameters_grid_steps + 1)
+
+    nb_observable_grid_steps = int(ceiling((max(observable) - min(observable)) / observable_grid_step))
+    observable_grid_vec = np.linspace(min(observable), max(observable), nb_observable_grid_steps + 1)
+
+    return parameter_grid_vec, observable_grid_vec
 
 
 def get_parameter_number_density(parameter_index, parameters, observable, parameters_grid_step, observable_grid_step, layer):
@@ -110,6 +135,7 @@ def filter_tidal_heating(parameters, observations, tidal_heating_range,):
     filtered_parameters = np.copy(parameters)
     filtered_observations = np.copy(observations)
     for i in range(nb_simulations):
+        print(observations[i, 3])
         if (observations[i, 3] > tidal_heating_range[1] or observations[i, 3] < tidal_heating_range[0]):
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
