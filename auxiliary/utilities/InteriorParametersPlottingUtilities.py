@@ -13,7 +13,7 @@ def filter_parameters(parameters, observations):
         ocean_density = parameters[i, 6]
         shell_thickness = parameters[i, 10] - parameters[i, 5]
 
-        if core_density <= 2000.0 or core_density >= 3000.0 or ocean_density <= 1000.0 or ocean_density >= 1300.0 or shell_thickness <= 0.0:
+        if core_density < 2000.0 or core_density > 3000.0 or ocean_density < 1000.0 or ocean_density > 1300.0 or shell_thickness <= 0.0:
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
@@ -21,8 +21,32 @@ def filter_parameters(parameters, observations):
     return filtered_parameters, filtered_observations, nb_simulations-counter
 
 
-def get_parameter_grid_vec(parameter_index, parameters, observable, parameters_grid_step, parameters_intervals,
-                           observable_grid_step, layer):
+def filter_parameters_from_observations(parameters, observations, obs_std, obs_index):
+    nb_simulations = parameters.shape[0]
+
+    counter = 0
+    filtered_parameters = np.copy(parameters)
+    filtered_observations = np.copy(observations)
+
+    observations_mean = np.mean(observations[:, obs_index])
+    for i in range(nb_simulations):
+        current_observation = observations[i, obs_index]
+
+        if current_observation > observations_mean + 3*obs_std or current_observation < observations_mean - 3*obs_std:
+            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
+            filtered_observations = np.delete(filtered_observations, i - counter, 0)
+            counter += 1
+
+    return filtered_parameters, filtered_observations, nb_simulations-counter
+
+
+def get_parameter_grid_vec(parameter_index,
+                           observable,
+                           parameters_grid_step,
+                           parameters_intervals,
+                           observable_grid_step,
+                           layer,
+                           obs_label):
 
     parameters_labels = list(parameters_grid_step[layer].keys())
 
@@ -120,8 +144,8 @@ def filter_libration_amplitude(parameters, observations, nominal_libration,):
     filtered_observations = np.copy(observations)
     for i in range(nb_simulations):
 
-        if ((observations[i, 0] >= nominal_libration[0] + nominal_libration[1]) or
-            observations[i, 0] <= nominal_libration[0] - nominal_libration[1]):
+        if ((observations[i, 0] > nominal_libration[0] + nominal_libration[1]) or
+            observations[i, 0] < nominal_libration[0] - nominal_libration[1]):
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
@@ -137,23 +161,6 @@ def filter_tidal_heating(parameters, observations, tidal_heating_range,):
     for i in range(nb_simulations):
         print(observations[i, 3])
         if (observations[i, 3] > tidal_heating_range[1] or observations[i, 3] < tidal_heating_range[0]):
-            filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
-            filtered_observations = np.delete(filtered_observations, i - counter, 0)
-            counter += 1
-
-    return filtered_parameters, filtered_observations, nb_simulations-counter
-
-
-def filter_observable(parameters, observations, observable_std, observable_index):
-    nb_simulations = parameters.shape[0]
-    counter = 0
-    filtered_parameters = np.copy(parameters)
-    filtered_observations = np.copy(observations)
-
-    observable_mean = np.mean(observations[:, observable_index])
-    for i in range(nb_simulations):
-        if (observations[i, observable_index] >= observable_mean + 3*observable_std or
-                observations[i, observable_index] <= observable_mean - 3*observable_std):
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
