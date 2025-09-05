@@ -800,6 +800,7 @@ def summarise_tuning_parameters_analysis(input_path,
 
     configurations_list = []
     configurations_lander_position_list = []
+    configurations_h2_love_number_list = []
     configurations_counter = 0
 
     parameters_of_interest = dict(
@@ -834,8 +835,8 @@ def summarise_tuning_parameters_analysis(input_path,
             parameter_configuration = int(list(parameters_to_tune.keys()).index(parameter_key))
             input_path_parameter = os.path.join(input_path_lander, parameter_key)
 
-            if lander_index == 3 and parameter_key == "simulation_duration":
-                continue
+            #if lander_index == 3 and parameter_key == "simulation_duration":
+            #    continue
 
             for parameter_value_index in range(len(parameters_to_tune[parameter_key])):
                 parameter_value_configuration = int(parameter_value_index)
@@ -925,6 +926,8 @@ def summarise_tuning_parameters_analysis(input_path,
                 parameters_of_interest["rms_formal_error_degree_2"].append(rms_formal_error_degree_2)
                 parameters_of_interest["nb_observations_total"].append(nb_observations_total)
                 if plot_formal_error_radial_love_number:
+                    configurations_h2_love_number_list.append(
+                        f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
                     parameters_of_interest["formal_error_radial_love_number"].append(formal_error_radial_love_number)
 
                 configurations_list.append(f"{lander_configuration}.{parameter_configuration}.{parameter_value_configuration}")
@@ -1024,6 +1027,7 @@ def summarise_tuning_parameters_analysis(input_path,
 
     ticks_aux = np.arange(0, len(configurations_list), 1)
     ticks_lander_position_aux = np.arange(0, len(configurations_lander_position_list), 1)
+    ticks_h2_love_number_aux = np.arange(0, len(configurations_h2_love_number_list), 1)
 
     for i in range(nb_parameters_of_interest):
         fig = plt.figure(figsize=(18, 6))
@@ -1046,16 +1050,16 @@ def summarise_tuning_parameters_analysis(input_path,
                 ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j][3],
                            color="black")
         elif parameter_key == "formal_error_radial_love_number":
-            for j in range(len(configurations_lander_position_list)):
-                ax.scatter(ticks_lander_position_aux[j], parameters_of_interest[parameter_key][j],
+            for j in range(len(configurations_h2_love_number_list)):
+                ax.scatter(ticks_h2_love_number_aux[j], parameters_of_interest[parameter_key][j],
                            color="black")
         else:
             ax.scatter(configurations_list, parameters_of_interest[parameter_key], color="black")
 
         if parameter_key == "formal_error_love_number":
-            ax.set_ylim(bottom=1e-5, top=1e-3)
+            ax.set_ylim(bottom=1e-6, top=1e-3)
         elif parameter_key == "formal_error_pole_position":
-            ax.set_ylim(bottom=1e-7, top=1e-2)
+            ax.set_ylim(bottom=1e-7, top=1e-1)
         elif parameter_key == "formal_error_pole_rate":
             ax.set_ylim(bottom=1e-13, top=2e-9)
         elif parameter_key == "rms_formal_error_lander_position":
@@ -1068,6 +1072,8 @@ def summarise_tuning_parameters_analysis(input_path,
             ax.set_ylim(bottom=1e-9, top=2e-7)
         elif parameter_key == "formal_error_radial_love_number":
             ax.set_ylim(bottom=1e-4, top=2e-3)
+        elif parameter_key == "nb_observations_total":
+            ax.set_ylim(bottom=1e3, top=3e5)
 
         if parameter_key == "formal_error_pole_position" or parameter_key == "formal_error_pole_rate":
             ax.legend(handles=[RA_handle, DE_handle], fontsize=fontsize)
@@ -1092,7 +1098,7 @@ def summarise_tuning_parameters_analysis(input_path,
         if (parameter_key == "formal_error_libration_amplitude" or parameter_key == "formal_error_pole_position" or
             parameter_key == "formal_error_love_number" or parameter_key == "formal_error_pole_rate" or
             parameter_key == "rms_formal_error_lander_position" or parameter_key == "rms_formal_error_degree_2" or
-            parameter_key == "formal_error_radial_love_number"):
+            parameter_key == "formal_error_radial_love_number" or parameter_key == "nb_observations_total"):
             ax.set_yscale("log")
         fig.tight_layout()
         fig.savefig(os.path.join(input_path, f"summary_{parameter_key}.pdf"))
@@ -1500,7 +1506,7 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_tuning_parameters_analysis(input_path)
 
-    summarise_tuning_parameters_analysis_flag = False
+    summarise_tuning_parameters_analysis_flag = True
     if summarise_tuning_parameters_analysis_flag:
         input_directory = "./output/covariance_analysis/tuning_parameters_analysis"
         time_stamp_folder = "2025.07.01.17.51.42"
