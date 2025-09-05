@@ -434,8 +434,12 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
 
     for i in range(len(observables_to_study)):
         observable_label = observables_to_study[i]
-        if observable_label == "k2_real":
+        if observable_label == "libration":
+            obs_index = 0
+        elif observable_label == "k2_real":
             obs_index = 1
+        elif observable_label == "h2_real":
+            obs_index = 2
         else:
             raise ValueError("Observable not recognized.")
 
@@ -448,13 +452,13 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
         ax = fig.add_subplot(111)
         h = ax.hist(filtered_observations_feasibility[:, obs_index], grid, histtype="bar")
         ax.set_xlabel(observables_label[obs_index], fontsize=fontsize)
-        ax.set_ylabel("Count", fontsize=fontsize)
+        ax.set_ylabel("Count  [-]", fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
 
         ax.axvline(x=mean, color="red")
-        ax.text(0.03, np.max(h[0]),
+        ax.text(np.mean(grid), np.max(h[0]),
                 f"Mean: {str(mean)[:5]}; std: {str(std)[:5]}", fontsize=fontsize)
-        ax.text(0.03, np.max(h[0])-25, f"Nb. samples: {round(np.sum(h[0]))}", fontsize=fontsize)
+        ax.text(np.mean(grid), np.max(h[0])-25, f"Nb. samples: {filtered_observations_feasibility.shape[0]}", fontsize=fontsize)
         fig.tight_layout()
         fig.savefig(os.path.join(plots_path, f"observables_histogram_{observable_label}.pdf"))
         plt.close(fig)
@@ -468,6 +472,7 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
                                                         parameters_grid_steps,
                                                         nominal_libration_amplitude,
                                                         tidal_heating_range,
+                                                        file_ticket,
                                                         fontsize=12):
     plots_path = os.path.join(input_path, "plots")
     os.makedirs(plots_path, exist_ok=True)
@@ -516,7 +521,9 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
 
     observables_to_study_labels = list(observables_to_study.keys())
     for current_observable in observables_to_study_labels:
-        if current_observable == "k2_real":
+        if current_observable == "libration":
+            obs_index = 0
+        elif current_observable == "k2_real":
             obs_index = 1
         elif current_observable == "h2_real":
             obs_index = 2
@@ -524,6 +531,8 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
             obs_index = 3
         elif current_observable == "h2_imag":
             obs_index = 4
+        else:
+            raise ValueError("Unknown observable " + current_observable)
 
         filtered_parameters, filtered_observations, nb_viable_simulations = Util.filter_parameters_from_observations(
             filtered_parameters,
@@ -535,34 +544,49 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
     for current_parameter in parameters_to_study:
         if current_parameter == "d_core":
             param_index = 0
+            label = r"$R_{c}$  [km]"
         elif current_parameter == "rho_core":
             param_index = 1
+            label = r"$\rho_{c}$  [kg m$^{-3}$]"
         elif current_parameter == "mu_core":
             param_index = 2
+            label = r"$\mu_{c}$  [Pa]"
         elif current_parameter == "eta_core":
             param_index = 3
+            label = r"$\eta_{c}$  [Pa s]"
         elif current_parameter == "k_core":
             param_index = 4
+            label = r"$K_{c}$  [Pa]"
         elif current_parameter == "d_ocean":
             param_index = 5
+            label = r"$d_{o}$  [km]"
         elif current_parameter == "rho_ocean":
             param_index = 6
+            label = r"$\rho_{o}$  [kg m$^{-3}$]"
         elif current_parameter == "mu_ocean":
             param_index = 7
+            label = r"$\mu_{o}$  [Pa]"
         elif current_parameter == "eta_ocean":
             param_index = 8
+            label = r"$\eta_{o}$  [Pa s]"
         elif current_parameter == "k_ocean":
             param_index = 9
+            label = r"$K_{o}$  [Pa]"
         elif current_parameter == "d_shell":
             param_index = 10
+            label = r"$d_{s}$  [km]"
         elif current_parameter == "rho_shell":
             param_index = 11
+            label = r"$\rho_{s}$  [kg m$^{-3}$]"
         elif current_parameter == "mu_shell":
             param_index = 12
+            label = r"$\mu_{s}$  [Pa]"
         elif current_parameter == "eta_shell":
             param_index = 13
+            label = r"$\eta_{s}$  [Pa s]"
         elif current_parameter == "k_shell":
             param_index = 14
+            label = r"$K_{s}$  [Pa]"
 
         mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
         std_old = np.std(filtered_parameters_feasibility[:, param_index])
@@ -587,13 +611,13 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
         axes[1].axvline(mean_new, color='red')
         axes[1].set_title(f"After filtering. Mean: {mean_new:.2f}, Std: {std_new:.2f}")
 
-        axes[0].set_xlabel(current_parameter, fontsize=fontsize)
-        axes[1].set_xlabel(current_parameter, fontsize=fontsize)
+        axes[0].set_xlabel(label, fontsize=fontsize)
+        axes[1].set_xlabel(label, fontsize=fontsize)
         axes[0].set_ylabel("Count", fontsize=fontsize)
         axes[0].tick_params(labelsize=fontsize)
         axes[1].tick_params(labelsize=fontsize)
 
-        fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}.pdf"))
+        fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}_{file_ticket}.pdf"))
         plt.close(fig)
 
 
@@ -681,7 +705,7 @@ def main():
                                                                    tidal_heating_range,
                                                                    parameters_intervals)
 
-    plot_monte_carlo_analysis_filtered_observables_histogram_flag = False
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
     if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
@@ -689,15 +713,15 @@ def main():
         time_stamp = "2025.09.04.10.21.10"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
-                                                        ["k2_real"],
-                                                        [0.001],
+                                                        ["k2_real", "libration", "h2_real"],
+                                                        [0.001, 0.001, 0.005],
                                                         filter_libration_amplitude_flag,
                                                         filter_tidal_heating_flag,
                                                         nominal_libration_amplitude,
                                                         tidal_heating_range
                                                         )
 
-    plot_histogram_filtered_parameters_from_observables_flag = True
+    plot_histogram_filtered_parameters_from_observables_flag = False
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
         time_stamp = "2025.09.04.10.21.10"
@@ -706,13 +730,21 @@ def main():
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         observables_to_study = dict(
-            k2_real = 1e-4
+            #k2_real = 1e-4
+            libration = 1e-4
         )
 
-        parameters_to_study = ["d_shell"]
+        parameters_to_study = ["d_core", "rho_core", "d_ocean", "rho_ocean", "d_shell", "rho_shell"]
         parameters_grid_steps = dict(
-            d_shell = [0.5, 0.5]
+            d_core = [0.5, 0.5],
+            rho_core = [10, 10],
+            d_ocean = [0.5, 0.5],
+            rho_ocean = [10, 10],
+            d_shell = [0.5, 0.5],
+            rho_shell = [10, 10]
         )
+
+        file_ticket = "libration"
 
         plot_histogram_filtered_parameters_from_observables(
             input_path,
@@ -722,7 +754,8 @@ def main():
             parameters_to_study,
             parameters_grid_steps,
             nominal_libration_amplitude,
-            tidal_heating_range,)
+            tidal_heating_range,
+            file_ticket)
 
 
 if __name__ == "__main__":
