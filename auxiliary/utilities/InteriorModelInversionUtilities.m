@@ -25,17 +25,26 @@ classdef InteriorModelInversionUtilities
 
         function interior_model_array = convert_interior_model_to_array(interior_model_struct)
             nb_layers = length(interior_model_struct);
-            interior_model_array = [];
-            for i = 2:nb_layers
+            interior_model_array = zeros(1, 15);
+            for k = 2:nb_layers
 
-                R0 = interior_model_struct(i).R0;
-                rho0 = interior_model_struct(i).rho0;
-                mu0 = interior_model_struct(i).mu0;
-                eta0 = interior_model_struct(i).eta0;
-                Ks0 = interior_model_struct(i).Ks0;
+                R0 = interior_model_struct(k).R0;
+                rho0 = interior_model_struct(k).rho0;
+                mu0 = interior_model_struct(k).mu0;
+                eta0 = interior_model_struct(k).eta0;
+                Ks0 = interior_model_struct(k).Ks0;
                 
-                interior_model_array = [interior_model_array, R0, rho0, mu0, eta0, Ks0];
+                
+                interior_model_array(1 + (k-2)*5) = R0;
+                interior_model_array(2 + (k-2)*5) = rho0;
+                interior_model_array(3 + (k-2)*5) = mu0;
+                interior_model_array(4 + (k-2)*5) = eta0;
+                interior_model_array(5 + (k-2)*5) = Ks0;
             end
+        end
+
+        function shell_bulk_modulus = compute_bulk_modulus_from_poisson(poisson, mu)
+            shell_bulk_modulus = - (2*poisson*mu + 2*mu)/(6*poisson - 3);
         end
 
     end
