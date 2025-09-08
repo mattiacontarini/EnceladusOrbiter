@@ -591,16 +591,27 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
         mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
         std_old = np.std(filtered_parameters_feasibility[:, param_index])
 
-        grid_old = np.arange(min(filtered_parameters_feasibility[:, param_index]),
-                         max(filtered_parameters_feasibility[:, param_index]),
-                         parameters_grid_steps[current_parameter][0])
+        if current_parameter == "eta_shell" or current_parameter == "eta_core":
+            grid_old = np.logspace(np.log10(min(filtered_parameters_feasibility[:, param_index])),
+                                np.log10(max(filtered_parameters_feasibility[:, param_index])),
+                                parameters_grid_steps[current_parameter][0])
+        else:
+            grid_old = np.arange(min(filtered_parameters_feasibility[:, param_index]),
+                                max(filtered_parameters_feasibility[:, param_index]),
+                                parameters_grid_steps[current_parameter][0])
 
         mean_new = np.mean(filtered_parameters[:, param_index])
         std_new = np.std(filtered_parameters[:, param_index])
 
-        grid_new = np.arange(min(filtered_parameters[:, param_index]),
-                         max(filtered_parameters[:, param_index]),
-                         parameters_grid_steps[current_parameter][1])
+        if current_parameter == "eta_shell" or current_parameter == "eta_core":
+            grid_new = np.logspace(np.log10(min(filtered_parameters[:, param_index])),
+                                   np.log10(max(filtered_parameters[:, param_index])),
+                                   parameters_grid_steps[current_parameter][1])
+        else:
+            grid_new = np.arange(min(filtered_parameters[:, param_index]),
+                                max(filtered_parameters[:, param_index]),
+                                parameters_grid_steps[current_parameter][1]
+                                 )
 
         # Plot histogram of parameter distribution before and after filtering the observables
         fig, axes = plt.subplots(1, 2, figsize=(8, 5), constrained_layout=True)
@@ -616,6 +627,10 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
         axes[0].set_ylabel("Count", fontsize=fontsize)
         axes[0].tick_params(labelsize=fontsize)
         axes[1].tick_params(labelsize=fontsize)
+
+        if current_parameter == "eta_shell" or current_parameter == "eta_core":
+            axes[0].set_xscale("log")
+            axes[1].set_xscale("log")
 
         fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}_{file_ticket}.pdf"))
         plt.close(fig)
@@ -636,7 +651,7 @@ def main():
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.04.10.21.10"
+        time_stamp = "2025.09.05.13.39.46"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                                   filter_libration_amplitude_flag,
@@ -694,7 +709,7 @@ def main():
             K = [1e9, 1e14]
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.04.10.21.10"
+        time_stamp = "2025.09.05.13.39.46"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
@@ -705,12 +720,12 @@ def main():
                                                                    tidal_heating_range,
                                                                    parameters_intervals)
 
-    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = False
     if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.04.10.21.10"
+        time_stamp = "2025.09.05.13.39.46"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
                                                         ["k2_real", "libration", "h2_real"],
@@ -721,30 +736,34 @@ def main():
                                                         tidal_heating_range
                                                         )
 
-    plot_histogram_filtered_parameters_from_observables_flag = False
+    plot_histogram_filtered_parameters_from_observables_flag = True
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.04.10.21.10"
+        time_stamp = "2025.09.05.13.39.46"
         input_path = os.path.join(input_path, time_stamp)
 
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         observables_to_study = dict(
-            #k2_real = 1e-4
-            libration = 1e-4
+            k2_real = 1e-4,
+            libration = 1e-4,
+            h2_real = 7e-4,
         )
 
-        parameters_to_study = ["d_core", "rho_core", "d_ocean", "rho_ocean", "d_shell", "rho_shell"]
+        file_ticket = "k2_h2_lib"
+
+        parameters_to_study = [#"d_core", "rho_core", "d_ocean", "rho_ocean", "d_shell", "rho_shell",
+            "eta_core", "eta_shell"]
         parameters_grid_steps = dict(
             d_core = [0.5, 0.5],
             rho_core = [10, 10],
             d_ocean = [0.5, 0.5],
             rho_ocean = [10, 10],
             d_shell = [0.5, 0.5],
-            rho_shell = [10, 10]
+            rho_shell = [10, 10],
+            eta_core = [6, 6],
+            eta_shell = [6, 6],
         )
-
-        file_ticket = "libration"
 
         plot_histogram_filtered_parameters_from_observables(
             input_path,
