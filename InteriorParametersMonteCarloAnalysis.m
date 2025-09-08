@@ -24,7 +24,7 @@ interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e20;
 interior_parameters_to_vary_top("K_core") = 1.0e11;
-interior_parameters_to_vary_top("d_ocean") = 40.0e3;  % [m]
+interior_parameters_to_vary_top("d_ocean") = 60.0e3;  % [m]
 interior_parameters_to_vary_top("rho_shell") = 1000.0;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
 interior_parameters_to_vary_top("eta_shell") = 1.0e20;
@@ -42,7 +42,7 @@ interior_parameters_to_vary_bottom("eta_shell") = 1.0e14;
 interior_parameters_to_vary_bottom("poisson_shell") = 0.3;
 
 % Set number of samples per variable
-nb_samples_per_variables = 100000;
+nb_samples_per_variables = 300000;
 
 % Set seed
 seed = 1702;
