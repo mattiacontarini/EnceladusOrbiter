@@ -1249,7 +1249,7 @@ def plot_lander_location_analysis(input_path, orbit_label, fontsize=12):
     parameters_of_interest_store = dict()
     parameters_of_interest_store_labels = dict(
         max_estimatable_degree_gravity_field="Max estimatable gravity degree",
-        formal_error_love_number="Formal error k2 Love number (sqrt(Re**2 + Im**2))",
+        formal_error_love_number=r"Formal error $k_2$ Love number (\sqrt(Re**2 + Im**2))",
         formal_error_libration_amplitude="Formal error libration amplitude",
         formal_error_pole_RA="Formal error pole RA",
         formal_error_pole_DE="Formal error pole DE",
@@ -1568,7 +1568,7 @@ def main():
         plot_tuning_parameters_refinement_analysis(input_directory,
                                                    no_configurations)
 
-    plot_lander_location_analysis_flag = False
+    plot_lander_location_analysis_flag = True
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
         time_stamp_folder = "2025.08.04.11.26.49"
@@ -1582,7 +1582,7 @@ def main():
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
 
-    plot_nominal_cases_analysis_flag = True
+    plot_nominal_cases_analysis_flag = False
     if plot_nominal_cases_analysis_flag:
         input_directory = "./output/covariance_analysis/nominal_cases_analysis"
         time_stamp_folder = "2025.08.18.14.55.53"

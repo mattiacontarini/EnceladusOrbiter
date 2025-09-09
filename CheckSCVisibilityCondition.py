@@ -13,7 +13,7 @@ import os
 
 # Define input path
 input_directory = "./output/covariance_analysis/single_case_analysis"
-time_stamp_folder = "2025.08.05.17.43.41"
+time_stamp_folder = "2025.09.09.16.00.58"
 input_path = os.path.join(input_directory, time_stamp_folder)
 simulation_results_path = os.path.join(input_path, "simulation_results")
 observation_times_path = os.path.join(input_path, "observation_times")
@@ -85,6 +85,7 @@ interpolator = interpolators.create_one_dimensional_vector_interpolator(dependen
 # Plot coordinates of spacecraft at observation epochs
 for lander in CovAnalysisConfig.lander_names:
     observation_times = np.loadtxt(os.path.join(observation_times_path, f"observation_times_{lander}.dat"))
+    nb_observations = len(observation_times)
     coordinates_store = np.zeros((len(observation_times), 3))
     lander_coordinates = CovAnalysisConfig.lander_coordinates[lander]
     for i in range(len(observation_times)):
@@ -102,6 +103,6 @@ for lander in CovAnalysisConfig.lander_names:
     ax.set_xlabel("Longitude  [deg]", fontsize=fontsize)
     ax.set_ylabel("Latitude  [deg]", fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    ax.set_title(f"Lander: {lander}", fontsize=fontsize)
+    ax.set_title(f"Lander: {lander}. Nb. observations: {nb_observations}", fontsize=fontsize)
     fig.savefig(os.path.join(plots_path, f"sc_location_at_observation_{lander}.pdf"))
     plt.close(fig)
