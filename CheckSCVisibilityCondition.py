@@ -103,6 +103,6 @@ for lander in CovAnalysisConfig.lander_names:
     ax.set_xlabel("Longitude  [deg]", fontsize=fontsize)
     ax.set_ylabel("Latitude  [deg]", fontsize=fontsize)
     ax.tick_params(labelsize=fontsize)
-    ax.set_title(f"Lander: {lander}. Nb. observations: {nb_observations}", fontsize=fontsize)
+    ax.set_title(f"Lander: {lander}. Nb. lander observations: {nb_observations}", fontsize=fontsize)
     fig.savefig(os.path.join(plots_path, f"sc_location_at_observation_{lander}.pdf"))
     plt.close(fig)
