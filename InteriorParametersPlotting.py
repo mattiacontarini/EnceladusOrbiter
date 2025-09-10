@@ -646,12 +646,12 @@ def main():
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
 
-    plot_monte_carlo_interior_parameters_analysis_flag = False
+    plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.05.13.39.46"
+        time_stamp = "2025.09.08.09.23.16"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                                   filter_libration_amplitude_flag,
@@ -661,7 +661,7 @@ def main():
                                                                   )
 
 
-    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = False
+    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = True
     if plot_monte_carlo_interior_parameters_analysis_density_plot_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
@@ -709,7 +709,7 @@ def main():
             K = [1e9, 1e14]
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.05.13.39.46"
+        time_stamp = "2025.09.08.09.23.16"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
@@ -720,12 +720,12 @@ def main():
                                                                    tidal_heating_range,
                                                                    parameters_intervals)
 
-    plot_monte_carlo_analysis_filtered_observables_histogram_flag = False
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
     if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.05.13.39.46"
+        time_stamp = "2025.09.08.09.23.16"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
                                                         ["k2_real", "libration", "h2_real"],
@@ -739,7 +739,7 @@ def main():
     plot_histogram_filtered_parameters_from_observables_flag = True
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.05.13.39.46"
+        time_stamp = "2025.09.08.09.23.16"
         input_path = os.path.join(input_path, time_stamp)
 
         filter_libration_amplitude_flag = True
