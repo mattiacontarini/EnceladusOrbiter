@@ -989,7 +989,7 @@ class CovarianceAnalysis:
             Enceladus_radius = spice.get_average_radius("Enceladus")
 
             sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
-            partials_extended, drL_dh2_dict, dh_dh2_dict = CovUtil.extend_design_matrix_to_h2_love_number(
+            partials_extended, drL_dh2_dict, dh_dh2_dict, dh_drL_dict = CovUtil.extend_design_matrix_to_h2_love_number(
                 partials,
                 sorted_observation_epochs,
                 self.lander_to_include,
@@ -1404,6 +1404,7 @@ class CovarianceAnalysis:
 
                 save2txt(drL_dh2_dict, "drL_dh2_partials.dat", covariance_results_output_path)
                 save2txt(dh_dh2_dict, "dh_dh2_partials.dat", covariance_results_output_path)
+                save2txt(dh_drL_dict, "dh_drL_partials.dat", covariance_results_output_path)
 
             # Save formal error of libration amplitude
             formal_error_libration_amplitude_filename = os.path.join(covariance_results_output_path,
