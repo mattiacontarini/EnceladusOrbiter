@@ -380,7 +380,7 @@ def single_case_analysis(time_stamp,
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
     UDP.save_obs_times_of_vehicle_flag = save_obs_times_of_vehicle_flag
-    UDP.estimate_h2_love_number_flag = False
+    UDP.estimate_h2_love_number_flag = True
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)
@@ -392,9 +392,9 @@ def main():
     time_stamp = datetime.datetime.now().strftime("%Y.%m.%d.%H.%M.%S")
 
     # Set whether the results of the covariance analysis should be saved
-    save_simulation_results_flag = True
+    save_simulation_results_flag = False
     save_covariance_results_flag = True
-    save_obs_times_of_vehicle_flag = True
+    save_obs_times_of_vehicle_flag = False
 
     # Analyse every combination of parameters of interest
     perform_full_parameters_spectrum_analysis_flag = False
@@ -419,7 +419,7 @@ def main():
     # Perform the covariance analysis for only one base set
     perform_single_case_analysis_flag = True
     if perform_single_case_analysis_flag:
-        initial_state_index = 3
+        initial_state_index = 1
         single_case_analysis(time_stamp,
                              initial_state_index,
                              save_simulation_results_flag,
