@@ -1,10 +1,12 @@
 # Tudat import
 from matplotlib import pyplot as plt
+from tudatpy.data import save2txt
 from tudatpy.math import interpolators
 from tudatpy import constants
 
 # Files import
 from auxiliary import CovarianceAnalysisConfig as CovAnalysisConfig
+from auxiliary.CovarianceAnalysisConfig import minimum_elevation_angle_visibility
 from auxiliary.utilities import utilities
 
 # General imports
@@ -23,7 +25,7 @@ os.makedirs(plots_path, exist_ok=True)
 fontsize=12
 
 # Plot elevation angle history
-fig, axes = plt.subplots(5, 2, figsize=(8, 10))
+fig, axes = plt.subplots(5, 2, figsize=(8, 12), constrained_layout=True)
 for lander in CovAnalysisConfig.lander_names:
     target_angles_and_range = np.loadtxt(os.path.join(simulation_results_path, f"target_angles_and_range_{lander}.dat"))
     epochs = target_angles_and_range[:, 0]
@@ -49,15 +51,29 @@ for lander in CovAnalysisConfig.lander_names:
         ax = axes[4, 0]
     ax.scatter(epochs / constants.JULIAN_DAY, np.rad2deg(elevation_angle), marker=".", color="black")
     ax.axhline(y=np.rad2deg(CovAnalysisConfig.minimum_elevation_angle_visibility),
-               color="red")
-    ax.set_xlabel(r"$t - t_0$  [days]", fontsize=fontsize)
-    ax.set_ylabel(r"$\delta$  [deg]", fontsize=fontsize)
+               color="red",
+               linewidth=3)
+
+    ax.set_ylabel(r"Elevation [deg]", fontsize=fontsize)
     ax.grid(True)
     ax.tick_params(labelsize=fontsize)
     ax.set_title(f"Lander: {lander}", fontsize=fontsize)
+    ax.set_ylim(bottom=0)
+
+axes[3, 1].set_xlabel(r"$t - t_0$  [days]", fontsize=fontsize)
+axes[4, 0].set_xlabel(r"$t - t_0$  [days]", fontsize=fontsize)
 plt.delaxes(axes[4, 1])
 fig.savefig(os.path.join(plots_path, f"elevation_angle_analysis.pdf"))
 plt.close(fig)
+
+# Save minimum elevation angle for each lander
+minimum_elevation_angle_deg = dict()
+for lander in CovAnalysisConfig.lander_names:
+    target_angles_and_range = np.loadtxt(os.path.join(simulation_results_path, f"target_angles_and_range_{lander}.dat"))
+    epochs = target_angles_and_range[:, 0]
+    elevation_angle = target_angles_and_range[:, 1]
+    minimum_elevation_angle_deg[lander] = np.rad2deg(min(elevation_angle))
+save2txt(minimum_elevation_angle_deg, "minimum_elevation_angle", observation_times_path)
 
 # Load dependent variables history
 nb_arcs = np.loadtxt(os.path.join(simulation_results_path, "nb_arcs.dat"))
