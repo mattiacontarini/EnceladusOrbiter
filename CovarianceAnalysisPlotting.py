@@ -1568,17 +1568,17 @@ def main():
         plot_tuning_parameters_refinement_analysis(input_directory,
                                                    no_configurations)
 
-    plot_lander_location_analysis_flag = True
+    plot_lander_location_analysis_flag = False
     if plot_lander_location_analysis_flag:
         input_directory = "./output/covariance_analysis/lander_location_analysis"
         time_stamp_folder = "2025.08.04.11.26.49"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_lander_location_analysis(input_path, "K3", fontsize=12)
 
-    plot_h2_love_number_partials_flag = False
+    plot_h2_love_number_partials_flag = True
     if plot_h2_love_number_partials_flag:
         input_directory = "./output/covariance_analysis/single_case_analysis"
-        time_stamp_folder = "2025.06.20.16.31.24"
+        time_stamp_folder = "2025.09.10.14.29.46"
         input_path = os.path.join(input_directory, time_stamp_folder)
         plot_h2_partials_analysis(input_path)
 
