@@ -155,19 +155,31 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
 
     # Filter data based on libration amplitude and tidal heating observations
     if filter_libration_amplitude_flag:
-        filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
-            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        filtered_parameters_feasibility = filtered_parameters
-        filtered_observations_feasibility = filtered_observations
-        np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"), filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"), filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
 
     if filter_tidal_heating_flag:
-        filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
-            filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
-        )
-        filtered_parameters_feasibility = filtered_parameters
-        filtered_observations_feasibility = filtered_observations
-        np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"), [nb_feasible_tidal_heating_models])
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"), filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"), filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"), [nb_feasible_tidal_heating_models])
 
     for i in range(len(layers)):
         layer = layers[i]
@@ -249,8 +261,8 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
             ax.grid(True)
             ax2.grid(True)
             ax3.grid(True)
-            #ax2.set_yscale("log")
-            #ax3.set_yscale("log")
+            ax2.set_yscale("log")
+            ax3.set_yscale("log")
         if layer != "ocean":
             fig.delaxes(axes[2, 1])
             fig2.delaxes(axes2[2, 1])
@@ -308,16 +320,36 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
     filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
 
     if filter_libration_amplitude_flag:
-        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
-            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        filtered_parameters_feasibility = filtered_parameters_libration
-        filtered_observations_feasibility = filtered_observations_libration
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+
     if filter_tidal_heating_flag:
-        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
-            filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
-        )
-        filtered_parameters_feasibility = filtered_parameters_heating
-        filtered_observations_feasibility = filtered_observations_heating
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"),
+                       [nb_feasible_tidal_heating_models])
 
     nb_observables = filtered_observations_feasibility.shape[1]
 
@@ -418,16 +450,36 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
 
     # Filter parameters and observations based on libration amplitude and tidal heating observations
     if filter_libration_amplitude_flag:
-        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
-            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        filtered_parameters_feasibility = filtered_parameters_libration
-        filtered_observations_feasibility = filtered_observations_libration
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+
     if filter_tidal_heating_range_flag:
-        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
-            filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
-        )
-        filtered_parameters_feasibility = filtered_parameters_heating
-        filtered_observations_feasibility = filtered_observations_heating
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"),
+                       [nb_feasible_tidal_heating_models])
 
     # Set axis label of observables
     observables_label = [r"$\phi$", r"$Re(k_2)$", r"$Re(h_2)$", r"$\dot{E}$", r"$Re(k_2)$", r"$Im(h_2)$"]
@@ -501,16 +553,35 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
 
     # Filter parameters and observations based on libration amplitude and tidal heating observations
     if filter_libration_amplitude_flag:
-        filtered_parameters_libration, filtered_observations_libration, nb_feasible_models_libration = Util.filter_libration_amplitude(
-            filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
-        filtered_parameters_feasibility = filtered_parameters_libration
-        filtered_observations_feasibility = filtered_observations_libration
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+
     if filter_tidal_heating_range_flag:
-        filtered_parameters_heating, filtered_observations_heating, nb_feasible_models_heating = Util.filter_tidal_heating(
-            filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
-        )
-        filtered_parameters_feasibility = filtered_parameters_heating
-        filtered_observations_feasibility = filtered_observations_heating
+        try:
+            filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"), [nb_feasible_tidal_heating_models])
 
     # Compute ocean and shell thickness
     filtered_parameters_feasibility[:, 5] = filtered_parameters_feasibility[:, 5] - filtered_parameters_feasibility[:, 0]
@@ -588,38 +659,52 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
             param_index = 14
             label = r"$K_{s}$  [Pa]"
 
-        mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
-        std_old = np.std(filtered_parameters_feasibility[:, param_index])
-
         if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            grid_old = np.logspace(np.log10(min(filtered_parameters_feasibility[:, param_index])),
+            mean_old = np.mean(np.log10(filtered_parameters_feasibility[:, param_index]))
+            std_old = np.std(np.log10(filtered_parameters_feasibility[:, param_index]))
+            grid_old = np.linspace(np.log10(min(filtered_parameters_feasibility[:, param_index])),
                                 np.log10(max(filtered_parameters_feasibility[:, param_index])),
                                 parameters_grid_steps[current_parameter][0])
         else:
+            mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
+            std_old = np.std(filtered_parameters_feasibility[:, param_index])
             grid_old = np.arange(min(filtered_parameters_feasibility[:, param_index]),
                                 max(filtered_parameters_feasibility[:, param_index]),
                                 parameters_grid_steps[current_parameter][0])
 
-        mean_new = np.mean(filtered_parameters[:, param_index])
-        std_new = np.std(filtered_parameters[:, param_index])
-
         if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            grid_new = np.logspace(np.log10(min(filtered_parameters[:, param_index])),
+            mean_new = np.mean(np.log10(filtered_parameters[:, param_index]))
+            std_new = np.std(np.log10(filtered_parameters[:, param_index]))
+            grid_new = np.linspace(np.log10(min(filtered_parameters[:, param_index])),
                                    np.log10(max(filtered_parameters[:, param_index])),
                                    parameters_grid_steps[current_parameter][1])
         else:
+            mean_new = np.mean(filtered_parameters[:, param_index])
+            std_new = np.std(filtered_parameters[:, param_index])
             grid_new = np.arange(min(filtered_parameters[:, param_index]),
                                 max(filtered_parameters[:, param_index]),
                                 parameters_grid_steps[current_parameter][1]
                                  )
 
+        np.savetxt(os.path.join(input_path, f"distribution_old_{current_parameter}.txt"), [mean_old, std_old])
+        np.savetxt(os.path.join(input_path, f"distribution_new_{current_parameter}.txt"), [mean_new, std_new])
+
         # Plot histogram of parameter distribution before and after filtering the observables
         fig, axes = plt.subplots(1, 2, figsize=(8, 5), constrained_layout=True)
-        axes[0].hist(filtered_parameters_feasibility[:, param_index], grid_old)
+        if current_parameter == "eta_shell" or current_parameter == "eta_core":
+            axes[0].hist(np.log10(filtered_parameters_feasibility[:, param_index]), grid_old)
+            axes[1].hist(np.log10(filtered_parameters[:, param_index]), grid_new)
+        else:
+            axes[0].hist(filtered_parameters_feasibility[:, param_index], grid_old)
+            axes[1].hist(filtered_parameters[:, param_index], grid_new)
+
         axes[0].axvline(mean_old, color='red')
+        axes[0].axvline(mean_old + std_old, color='red', linestyle='--')
+        axes[0].axvline(mean_old - std_old, color='red', linestyle='--')
         axes[0].set_title(f"Before filtering. Mean: {mean_old:.2f}, Std: {std_old:.2f}")
-        axes[1].hist(filtered_parameters[:, param_index], grid_new)
         axes[1].axvline(mean_new, color='red')
+        axes[1].axvline(mean_new + std_new, color='red', linestyle='--')
+        axes[1].axvline(mean_new - std_new, color='red', linestyle='--')
         axes[1].set_title(f"After filtering. Mean: {mean_new:.2f}, Std: {std_new:.2f}")
 
         axes[0].set_xlabel(label, fontsize=fontsize)
@@ -628,9 +713,9 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
         axes[0].tick_params(labelsize=fontsize)
         axes[1].tick_params(labelsize=fontsize)
 
-        if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            axes[0].set_xscale("log")
-            axes[1].set_xscale("log")
+        # if current_parameter == "eta_shell" or current_parameter == "eta_core":
+        #     axes[0].set_xscale("log")
+        #     axes[1].set_xscale("log")
 
         fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}_{file_ticket}.pdf"))
         plt.close(fig)
@@ -646,12 +731,12 @@ def main():
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
 
-    plot_monte_carlo_interior_parameters_analysis_flag = True
+    plot_monte_carlo_interior_parameters_analysis_flag = False
     if plot_monte_carlo_interior_parameters_analysis_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16"
+        time_stamp = "2025.09.12.08.53.51"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                                   filter_libration_amplitude_flag,
@@ -661,7 +746,7 @@ def main():
                                                                   )
 
 
-    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = True
+    plot_monte_carlo_interior_parameters_analysis_density_plot_flag = False
     if plot_monte_carlo_interior_parameters_analysis_density_plot_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
@@ -702,14 +787,14 @@ def main():
             rho = [1000, 1300],
         )
         parameters_intervals["shell"] = dict(
-            d = [15, 30],
+            d = [0, 30],
             rho = [800, 1000],
             mu = [1e9, 5e9],
             eta = [1e14, 1e20],
             K = [1e9, 1e14]
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16"
+        time_stamp = "2025.09.12.08.53.51"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
@@ -720,12 +805,12 @@ def main():
                                                                    tidal_heating_range,
                                                                    parameters_intervals)
 
-    plot_monte_carlo_analysis_filtered_observables_histogram_flag = True
+    plot_monte_carlo_analysis_filtered_observables_histogram_flag = False
     if plot_monte_carlo_analysis_filtered_observables_histogram_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16"
+        time_stamp = "2025.09.12.08.53.51"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
                                                         ["k2_real", "libration", "h2_real"],
@@ -746,14 +831,22 @@ def main():
         filter_tidal_heating_flag = False
         observables_to_study = dict(
             k2_real = 1e-4,
-            libration = 1e-4,
+            # libration = 1e-4,
             h2_real = 7e-4,
         )
 
-        file_ticket = "k2_h2_lib"
+        file_ticket = "k2_h2_real"
 
-        parameters_to_study = [#"d_core", "rho_core", "d_ocean", "rho_ocean", "d_shell", "rho_shell",
-            "eta_core", "eta_shell"]
+        parameters_to_study = [
+            "d_core",
+            "rho_core",
+            "d_ocean",
+            "rho_ocean",
+            "d_shell",
+            "rho_shell",
+            "eta_core",
+            "eta_shell"
+        ]
         parameters_grid_steps = dict(
             d_core = [0.5, 0.5],
             rho_core = [10, 10],
