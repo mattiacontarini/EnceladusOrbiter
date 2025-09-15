@@ -13,7 +13,7 @@ def filter_parameters(parameters, observations):
         ocean_density = parameters[i, 6]
         shell_thickness = parameters[i, 10] - parameters[i, 5]
 
-        if core_density < 2000.0 or core_density > 3000.0 or ocean_density < 1000.0 or ocean_density > 1300.0 or shell_thickness <= 0.0:
+        if core_density < 2000.0 or core_density > 3000.0 or ocean_density < 1000.0 or ocean_density > 1300.0 or shell_thickness <= 1.0:
             filtered_parameters = np.delete(filtered_parameters, i - counter, 0)
             filtered_observations = np.delete(filtered_observations, i - counter, 0)
             counter += 1
