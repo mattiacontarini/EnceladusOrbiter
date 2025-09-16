@@ -34,8 +34,13 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
         layer_input_path = os.path.join(input_path, layer)
         layer_index = layers.index(layer)
 
-        fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 8))
-        for interior_parameter in interior_parameters:
+        if layer == "ocean":
+            interior_parameters_layer = interior_parameters[:2]
+            fig, axes = plt.subplots(1, 2, constrained_layout=True, figsize=(8, 4))
+        else:
+            interior_parameters_layer = interior_parameters
+            fig, axes = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 8))
+        for interior_parameter in interior_parameters_layer:
             interior_parameter_path = os.path.join(layer_input_path, f"{interior_parameter}.dat")
             interior_parameter_index = interior_parameters.index(interior_parameter)
 
@@ -45,16 +50,22 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
             k2_love_number_values = results[:, 1]
             h2_love_number_values = results[:, 2]
 
-            if interior_parameter_index == 0:
-                ax = axes[0, 0]
-            elif interior_parameter_index == 1:
-                ax = axes[0, 1]
-            elif interior_parameter_index == 2:
-                ax = axes[1, 0]
-            elif interior_parameter_index == 3:
-                ax = axes[1, 1]
-            elif interior_parameter_index == 4:
-                ax = axes[2, 0]
+            if layer == "ocean":
+                if interior_parameter_index == 0:
+                    ax = axes[0]
+                elif interior_parameter_index == 1:
+                    ax = axes[1]
+            else:
+                if interior_parameter_index == 0:
+                    ax = axes[0, 0]
+                elif interior_parameter_index == 1:
+                    ax = axes[0, 1]
+                elif interior_parameter_index == 2:
+                    ax = axes[1, 0]
+                elif interior_parameter_index == 3:
+                    ax = axes[1, 1]
+                elif interior_parameter_index == 4:
+                    ax = axes[2, 0]
 
             ax.plot(interior_parameter_values, k2_love_number_values.real, label=r"$K_2$", color="blue")
             ax.plot(interior_parameter_values, h2_love_number_values.real, label=r"$h_2$", color="red")
@@ -69,10 +80,12 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
             ax.tick_params(labelsize=fontsize)
             ax.grid(True)
             ax.set_yscale("log")
-        plt.delaxes(axes[2, 1])
+            ax.set_ylim(bottom=1e-2, top=5e-2)
+        if layer != "ocean":
+            plt.delaxes(axes[2, 1])
 
         fig.suptitle(r"Measurements: $k_2$ & $h_2$ Love numbers. Layer: " + layer, fontsize=fontsize)
-        fig.savefig(os.path.join(layer_input_path, "tidal_love_numbers.pdf"))
+        fig.savefig(os.path.join(layer_input_path, f"tidal_love_numbers_{layer}.pdf"))
         plt.close(fig)
 
     # Plot libration amplitude
@@ -101,7 +114,7 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
             elif interior_parameter_index == 4:
                 ax = axes[2, 0]
 
-            ax.plot(interior_parameter_values, libration_amplitude, color="blue")
+            ax.plot(interior_parameter_values, np.abs(libration_amplitude), color="blue")
             ax.set_xlabel(interior_parameters_labels[len(interior_parameters)*layer_index + interior_parameter_index], fontsize=fontsize)
             if interior_parameter_index % 2 == 0:
                 ax.set_ylabel(r"$\phi$  [deg]", fontsize=fontsize)
@@ -112,7 +125,7 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
         plt.delaxes(axes[2, 1])
 
         fig.suptitle(r"Measurement: libration amplitude. Layer: " + layer, fontsize=fontsize)
-        fig.savefig(os.path.join(layer_input_path, "libration_amplitude.pdf"))
+        fig.savefig(os.path.join(layer_input_path, f"libration_amplitude_{layer}.pdf"))
         plt.close(fig)
 
 
@@ -726,7 +739,7 @@ def main():
     nominal_libration_amplitude = [0.120, 0.021]  # [deg] - Thomas et al. (2016)
     tidal_heating_range = [15, 40]  # [GW] - Bagheri et al. (2025), page 17
 
-    plot_one_at_a_time_interior_parameters_analysis_flag = False
+    plot_one_at_a_time_interior_parameters_analysis_flag = True
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
@@ -821,7 +834,7 @@ def main():
                                                         tidal_heating_range
                                                         )
 
-    plot_histogram_filtered_parameters_from_observables_flag = True
+    plot_histogram_filtered_parameters_from_observables_flag = False
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
         time_stamp = "2025.09.08.09.23.16"
