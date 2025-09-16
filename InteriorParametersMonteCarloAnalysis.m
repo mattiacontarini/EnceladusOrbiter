@@ -19,27 +19,51 @@ end
 
 
 % Setup variables to tune through MC analysis
+%interior_parameters_to_vary_top = dictionary;
+%interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
+%interior_parameters_to_vary_top("mu_core") = 80.0e9; 
+%interior_parameters_to_vary_top("eta_core") = 1.0e20;
+%interior_parameters_to_vary_top("K_core") = 1.0e11;
+%interior_parameters_to_vary_top("d_ocean") = 60.0e3;  % [m]
+%interior_parameters_to_vary_top("rho_shell") = 1000.0;
+%interior_parameters_to_vary_top("mu_shell") = 5.0e9;
+%interior_parameters_to_vary_top("eta_shell") = 1.0e20;
+%interior_parameters_to_vary_top("poisson_shell") = 0.5;
+
+%interior_parameters_to_vary_bottom = dictionary;
+%interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
+%interior_parameters_to_vary_bottom("mu_core") = 1.0e9; 
+%interior_parameters_to_vary_bottom("eta_core") = 1.0e16;
+%interior_parameters_to_vary_bottom("K_core") = 1.0e9;
+%interior_parameters_to_vary_bottom("d_ocean") = 1.0e3;  % [m]
+%interior_parameters_to_vary_bottom("rho_shell") = 800.0;
+%interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
+%interior_parameters_to_vary_bottom("eta_shell") = 1.0e14;
+%interior_parameters_to_vary_bottom("poisson_shell") = 0.3;
+
+
 interior_parameters_to_vary_top = dictionary;
-interior_parameters_to_vary_top("R_core") = 210.0e3;  % [m]
+interior_parameters_to_vary_top("R_core") = 192.51e3 + 3.66e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e20;
 interior_parameters_to_vary_top("K_core") = 1.0e11;
-interior_parameters_to_vary_top("d_ocean") = 60.0e3;  % [m]
-interior_parameters_to_vary_top("rho_shell") = 1000.0;
+interior_parameters_to_vary_top("d_ocean") = 38.18e3 + 5.59e3;  % [m]
+interior_parameters_to_vary_top("rho_shell") = 887.30 + 56.49;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
 interior_parameters_to_vary_top("eta_shell") = 1.0e20;
 interior_parameters_to_vary_top("poisson_shell") = 0.5;
 
 interior_parameters_to_vary_bottom = dictionary;
-interior_parameters_to_vary_bottom("R_core") = 180.0e3;  % [m]
+interior_parameters_to_vary_bottom("R_core") = 192.51e3 - 3.66e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 1.0e9; 
 interior_parameters_to_vary_bottom("eta_core") = 1.0e16;
 interior_parameters_to_vary_bottom("K_core") = 1.0e9;
-interior_parameters_to_vary_bottom("d_ocean") = 1.0e3;  % [m]
-interior_parameters_to_vary_bottom("rho_shell") = 800.0;
+interior_parameters_to_vary_bottom("d_ocean") = 38.18e3 - 5.59e3;  % [m]
+interior_parameters_to_vary_bottom("rho_shell") = 887.30 - 56.49;
 interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
 interior_parameters_to_vary_bottom("eta_shell") = 1.0e14;
 interior_parameters_to_vary_bottom("poisson_shell") = 0.3;
+
 
 % Set number of samples per variable
 nb_samples_per_variables = 300000;
