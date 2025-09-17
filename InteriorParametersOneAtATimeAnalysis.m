@@ -22,20 +22,36 @@ Forcing_Enceladus(1).eccen = 0.0047;
 
 %% Variation delta
 
+min_values(2).Ks0 = 1.0e9;
+min_values(2).mu0 = 1.0e9;
+min_values(2).eta0 = 1.0e16;
+min_values(4).Ks0 = 1.0e9;
+min_values(4).mu0 = 1.0e9;
+min_values(4).eta0 = 1.0e14;
+
+max_values(2).Ks0 = 1.0e11;
+max_values(2).mu0 = 1.0e11;
+max_values(2).eta0 = 1.0e20;
+max_values(4).Ks0 = 1.0e14;
+max_values(4).mu0 = 1.0e10;
+max_values(4).eta0 = 1.0e20;
+
+% Setup variables to tune through MC analysis
+
 Interior_Model_Enceladus_Delta(1).R0 = 0;
 Interior_Model_Enceladus_Delta(1).rho0 = 0;
 
-Interior_Model_Enceladus_Delta(2).R0 = 20;
-Interior_Model_Enceladus_Delta(2).rho0 = 200;
+Interior_Model_Enceladus_Delta(2).R0 = 30;
+Interior_Model_Enceladus_Delta(2).rho0 = 500;
 Interior_Model_Enceladus_Delta(2).Ks0 = 3E9;
 Interior_Model_Enceladus_Delta(2).mu0 = 0.5E9;
 Interior_Model_Enceladus_Delta(2).eta0 = 0.5E20;
 
 Interior_Model_Enceladus_Delta(3).R0 = 10;
 Interior_Model_Enceladus_Delta(3).rho0 = 200;
-Interior_Model_Enceladus_Delta(3).Ks0 = 1E9;
-Interior_Model_Enceladus_Delta(3).mu0 = 0.1;
-Interior_Model_Enceladus_Delta(3).eta0 = 1E-3; 
+%Interior_Model_Enceladus_Delta(3).Ks0 = 1E9;
+%Interior_Model_Enceladus_Delta(3).mu0 = 0.1;
+%Interior_Model_Enceladus_Delta(3).eta0 = 1E-3; 
 
 Interior_Model_Enceladus_Delta(4).R0 = 10;
 Interior_Model_Enceladus_Delta(4).rho0 = 50;
@@ -60,7 +76,7 @@ Numerics_Enceladus.perturbation_order = 2;
 
 interior_parameters_to_vary = fieldnames(Interior_Model_Enceladus_Delta);
 nb_interior_parameters_to_vary = length(interior_parameters_to_vary);
-nb_runs_per_interior_parameter = 20;
+nb_runs_per_interior_parameter = 100;
 
 % Setup output structure
 Interior_Model_Enceladus_Analysis_Output(1).R0.k = [];
@@ -203,9 +219,13 @@ for i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).rho0.libration, libration.amplitude_rad(1)];
             end
         elseif j == 3
-            min = Interior_Model_Enceladus(i).Ks0 - Interior_Model_Enceladus_Delta(i).Ks0;
-            max = Interior_Model_Enceladus(i).Ks0 + Interior_Model_Enceladus_Delta(i).Ks0;
-            points = linspace(min, max, nb_runs_per_interior_parameter);
+            if i == 3
+                continue
+            else
+                min = min_values(i).Ks0;
+                max = max_values(i).Ks0;
+                points = linspace(min, max, nb_runs_per_interior_parameter);
+            end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).Ks0 = points(l);
                 Interior_Model_Enceladus_U = get_rheology( ...
@@ -229,9 +249,13 @@ for i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration, libration.amplitude_rad(1)];                
             end
         elseif j == 4
-            min = Interior_Model_Enceladus(i).mu0 - Interior_Model_Enceladus_Delta(i).mu0;
-            max = Interior_Model_Enceladus(i).mu0 + Interior_Model_Enceladus_Delta(i).mu0;
-            points = linspace(min, max, nb_runs_per_interior_parameter);
+            if i == 3
+                continue
+            else
+                min = min_values(i).mu0;
+                max = max_values(i).mu0;
+                points = linspace(min, max, nb_runs_per_interior_parameter);
+            end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).mu0 = points(l);
                 Interior_Model_Enceladus_U = get_rheology( ...
@@ -255,9 +279,13 @@ for i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).mu0.libration, libration.amplitude_rad(1)];                
             end
         elseif j == 5
-            min = Interior_Model_Enceladus(i).eta0 - Interior_Model_Enceladus_Delta(i).eta0;
-            max = Interior_Model_Enceladus(i).eta0 + Interior_Model_Enceladus_Delta(i).eta0;
-            points = linspace(min, max, nb_runs_per_interior_parameter);
+            if i == 3
+                continue
+            else
+                min = min_values(i).eta0;
+                max = max_values(i).eta0;
+                points = linspace(min, max, nb_runs_per_interior_parameter);
+            end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).eta0 = points(l);
                 Interior_Model_Enceladus_U = get_rheology( ...
@@ -328,20 +356,32 @@ for i = 2:Numerics_Enceladus.Nlayers
             output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).rho0.h);
             output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).rho0.libration;
         elseif j == 3
-            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter);
-            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.k);
-            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.h);
-            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration;
+            if i == 3
+                continue
+            else
+                output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.interior_parameter);
+                output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.k);
+                output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).Ks0.h);
+                output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).Ks0.libration;
+            end
         elseif j == 4
-            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter);
-            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.k);
-            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.h);
-            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).mu0.libration;
+            if i == 3
+                continue
+            else
+                output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.interior_parameter);
+                output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.k);
+                output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).mu0.h);
+                output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).mu0.libration;
+            end
         elseif j == 5
-            output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter);
-            output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.k);
-            output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.h);          
-            output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).eta0.libration;
+            if i == 3
+                continue
+            else
+                output_save_aux(:, 1) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.interior_parameter);
+                output_save_aux(:, 2) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.k);
+                output_save_aux(:, 3) = real(Interior_Model_Enceladus_Analysis_Output(i).eta0.h);          
+                output_save_aux(:, 4) = Interior_Model_Enceladus_Analysis_Output(i).eta0.libration;
+            end
         end
     
         writematrix(output_save_aux, parameter_path)
