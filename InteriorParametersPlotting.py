@@ -438,31 +438,36 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                     obs_label
                 )
 
+                # Make density plot
                 h = ax.hist2d(parameters[:, j], filtered_observations_feasibility[:, k],
                           [parameter_grid_vec, observable_grid_vec])
                 c = fig.colorbar(h[3], ax=ax)
                 c.set_label("Count  [-]")
 
+                # Set 0 level contour line
                 ax.contour([parameters[:, j], filtered_observations_feasibility[:, k]], h[3], [0], colors=["red"])
                 ax.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
 
                 if j % 2 == 0:
                     if k == 0:
-                        plt.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
                         ax.set_ylabel(r"$W_s$  [deg]", fontsize=fontsize)
                     elif k == 1:
-                        plt.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
                         ax.set_ylabel(r"$k_2$  [-]", fontsize=fontsize)
                     elif k == 2:
-                        plt.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
                         ax.set_ylabel(r"$h_2$  [-]", fontsize=fontsize)
 
                 if j == 2 or j == 3 or j == 4:
                     ax.set_xscale("log")
 
+        fig1.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
+        fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
+        fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
         fig1.savefig(os.path.join(plots_path, f"density_plot_libration_amplitude_{layer}.pdf"))
         fig2.savefig(os.path.join(plots_path, f"density_plot_k2_Love_number_{layer}.pdf"))
         fig3.savefig(os.path.join(plots_path, f"density_plot_h2_Love_number_{layer}.pdf"))
+        plt.close(fig1)
+        plt.close(fig2)
+        plt.close(fig3)
 
 
 def plot_monte_carlo_analysis_observables_histogram(input_path,
@@ -534,14 +539,18 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
     # Set axis label of observables
     observables_label = [r"$\phi$", r"$Re(k_2)$", r"$Re(h_2)$", r"$\dot{E}$", r"$Re(k_2)$", r"$Im(h_2)$"]
 
+    fig, axes = plt.subplots(2, 2, costrained_layout=True, figsize=(8, 8))
     for i in range(len(observables_to_study)):
         observable_label = observables_to_study[i]
         if observable_label == "libration":
             obs_index = 0
+            ax = axes[0, 0]
         elif observable_label == "k2_real":
             obs_index = 1
+            ax = axes[0, 1]
         elif observable_label == "h2_real":
             obs_index = 2
+            ax = axes[1, 0]
         else:
             raise ValueError("Observable not recognized.")
 
@@ -550,20 +559,17 @@ def plot_monte_carlo_analysis_observables_histogram(input_path,
 
         grid = np.arange(min(filtered_observations_feasibility[:, obs_index]), max(filtered_observations_feasibility[:, obs_index]), grid_steps[i])
 
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        h = ax.hist(filtered_observations_feasibility[:, obs_index], grid, histtype="bar")
+        h = ax.hist(filtered_observations_feasibility[:, obs_index], grid, histtype="step", color="black")
         ax.set_xlabel(observables_label[obs_index], fontsize=fontsize)
         ax.set_ylabel("Count  [-]", fontsize=fontsize)
         ax.tick_params(labelsize=fontsize)
 
         ax.axvline(x=mean, color="red")
-        ax.text(np.mean(grid), np.max(h[0]),
-                f"Mean: {str(mean)[:5]}; std: {str(std)[:5]}", fontsize=fontsize)
-        ax.text(np.mean(grid), np.max(h[0])-25, f"Nb. samples: {filtered_observations_feasibility.shape[0]}", fontsize=fontsize)
-        fig.tight_layout()
-        fig.savefig(os.path.join(plots_path, f"observables_histogram_{observable_label}.pdf"))
-        plt.close(fig)
+        ax.set_title(f"Mean: {str(mean)[:5]}. Std. dev.: {str(std)[:5]}. "
+                     f"Nb. samples: {filtered_observations_feasibility.shape[0]}", fontsize=fontsize)
+
+    fig.savefig(os.path.join(plots_path, f"observables_histogram.pdf"))
+    plt.close(fig)
 
 
 def plot_histogram_filtered_parameters_from_observables(input_path,
