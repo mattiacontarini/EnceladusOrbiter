@@ -3,6 +3,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
+from multiprocessing import Process
 
 # Files import
 from auxiliary.utilities import InteriorParametersPlottingUtilities as Util
@@ -171,6 +172,7 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
         try:
             filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
             filtered_observations_feasibility = np.loadtxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+            nb_feasible_libration_models = np.loadtxt(os.path.join(input_path, "nb_feasible_libration_models.dat"))
         except:
             filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
                 filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
@@ -264,7 +266,7 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
             ax2.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             ax3.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
             if j % 2 == 0:
-                ax.set_ylabel(r"$\phi$  [deg]", fontsize=fontsize)
+                ax.set_ylabel(r"$W_s$  [deg]", fontsize=fontsize)
                 ax2.set_ylabel(r"$k_2$  [-]", fontsize=fontsize)
                 ax3.set_ylabel(r"$h_2$  [-]", fontsize=fontsize)
             if j > 1:
@@ -280,13 +282,13 @@ def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
             fig.delaxes(axes[2, 1])
             fig2.delaxes(axes2[2, 1])
             fig3.delaxes(axes3[2, 1])
-        fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
-        fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
-        fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
+        fig.suptitle(f"Measurements: libration amplitude. Layer: {layer}. Nb. samples: {nb_feasible_libration_models}", fontsize=fontsize)
+        fig2.suptitle(f"Measurements: k2 Love number. Layer: {layer}. Nb. samples: {nb_feasible_libration_models}", fontsize=fontsize)
+        fig3.suptitle(f"Measurements: h2 Love number. Layer: {layer}. Nb. samples: {nb_feasible_libration_models}", fontsize=fontsize)
         if filter_libration_amplitude_flag:
-            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}_observations_filtered.pdf"))
-            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}_observations_filtered.pdf"))
-            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}_observations_filtered.pdf"))
+            fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}_observations_filtered.png"))
+            fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}_observations_filtered.png"))
+            fig3.savefig(os.path.join(plots_path, f"observations_trends_h2_Love_number_{layer}_observations_filtered.png"))
         else:
             fig.savefig(os.path.join(plots_path, f"observations_trends_libration_amplitude_{layer}.pdf"))
             fig2.savefig(os.path.join(plots_path, f"observations_trends_k2_Love_number_{layer}.pdf"))
@@ -380,18 +382,51 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
 
         nb_interior_parameters = parameters.shape[1]
 
-        for j in range(nb_interior_parameters):
+        if layer == "ocean":
+            fig1, axes1 = plt.subplots(1, 2, constrained_layout=True, figsize=(8, 4))
+            fig2, axes2 = plt.subplots(1, 2, constrained_layout=True, figsize=(8, 4))
+            fig3, axes3 = plt.subplots(1, 2, constrained_layout=True, figsize=(8, 4))
+        else:
+            fig1, axes1 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 12))
+            fig2, axes2 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 12))
+            fig3, axes3 = plt.subplots(3, 2, constrained_layout=True, figsize=(8, 12))
 
-            for k in range(nb_observables):
 
-                if k == 0:
-                    obs_label = "phi"
-                elif k == 1:
-                    obs_label = "k2"
-                elif k == 2:
-                    obs_label = "h2"
+        for k in range(nb_observables):
+
+            if k == 0:
+                obs_label = "phi"
+                fig = fig1
+                axes = axes1
+            elif k == 1:
+                obs_label = "k2"
+                fig = fig2
+                axes = axes2
+            elif k == 2:
+                obs_label = "h2"
+                fig = fig3
+                axes = axes3
+            else:
+                continue
+
+            for j in range(nb_interior_parameters):
+
+                if layer == "ocean":
+                    if j == 0:
+                        ax = axes[0]
+                    elif j == 1:
+                        ax = axes[1]
                 else:
-                    continue
+                    if j == 0:
+                        ax = axes[0, 0]
+                    elif j == 1:
+                        ax = axes[0, 1]
+                    elif j == 2:
+                        ax = axes[1, 0]
+                    elif j == 3:
+                        ax = axes[1, 1]
+                    elif j == 4:
+                        ax = axes[2, 0]
 
                 parameter_grid_vec, observable_grid_vec = Util.get_parameter_grid_vec(
                     j,
@@ -403,29 +438,31 @@ def plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                     obs_label
                 )
 
-                fig = plt.figure(figsize=(7, 5))
-                ax = fig.add_subplot(111)
                 h = ax.hist2d(parameters[:, j], filtered_observations_feasibility[:, k],
                           [parameter_grid_vec, observable_grid_vec])
                 c = fig.colorbar(h[3], ax=ax)
                 c.set_label("Count  [-]")
+
+                ax.contour([parameters[:, j], filtered_observations_feasibility[:, k]], h[3], [0], colors=["red"])
                 ax.set_xlabel(interior_parameters_labels[5 * i + j], fontsize=fontsize)
+
+                if j % 2 == 0:
+                    if k == 0:
+                        plt.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
+                        ax.set_ylabel(r"$W_s$  [deg]", fontsize=fontsize)
+                    elif k == 1:
+                        plt.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
+                        ax.set_ylabel(r"$k_2$  [-]", fontsize=fontsize)
+                    elif k == 2:
+                        plt.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
+                        ax.set_ylabel(r"$h_2$  [-]", fontsize=fontsize)
 
                 if j == 2 or j == 3 or j == 4:
                     ax.set_xscale("log")
-                if k == 0:
-                    plt.suptitle(f"Measurements: libration amplitude. Layer: {layer}", fontsize=fontsize)
-                    ax.set_ylabel(r"$\phi$  [deg]", fontsize=fontsize)
-                    plt.savefig(os.path.join(plots_path, f"density_plot_libration_amplitude_{layer}_{interior_parameters_labels[5 * i + j]}.pdf"))
-                elif k == 1:
-                    plt.suptitle(f"Measurements: k2 Love number. Layer: {layer}", fontsize=fontsize)
-                    ax.set_ylabel(r"$k_2$  [-]", fontsize=fontsize)
-                    plt.savefig(os.path.join(plots_path, f"density_plot_k2_Love_number_{layer}_{interior_parameters_labels[5 * i + j]}.pdf"))
-                elif k == 2:
-                    plt.suptitle(f"Measurements: h2 Love number. Layer: {layer}", fontsize=fontsize)
-                    ax.set_ylabel(r"$h_2$  [-]", fontsize=fontsize)
-                    plt.savefig(os.path.join(plots_path, f"density_plot_h2_Love_number_{layer}_{interior_parameters_labels[5 * i + j]}.pdf"))
-                plt.close()
+
+        fig1.savefig(os.path.join(plots_path, f"density_plot_libration_amplitude_{layer}.pdf"))
+        fig2.savefig(os.path.join(plots_path, f"density_plot_k2_Love_number_{layer}.pdf"))
+        fig3.savefig(os.path.join(plots_path, f"density_plot_h2_Love_number_{layer}.pdf"))
 
 
 def plot_monte_carlo_analysis_observables_histogram(input_path,
@@ -739,24 +776,36 @@ def main():
     nominal_libration_amplitude = [0.120, 0.021]  # [deg] - Thomas et al. (2016)
     tidal_heating_range = [15, 40]  # [GW] - Bagheri et al. (2025), page 17
 
-    plot_one_at_a_time_interior_parameters_analysis_flag = True
+    plot_one_at_a_time_interior_parameters_analysis_flag = False
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
 
-    plot_monte_carlo_interior_parameters_analysis_flag = False
+    plot_monte_carlo_interior_parameters_analysis_flag = True
     if plot_monte_carlo_interior_parameters_analysis_flag:
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.12.08.53.51"
+        time_stamp = "2025.09.15.11.21.02"
         input_path = os.path.join(input_path, time_stamp)
+
+        fontsize=14
+        #p = Process(target=plot_monte_carlo_interior_parameters_analysis_simple_plot,
+        #            args=(input_path,
+        #                  filter_libration_amplitude_flag,
+        #                  filter_tidal_heating_flag,
+        #                  nominal_libration_amplitude,
+        #                  tidal_heating_range,
+        #                  fontsize)
+        #            )
+        #p.start()
+        #p.join()
         plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                                   filter_libration_amplitude_flag,
                                                                   filter_tidal_heating_flag,
                                                                   nominal_libration_amplitude,
                                                                   tidal_heating_range,
-                                                                  )
+                                                                  fontsize=fontsize)
 
 
     plot_monte_carlo_interior_parameters_analysis_density_plot_flag = False
@@ -807,7 +856,7 @@ def main():
             K = [1e9, 1e14]
         )
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.12.08.53.51"
+        time_stamp = "2025.09.15.11.21.02"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_interior_parameters_analysis_density_plot(input_path,
                                                                    parameters_grid_step,
@@ -823,7 +872,7 @@ def main():
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.12.08.53.51"
+        time_stamp = "2025.09.15.11.21.02"
         input_path = os.path.join(input_path, time_stamp)
         plot_monte_carlo_analysis_observables_histogram(input_path,
                                                         ["k2_real", "libration", "h2_real"],
@@ -837,7 +886,7 @@ def main():
     plot_histogram_filtered_parameters_from_observables_flag = False
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16"
+        time_stamp = "2025.09.15.11.21.02"
         input_path = os.path.join(input_path, time_stamp)
 
         filter_libration_amplitude_flag = True
