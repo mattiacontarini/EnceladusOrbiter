@@ -89,7 +89,7 @@ def main():
 
         # Plot results
         fig1, ax1 = plt.subplots(figsize=(7, 6))
-        fig2, ax2 = plt.subplots(figsize=(7, 6))
+        fig2, ax2 = plt.subplots(figsize=(6, 4))
         fontsize = 12
         # Plot accelerations of Enceladus and Saturn
         benchmark_dependent_variable_history = np.loadtxt(input_path + f"/dependent_variable_history_benchmark.dat")
@@ -147,13 +147,14 @@ def main():
         fig1.savefig(output_path + "/accelerations_magnitude.pdf")
 
         pos = ax2.get_position()
-        ax2.set_position([pos.x0, pos.y0, pos.width, pos.height * 0.9])
-        fig2.legend(loc="upper center", bbox_to_anchor=(0.5, 0.97), ncol=4, fancybox=True)
+        #ax2.set_position([pos.x0, pos.y0, pos.width, pos.height * 0.9])
+        #fig2.legend(loc="upper center", bbox_to_anchor=(0.5, 0.97), ncol=4, fancybox=True)
         ax2.set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
         ax2.set_ylabel(r"$||\Delta \mathbf{r} (t)||$ [m]", fontsize=fontsize)
         ax2.set_yscale("log")
         ax2.grid(True)
         ax2.tick_params(axis='both', which='major', labelsize=fontsize)
+        fig2.tight_layout()
         fig2.savefig(output_path + "/position_difference_norm.pdf")
         plt.close()
 
