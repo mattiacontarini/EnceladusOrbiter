@@ -43,30 +43,30 @@ end
 
 
 interior_parameters_to_vary_top = dictionary;
-interior_parameters_to_vary_top("R_core") = 192.51e3 + 3.66e3;  % [m]
+interior_parameters_to_vary_top("R_core") = 192.03e3 + 2*5.83e3;  % [m]
 interior_parameters_to_vary_top("mu_core") = 80.0e9; 
 interior_parameters_to_vary_top("eta_core") = 1.0e20;
 interior_parameters_to_vary_top("K_core") = 1.0e11;
-interior_parameters_to_vary_top("d_ocean") = 38.18e3 + 5.59e3;  % [m]
-interior_parameters_to_vary_top("rho_shell") = 887.30 + 56.49;
+interior_parameters_to_vary_top("d_ocean") = 38.61e3 + 2*6.76e3;  % [m]
+interior_parameters_to_vary_top("rho_shell") = 1000.0;
 interior_parameters_to_vary_top("mu_shell") = 5.0e9;
 interior_parameters_to_vary_top("eta_shell") = 1.0e20;
 interior_parameters_to_vary_top("poisson_shell") = 0.5;
 
 interior_parameters_to_vary_bottom = dictionary;
-interior_parameters_to_vary_bottom("R_core") = 192.51e3 - 3.66e3;  % [m]
+interior_parameters_to_vary_bottom("R_core") = 192.03e3 - 2*5.83e3;  % [m]
 interior_parameters_to_vary_bottom("mu_core") = 1.0e9; 
 interior_parameters_to_vary_bottom("eta_core") = 1.0e16;
 interior_parameters_to_vary_bottom("K_core") = 1.0e9;
-interior_parameters_to_vary_bottom("d_ocean") = 38.18e3 - 5.59e3;  % [m]
-interior_parameters_to_vary_bottom("rho_shell") = 887.30 - 56.49;
+interior_parameters_to_vary_bottom("d_ocean") = 38.61e3 - 2*6.76e3;  % [m]
+interior_parameters_to_vary_bottom("rho_shell") = 800.0;
 interior_parameters_to_vary_bottom("mu_shell") = 1.0e9;
 interior_parameters_to_vary_bottom("eta_shell") = 1.0e14;
 interior_parameters_to_vary_bottom("poisson_shell") = 0.3;
 
 
 % Set number of samples per variable
-nb_samples_per_variables = 300000;
+%nb_samples_per_variables = 100000;
 
 % Set seed
 seed = 1702;
@@ -102,7 +102,8 @@ tidal_heating_factor=(21/2)*((omega0_Enceladus*R_Enceladus)^5/G)*Forcing_Encelad
 % Retrieve nb of simulations
 control_variables_names = keys(interior_parameters_to_vary_top);
 nb_variables = length(control_variables_names);
-nb_simulations = nb_variables * nb_samples_per_variables;
+%nb_simulations = nb_variables * nb_samples_per_variables;
+nb_simulations = 1.0e6;
 fprintf("Total nb. of simulations: %d\n", nb_simulations)
 
 % Set random number generator
