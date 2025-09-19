@@ -922,12 +922,16 @@ def plot_monte_carlo_analysis_parameters_histogram(input_path,
             np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"),
                        [nb_feasible_tidal_heating_models])
 
+    # Compute ocean and shell thickness
+    filtered_parameters_feasibility[:, 5] = filtered_parameters_feasibility[:, 5] - filtered_parameters_feasibility[:, 0]
+    filtered_parameters_feasibility[:, 10] = filtered_parameters_feasibility[:, 10] - filtered_parameters_feasibility[:, 5] - filtered_parameters_feasibility[:, 0]
+
     # Set axis label of observables
     for i in range(len(layers)):
 
         layer = layers[i]
 
-        if layer == "ocean":
+        if layer == "ocean" or layer == "core":
             parameters = filtered_parameters_feasibility[:, 5 * i:5 * i + 2]
             fig, axes = plt.subplots(1, 2, constrained_layout=True, figsize=(8, 4))
         else:
@@ -936,7 +940,7 @@ def plot_monte_carlo_analysis_parameters_histogram(input_path,
 
         for j in range(parameters.shape[1]):
 
-            if layer == "ocean":
+            if layer == "ocean" or layer == "core":
                 if j == 0:
                     ax = axes[0]
                 else:
@@ -956,11 +960,11 @@ def plot_monte_carlo_analysis_parameters_histogram(input_path,
                     ax = axes[2, 1]
 
             if j == 3 or j == 4 or (j == 2 and layer != "shell"):
-                mean = np.mean(np.log10(filtered_parameters_feasibility[:, j]))
-                std = np.std(np.log10(filtered_parameters_feasibility[:, j]))
+                mean = np.mean(np.log10(parameters[:, j]))
+                std = np.std(np.log10(parameters[:, j]))
             else:
-                mean = np.mean(filtered_parameters_feasibility[:, j])
-                std = np.std(filtered_parameters_feasibility[:, j])
+                mean = np.mean(parameters[:, j])
+                std = np.std(parameters[:, j])
 
             parameter_grid_vec, observable_grid_vec = Util.get_parameter_grid_vec(
                 j,
@@ -968,15 +972,13 @@ def plot_monte_carlo_analysis_parameters_histogram(input_path,
                 parameters_grid_step,
                 parameters_intervals,
                 observable_grid_step["phi"],
-                layer,
-                "phi"
+                layer
             )
 
             if j == 3 or j == 4 or (j == 2 and layer != "shell"):
-                h = ax.hist(np.log10(filtered_parameters_feasibility[:, j]), np.log10(parameter_grid_vec), histtype="bar", color="tab:blue")
-                ax.set_xscale("log")
+                h = ax.hist(np.log10(parameters[:, j]), np.log10(parameter_grid_vec), histtype="bar", color="tab:blue")
             else:
-                h = ax.hist(filtered_parameters_feasibility[:, j], parameter_grid_vec, histtype="bar", color="tab:blue")
+                h = ax.hist(parameters[:, j], parameter_grid_vec, histtype="bar", color="tab:blue")
 
 
             ax.set_xlabel(interior_parameters_labels[5*i + j], fontsize=fontsize)
@@ -986,9 +988,17 @@ def plot_monte_carlo_analysis_parameters_histogram(input_path,
             ax.axvline(x=mean - std, color="red", linestyle="dashed")
 
             ax.tick_params(labelsize=fontsize)
-            ax.set_title(f"Mean: {str(mean)[:5]}. Std. dev.: {str(std)[:5]}. ", fontsize=fontsize)
+            if j == 2 and layer == "shell":
+                ax.set_title(f"Mean: {str(Util.format_e(mean))[:7]}. Std. dev.: {str(Util.format_e(std))[:7]}. ",
+                             fontsize=fontsize)
+            else:
+                ax.set_title(f"Mean: {str(mean)[:6]}. Std. dev.: {str(std)[:5]}. ",
+                             fontsize=fontsize)
 
-        if layer != "ocean":
+            if j % 2 == 0:
+                ax.set_ylabel("Count [-]", fontsize=fontsize)
+
+        if layer == "shell":
             fig.delaxes(axes[2, 1])
 
         fig.suptitle(f"Layer: {layer}.", fontsize=fontsize)
@@ -1108,30 +1118,30 @@ def main():
                                                         tidal_heating_range
                                                         )
 
-    plot_monte_carlo_analysis_filtered_parameters_histogram_flag = False
+    plot_monte_carlo_analysis_filtered_parameters_histogram_flag = True
     if plot_monte_carlo_analysis_filtered_parameters_histogram_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.17.12.10.02"
+        time_stamp =  "2025.09.17.12.10.02"
         input_path = os.path.join(input_path, time_stamp)
 
         parameters_grid_step = dict()
         parameters_grid_step["core"] = dict(
-            d=2.5,
-            rho=10,
+            d=1.25,
+            rho=5,
             mu=19,
-            eta=14,
+            eta=28,
             K=21,
         )
         parameters_grid_step["ocean"] = dict(
-            d=2.5,
-            rho=25,
+            d=1.25,
+            rho=12.5,
         )
         parameters_grid_step["shell"] = dict(
-            d=2.5,
+            d=1.25,
             rho=12.5,
             mu=0.25e9,
             eta=16,
-            K=6,
+            K=24,
         )
         observable_grid_step = dict(
             h2=0.01,
@@ -1217,69 +1227,6 @@ def main():
             nominal_libration_amplitude,
             tidal_heating_range,
             file_ticket)
-
-    plot_histogram_selected_filtered_parameters_from_observables_flag = True
-    if plot_histogram_selected_filtered_parameters_from_observables_flag:
-        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16"  #2025.09.17.12.10.02"
-        input_path = os.path.join(input_path, time_stamp)
-
-        filter_libration_amplitude_flag = True
-        filter_tidal_heating_flag = False
-
-        parameters_grid_step = dict()
-        parameters_grid_step["core"] = dict(
-            d=2.5,
-            rho=10,
-            mu=19,
-            eta=14,
-            K=21,
-        )
-        parameters_grid_step["ocean"] = dict(
-            d=2.5,
-            rho=25,
-        )
-        parameters_grid_step["shell"] = dict(
-            d=2.5,
-            rho=12.5,
-            mu=0.25e9,
-            eta=16,
-            K=6,
-        )
-        observable_grid_step = dict(
-            h2=0.01,
-            k2=0.005,
-            phi=0.005,
-        )
-        parameters_intervals = dict()
-        parameters_intervals["core"] = dict(
-            d=[180, 210],
-            rho=[2220, 2380],
-            mu=[1e9, 8e10],
-            eta=[1e16, 1e20],
-            K=[1e9, 1e11]
-        )
-        parameters_intervals["ocean"] = dict(
-            d=[0, 40],
-            rho=[1000, 1300],
-        )
-        parameters_intervals["shell"] = dict(
-            d=[0, 30],
-            rho=[800, 1000],
-            mu=[1e9, 5e9],
-            eta=[1e14, 1e20],
-            K=[1e9, 1e14]
-        )
-
-        plot_monte_carlo_analysis_parameters_histogram(
-            input_path,
-            parameters_grid_step,
-            parameters_intervals,
-            observable_grid_step,
-            filter_libration_amplitude_flag,
-            filter_tidal_heating_flag,
-            nominal_libration_amplitude,
-            tidal_heating_range)
 
 
 if __name__ == "__main__":
