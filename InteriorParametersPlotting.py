@@ -733,112 +733,159 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
             obs_index
         )
 
-    for current_parameter in parameters_to_study:
-        if current_parameter == "d_core":
-            param_index = 0
-            label = r"$R_{c}$  [km]"
-        elif current_parameter == "rho_core":
-            param_index = 1
-            label = r"$\rho_{c}$  [kg m$^{-3}$]"
-        elif current_parameter == "mu_core":
-            param_index = 2
-            label = r"$\mu_{c}$  [Pa]"
-        elif current_parameter == "eta_core":
-            param_index = 3
-            label = r"$\eta_{c}$  [Pa s]"
-        elif current_parameter == "k_core":
-            param_index = 4
-            label = r"$K_{c}$  [Pa]"
-        elif current_parameter == "d_ocean":
-            param_index = 5
-            label = r"$d_{o}$  [km]"
-        elif current_parameter == "rho_ocean":
-            param_index = 6
-            label = r"$\rho_{o}$  [kg m$^{-3}$]"
-        elif current_parameter == "mu_ocean":
-            param_index = 7
-            label = r"$\mu_{o}$  [Pa]"
-        elif current_parameter == "eta_ocean":
-            param_index = 8
-            label = r"$\eta_{o}$  [Pa s]"
-        elif current_parameter == "k_ocean":
-            param_index = 9
-            label = r"$K_{o}$  [Pa]"
-        elif current_parameter == "d_shell":
-            param_index = 10
-            label = r"$d_{s}$  [km]"
-        elif current_parameter == "rho_shell":
-            param_index = 11
-            label = r"$\rho_{s}$  [kg m$^{-3}$]"
-        elif current_parameter == "mu_shell":
-            param_index = 12
-            label = r"$\mu_{s}$  [Pa]"
-        elif current_parameter == "eta_shell":
-            param_index = 13
-            label = r"$\eta_{s}$  [Pa s]"
-        elif current_parameter == "k_shell":
-            param_index = 14
-            label = r"$K_{s}$  [Pa]"
+    nb_parameters = len(filtered_parameters)
+    np.savetxt(os.path.join(input_path, f"nb_acceptable_models_{file_ticket}.txt"),
+               [nb_parameters])
 
-        if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            mean_old = np.mean(np.log10(filtered_parameters_feasibility[:, param_index]))
-            std_old = np.std(np.log10(filtered_parameters_feasibility[:, param_index]))
-            grid_old = np.linspace(np.log10(min(filtered_parameters_feasibility[:, param_index])),
-                                np.log10(max(filtered_parameters_feasibility[:, param_index])),
-                                parameters_grid_steps[current_parameter][0])
+    for current_observable in observables_to_study_labels:
+        if current_observable == "libration":
+            obs_index = 0
+        elif current_observable == "k2_real":
+            obs_index = 1
+        elif current_observable == "h2_real":
+            obs_index = 2
+        elif current_observable == "k2_imag":
+            obs_index = 3
+        elif current_observable == "h2_imag":
+            obs_index = 4
         else:
-            mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
-            std_old = np.std(filtered_parameters_feasibility[:, param_index])
-            grid_old = np.arange(min(filtered_parameters_feasibility[:, param_index]),
-                                max(filtered_parameters_feasibility[:, param_index]),
-                                parameters_grid_steps[current_parameter][0])
+            raise ValueError("Unknown observable " + current_observable)
+        mean = np.mean(filtered_observations_feasibility[:, obs_index])
+        np.savetxt(os.path.join(input_path, f"distribution_{current_observable}_{file_ticket}.txt"),
+                   [mean, observables_to_study[current_observable]])
 
-        if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            mean_new = np.mean(np.log10(filtered_parameters[:, param_index]))
-            std_new = np.std(np.log10(filtered_parameters[:, param_index]))
-            grid_new = np.linspace(np.log10(min(filtered_parameters[:, param_index])),
-                                   np.log10(max(filtered_parameters[:, param_index])),
-                                   parameters_grid_steps[current_parameter][1])
+    layers = list(parameters_to_study.keys())
+
+    for current_layer in layers:
+
+        nb_parameters = len(parameters_to_study[current_layer])
+        print(current_layer, nb_parameters)
+
+        if nb_parameters == 1:
+            fig, axes = plt.subplots(nb_parameters, 2, figsize=(8, 4), constrained_layout=True)
+        elif nb_parameters == 2:
+            fig, axes = plt.subplots(nb_parameters, 2, figsize=(8, 6), constrained_layout=True)
+        elif nb_parameters == 3:
+            fig, axes = plt.subplots(nb_parameters, 2, figsize=(8, 9), constrained_layout=True)
         else:
-            mean_new = np.mean(filtered_parameters[:, param_index])
-            std_new = np.std(filtered_parameters[:, param_index])
-            grid_new = np.arange(min(filtered_parameters[:, param_index]),
-                                max(filtered_parameters[:, param_index]),
-                                parameters_grid_steps[current_parameter][1]
-                                 )
+            fig, axes = plt.subplots(nb_parameters, 2, figsize=(8, 11), constrained_layout=True)
 
-        np.savetxt(os.path.join(input_path, f"distribution_old_{current_parameter}.txt"), [mean_old, std_old])
-        np.savetxt(os.path.join(input_path, f"distribution_new_{current_parameter}.txt"), [mean_new, std_new])
+        for i in range(nb_parameters):
+            current_parameter = parameters_to_study[current_layer][i]
 
-        # Plot histogram of parameter distribution before and after filtering the observables
-        fig, axes = plt.subplots(1, 2, figsize=(8, 5), constrained_layout=True)
-        if current_parameter == "eta_shell" or current_parameter == "eta_core":
-            axes[0].hist(np.log10(filtered_parameters_feasibility[:, param_index]), grid_old)
-            axes[1].hist(np.log10(filtered_parameters[:, param_index]), grid_new)
-        else:
-            axes[0].hist(filtered_parameters_feasibility[:, param_index], grid_old)
-            axes[1].hist(filtered_parameters[:, param_index], grid_new)
+            print(current_parameter)
 
-        axes[0].axvline(mean_old, color='red')
-        axes[0].axvline(mean_old + std_old, color='red', linestyle='--')
-        axes[0].axvline(mean_old - std_old, color='red', linestyle='--')
-        axes[0].set_title(f"Before filtering. Mean: {mean_old:.2f}, Std: {std_old:.2f}")
-        axes[1].axvline(mean_new, color='red')
-        axes[1].axvline(mean_new + std_new, color='red', linestyle='--')
-        axes[1].axvline(mean_new - std_new, color='red', linestyle='--')
-        axes[1].set_title(f"After filtering. Mean: {mean_new:.2f}, Std: {std_new:.2f}")
+            if current_parameter == "d_core":
+                param_index = 0
+                label = r"$R_{c}$  [km]"
+            elif current_parameter == "rho_core":
+                param_index = 1
+                label = r"$\rho_{c}$  [kg m$^{-3}$]"
+            elif current_parameter == "mu_core":
+                param_index = 2
+                label = r"$\mu_{c}$  [Pa]"
+            elif current_parameter == "eta_core":
+                param_index = 3
+                label = r"$\eta_{c}$  [Pa s]"
+            elif current_parameter == "k_core":
+                param_index = 4
+                label = r"$K_{c}$  [Pa]"
+            elif current_parameter == "d_ocean":
+                param_index = 5
+                label = r"$d_{o}$  [km]"
+            elif current_parameter == "rho_ocean":
+                param_index = 6
+                label = r"$\rho_{o}$  [kg m$^{-3}$]"
+            elif current_parameter == "mu_ocean":
+                param_index = 7
+                label = r"$\mu_{o}$  [Pa]"
+            elif current_parameter == "eta_ocean":
+                param_index = 8
+                label = r"$\eta_{o}$  [Pa s]"
+            elif current_parameter == "k_ocean":
+                param_index = 9
+                label = r"$K_{o}$  [Pa]"
+            elif current_parameter == "d_shell":
+                param_index = 10
+                label = r"$d_{s}$  [km]"
+            elif current_parameter == "rho_shell":
+                param_index = 11
+                label = r"$\rho_{s}$  [kg m$^{-3}$]"
+            elif current_parameter == "mu_shell":
+                param_index = 12
+                label = r"$\mu_{s}$  [Pa]"
+            elif current_parameter == "eta_shell":
+                param_index = 13
+                label = r"$\eta_{s}$  [Pa s]"
+            elif current_parameter == "k_shell":
+                param_index = 14
+                label = r"$log(K_{s})$  [log(Pa)]"
 
-        axes[0].set_xlabel(label, fontsize=fontsize)
-        axes[1].set_xlabel(label, fontsize=fontsize)
-        axes[0].set_ylabel("Count", fontsize=fontsize)
-        axes[0].tick_params(labelsize=fontsize)
-        axes[1].tick_params(labelsize=fontsize)
+            if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "k_shell":
+                mean_old = np.mean(np.log10(filtered_parameters_feasibility[:, param_index]))
+                std_old = np.std(np.log10(filtered_parameters_feasibility[:, param_index]))
+                grid_old = np.linspace(np.log10(min(filtered_parameters_feasibility[:, param_index])),
+                                    np.log10(max(filtered_parameters_feasibility[:, param_index])),
+                                    parameters_grid_steps[current_parameter][0])
+            else:
+                mean_old = np.mean(filtered_parameters_feasibility[:, param_index])
+                std_old = np.std(filtered_parameters_feasibility[:, param_index])
+                grid_old = np.arange(min(filtered_parameters_feasibility[:, param_index]),
+                                    max(filtered_parameters_feasibility[:, param_index]),
+                                    parameters_grid_steps[current_parameter][0])
 
-        # if current_parameter == "eta_shell" or current_parameter == "eta_core":
-        #     axes[0].set_xscale("log")
-        #     axes[1].set_xscale("log")
+            if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "k_shell":
+                mean_new = np.mean(np.log10(filtered_parameters[:, param_index]))
+                std_new = np.std(np.log10(filtered_parameters[:, param_index]))
+                grid_new = np.linspace(np.log10(min(filtered_parameters[:, param_index])),
+                                       np.log10(max(filtered_parameters[:, param_index])),
+                                       parameters_grid_steps[current_parameter][1])
+            else:
+                mean_new = np.mean(filtered_parameters[:, param_index])
+                std_new = np.std(filtered_parameters[:, param_index])
+                grid_new = np.arange(min(filtered_parameters[:, param_index]),
+                                    max(filtered_parameters[:, param_index]),
+                                    parameters_grid_steps[current_parameter][1]
+                                     )
 
-        fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_parameter}_{file_ticket}.pdf"))
+            np.savetxt(os.path.join(input_path, f"distribution_old_{current_parameter}.txt"), [mean_old, std_old])
+            np.savetxt(os.path.join(input_path, f"distribution_new_{current_parameter}.txt"), [mean_new, std_new])
+
+            # Plot histogram of parameter distribution before and after filtering the observables
+            if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "k_shell":
+                axes[i, 0].hist(np.log10(filtered_parameters_feasibility[:, param_index]), grid_old)
+                axes[i, 1].hist(np.log10(filtered_parameters[:, param_index]), grid_new)
+            else:
+                axes[i, 0].hist(filtered_parameters_feasibility[:, param_index], grid_old)
+                axes[i, 1].hist(filtered_parameters[:, param_index], grid_new)
+
+            axes[i, 0].axvline(mean_old, color='red')
+            axes[i, 0].axvline(mean_old + std_old, color='red', linestyle='--')
+            axes[i, 0].axvline(mean_old - std_old, color='red', linestyle='--')
+
+            if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "mu_shell" :
+                axes[i, 0].set_title(f"Before filtering. Mean: {Util.format_e(mean_old)}, Std: {Util.format_e(std_old)}")
+            else:
+                axes[i, 0].set_title(f"Before filtering. Mean: {mean_old:.2f}, Std: {std_old:.2f}")
+            axes[i, 1].axvline(mean_new, color='red')
+            axes[i, 1].axvline(mean_new + std_new, color='red', linestyle='--')
+            axes[i, 1].axvline(mean_new - std_new, color='red', linestyle='--')
+            if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "mu_shell":
+                axes[i, 1].set_title(f"After filtering. Mean: {Util.format_e(mean_new)}, Std: {Util.format_e(std_new)}")
+            else:
+                axes[i, 1].set_title(f"After filtering. Mean: {mean_new:.2f}, Std: {std_new:.2f}")
+
+            axes[i, 0].set_xticks(axes[i, 0].get_xticks())
+            axes[i, 1].set_xticks(axes[i, 0].get_xticks())
+
+            axes[i, 0].set_xlabel(label, fontsize=fontsize)
+            axes[i, 1].set_xlabel(label, fontsize=fontsize)
+            axes[i, 0].set_ylabel("Count", fontsize=fontsize)
+            axes[i, 0].tick_params(labelsize=fontsize)
+            axes[i, 1].tick_params(labelsize=fontsize)
+
+        fig.suptitle(f"Layer: {current_layer}", fontsize=fontsize)
+        fig.savefig(os.path.join(plots_path, f"filtered_parameters_histogram_{current_layer}_{file_ticket}.pdf"))
         plt.close(fig)
 
 
@@ -1118,7 +1165,7 @@ def main():
                                                         tidal_heating_range
                                                         )
 
-    plot_monte_carlo_analysis_filtered_parameters_histogram_flag = True
+    plot_monte_carlo_analysis_filtered_parameters_histogram_flag = False
     if plot_monte_carlo_analysis_filtered_parameters_histogram_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
         time_stamp =  "2025.09.17.12.10.02"
@@ -1180,32 +1227,28 @@ def main():
             nominal_libration_amplitude,
             tidal_heating_range)
 
-    plot_histogram_filtered_parameters_from_observables_flag = False
+    plot_histogram_filtered_parameters_from_observables_flag = True
     if plot_histogram_filtered_parameters_from_observables_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.15.11.21.02"
+        time_stamp = "2025.09.17.12.10.02"
         input_path = os.path.join(input_path, time_stamp)
 
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
         observables_to_study = dict(
-            k2_real = 1e-4,
-            #libration = 1e-4,
+            k2_real = 6e-5,
+            libration = 1e-3,
             h2_real = 7e-4,
         )
 
         file_ticket = "h2_k2_real"
 
-        parameters_to_study = [
-            "d_core",
-            "rho_core",
-            "d_ocean",
-            "rho_ocean",
-            "d_shell",
-            "rho_shell",
-            "eta_core",
-            "eta_shell"
-        ]
+        parameters_to_study = dict(
+            core = ["d_core", "rho_core"],
+            ocean = ["d_ocean", "rho_ocean"],
+            shell = ["d_shell", "rho_shell", "mu_shell", "k_shell"],
+        )
+
         parameters_grid_steps = dict(
             d_core = [0.5, 0.5],
             rho_core = [10, 10],
@@ -1215,18 +1258,27 @@ def main():
             rho_shell = [10, 10],
             eta_core = [6, 6],
             eta_shell = [6, 6],
+            mu_core = [6, 6],
+            mu_shell = [0.25e9, 0.25e9],
+            k_shell = [6, 6],
         )
 
-        plot_histogram_filtered_parameters_from_observables(
-            input_path,
-            filter_libration_amplitude_flag,
-            filter_tidal_heating_flag,
-            observables_to_study,
-            parameters_to_study,
-            parameters_grid_steps,
-            nominal_libration_amplitude,
-            tidal_heating_range,
-            file_ticket)
+        p = Process(target=plot_histogram_filtered_parameters_from_observables,
+                    args=(
+                        input_path,
+                        filter_libration_amplitude_flag,
+                        filter_tidal_heating_flag,
+                        observables_to_study,
+                        parameters_to_study,
+                        parameters_grid_steps,
+                        nominal_libration_amplitude,
+                        tidal_heating_range,
+                        file_ticket
+                    )
+                    )
+        p.start()
+        p.join()
+        p.close()
 
 
 if __name__ == "__main__":
