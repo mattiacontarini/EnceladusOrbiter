@@ -6,6 +6,8 @@ import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 from multiprocessing import Process
 import statistics
+import pandas
+import seaborn as sns
 
 # Files import
 from auxiliary.utilities import InteriorParametersPlottingUtilities as Util
@@ -1071,6 +1073,7 @@ def make_parameters_correlation_plots(input_path,
                                       parameters_grid_step,
                                       parameters_intervals,
                                       observable_grid_step,
+                                      observables_to_study,
                                       filter_libration_amplitude_flag,
                                       filter_tidal_heating_range_flag,
                                       nominal_libration_amplitude,
@@ -1157,6 +1160,30 @@ def make_parameters_correlation_plots(input_path,
     filtered_parameters_feasibility[:, 10] = filtered_parameters_feasibility[:, 10] - filtered_parameters_feasibility[
         :, 5] - filtered_parameters_feasibility[:, 0]
 
+    observables_to_study_labels = list(observables_to_study.keys())
+    filtered_parameters = filtered_parameters_feasibility
+    filtered_observations = filtered_observations_feasibility
+    for current_observable in observables_to_study_labels:
+        if current_observable == "libration":
+            obs_index = 0
+        elif current_observable == "k2_real":
+            obs_index = 1
+        elif current_observable == "h2_real":
+            obs_index = 2
+        elif current_observable == "k2_imag":
+            obs_index = 3
+        elif current_observable == "h2_imag":
+            obs_index = 4
+        else:
+            raise ValueError("Unknown observable " + current_observable)
+
+        filtered_parameters, filtered_observations, nb_viable_simulations = Util.filter_parameters_from_observations(
+            filtered_parameters,
+            filtered_observations,
+            observables_to_study[current_observable],
+            obs_index
+        )
+
     nb_of_couples = len(parameters_to_correlate)
     for i in range(nb_of_couples):
         indices = [parameters_to_correlate[i][0], parameters_to_correlate[i][1]]
@@ -1187,7 +1214,7 @@ def make_parameters_correlation_plots(input_path,
 
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        h, xedges, yedges, image = ax.hist2d(filtered_parameters_feasibility[:, indices[0]], filtered_parameters_feasibility[:, indices[1]],
+        h, xedges, yedges, image = ax.hist2d(filtered_parameters[:, indices[0]], filtered_parameters[:, indices[1]],
                       parameter_grid_vec_list, cmap="magma")
         c = fig.colorbar(image, ax=ax)
         c.set_label("Count [-]", fontsize=12)
@@ -1207,6 +1234,133 @@ def make_parameters_correlation_plots(input_path,
 
         fig.tight_layout()
         fig.savefig(os.path.join(plots_path, f"correlation_{interior_parameters_keys[indices[0]]}_{interior_parameters_keys[indices[1]]}.pdf"))
+        plt.close(fig)
+
+def perform_preliminary_correlation_analysis(input_path,
+                                             metric,
+                                             observables_to_study,
+                                             filter_libration_amplitude_flag,
+                                             filter_tidal_heating_range_flag,
+                                             nominal_libration_amplitude,
+                                             tidal_heating_range,
+                                             fontsize=12):
+    plots_path = os.path.join(input_path, "plots")
+    plots_path = os.path.join(plots_path, "correlation_plots")
+    os.makedirs(plots_path, exist_ok=True)
+
+    layers = ["core", "ocean", "shell"]
+
+    interior_parameters_labels = [r"$R_{c}$", r"$\rho_{c}$", r"$\mu_{c}$",
+                                  r"$\eta_{c}$", r"$K_{c}$",
+                                  r"$d_{o}$", r"$\rho_{o}$",
+                                  # r"$\mu_{o}$", r"$\eta_{o}$", r"$K_{o}$",
+                                  r"$d_{s}$", r"$\rho_{s}$", r"$\mu_{s}$",
+                                  r"$\eta_{s}$", r"$K_{s}$"]
+
+    # Load results
+    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+
+    # Convert libration amplitude to deg
+    observations[:, 0] = np.rad2deg(observations[:, 0])
+
+    # Filter parameter and observations based on the feasibility of the interior model
+    try:
+        filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"))
+        filtered_observations_feasibility = np.loadtxt(
+            os.path.join(input_path, "filtered_observations_feasibility.dat"))
+    except:
+        filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(
+            interior_models, observations)
+        np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
+        np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+        np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
+
+    # Apply absolute value to libration amplitude
+    filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
+
+    # Filter parameters and observations based on libration amplitude and tidal heating observations
+    if filter_libration_amplitude_flag:
+        try:
+            filtered_parameters_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+
+    if filter_tidal_heating_range_flag:
+        try:
+            filtered_parameters_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"),
+                       [nb_feasible_tidal_heating_models])
+
+    # Compute ocean and shell thickness
+    filtered_parameters_feasibility[:, 5] = filtered_parameters_feasibility[:, 5] - filtered_parameters_feasibility[
+        :, 0]
+    filtered_parameters_feasibility[:, 10] = filtered_parameters_feasibility[:, 10] - filtered_parameters_feasibility[
+        :, 5] - filtered_parameters_feasibility[:, 0]
+
+    filtered_parameters = filtered_parameters_feasibility
+    filtered_observations = filtered_observations_feasibility
+
+
+    observables_to_study_labels = list(observables_to_study.keys())
+    for current_observable in observables_to_study_labels:
+        if current_observable == "libration":
+            obs_index = 0
+        elif current_observable == "k2_real":
+            obs_index = 1
+        elif current_observable == "h2_real":
+            obs_index = 2
+        elif current_observable == "k2_imag":
+            obs_index = 3
+        elif current_observable == "h2_imag":
+            obs_index = 4
+        else:
+            raise ValueError("Unknown observable " + current_observable)
+
+        filtered_parameters, filtered_observations, nb_viable_simulations = Util.filter_parameters_from_observations(
+            filtered_parameters,
+            filtered_observations,
+            observables_to_study[current_observable],
+            obs_index
+        )
+
+    filtered_parameters_feasibility_aux = np.delete(filtered_parameters, [7, 8, 9], 1)
+
+    data_frame = pandas.DataFrame(filtered_parameters_feasibility_aux, columns=interior_parameters_labels)
+    correlation_matrix = data_frame.corr(method=metric, numeric_only=True)
+
+    ax = sns.heatmap(correlation_matrix)
+    if observables_to_study_labels == []:
+        nb_viable_simulations = filtered_parameters.shape[0]
+    ax.set_title(f"Nb. samples: {nb_viable_simulations}", fontsize=fontsize)
+    ax.set_xlabel("Interior parameters", fontsize=fontsize)
+    ax.set_ylabel("Interior parameters", fontsize=fontsize)
+    plt.savefig(os.path.join(plots_path, f"interior_parameters_correlation_matrix_{metric}.pdf"))
+    plt.close()
 
 
 def main():
@@ -1214,7 +1368,7 @@ def main():
     nominal_libration_amplitude = [0.120, 0.021]  # [deg] - Thomas et al. (2016)
     tidal_heating_range = [15, 40]  # [GW] - Bagheri et al. (2025), page 17
 
-    plot_one_at_a_time_interior_parameters_analysis_flag = True
+    plot_one_at_a_time_interior_parameters_analysis_flag = False
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
@@ -1436,10 +1590,10 @@ def main():
         p.join()
         p.close()
 
-    make_parameters_correlation_plots_flag = False
+    make_parameters_correlation_plots_flag = True
     if make_parameters_correlation_plots_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
-        time_stamp = "2025.09.08.09.23.16" # "2025.09.17.12.10.02" # "2025.09.08.09.23.16"
+        time_stamp = "2025.09.17.12.10.02" # "2025.09.08.09.23.16"
         input_path = os.path.join(input_path, time_stamp)
         filter_libration_amplitude_flag = True
         filter_tidal_heating_flag = False
@@ -1460,7 +1614,8 @@ def main():
                                    [13, 10],
                                    [11, 6],
                                    [10, 6],
-                                   [5, 10]]
+                                   [5, 10],
+                                   [10, 12]]
 
         parameters_grid_step = dict()
         parameters_grid_step["core"] = dict(
@@ -1505,16 +1660,46 @@ def main():
             eta=[1e14, 1e20],
             K=[1e9, 1e14]
         )
+        observables_to_study = dict(
+            k2_real = 6e-5,
+            #libration = 1e-3,
+            h2_real = 7e-4,
+        )
 
         make_parameters_correlation_plots(input_path,
                                       parameters_to_correlate,
                                       parameters_grid_step,
                                       parameters_intervals,
                                       observable_grid_step,
+                                      observables_to_study,
                                       filter_libration_amplitude_flag,
                                       filter_tidal_heating_flag,
                                       nominal_libration_amplitude,
                                       tidal_heating_range)
+
+    perform_preliminary_correlation_analysis_flag = False
+    if perform_preliminary_correlation_analysis_flag:
+        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
+        time_stamp = "2025.09.17.12.10.02" # "2025.09.08.09.23.16" #"2025.09.17.12.10.02"
+        input_path = os.path.join(input_path, time_stamp)
+        filter_libration_amplitude_flag = True
+        filter_tidal_heating_flag = False
+
+        observables_to_study = dict(
+            k2_real = 6e-5,
+            #libration = 1e-3,
+            h2_real = 7e-4,
+        )
+        metric = "kendall"
+        perform_preliminary_correlation_analysis(input_path,
+                                                 metric,
+                                                 observables_to_study,
+                                                 filter_libration_amplitude_flag,
+                                                 filter_tidal_heating_flag,
+                                                 nominal_libration_amplitude,
+                                                 tidal_heating_range)
+
+
 
 
 
