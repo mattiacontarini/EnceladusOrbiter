@@ -190,7 +190,6 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
     fig.savefig(os.path.join(input_path, f"libration_amplitude.pdf"))
     plt.close(fig)
 
-
 def plot_monte_carlo_interior_parameters_analysis_simple_plot(input_path,
                                                               filter_libration_amplitude_flag,
                                                               filter_tidal_heating_flag,
@@ -860,8 +859,8 @@ def plot_histogram_filtered_parameters_from_observables(input_path,
                                     parameters_grid_steps[current_parameter][1]
                                      )
 
-            np.savetxt(os.path.join(input_path, f"distribution_old_{current_parameter}.txt"), [mean_old, std_old])
-            np.savetxt(os.path.join(input_path, f"distribution_new_{current_parameter}.txt"), [mean_new, std_new])
+            np.savetxt(os.path.join(input_path, f"distribution_old_{current_parameter}_{file_ticket}.txt"), [mean_old, std_old])
+            np.savetxt(os.path.join(input_path, f"distribution_new_{current_parameter}_{file_ticket}.txt"), [mean_new, std_new])
 
             # Plot histogram of parameter distribution before and after filtering the observables
             if current_parameter == "eta_shell" or current_parameter == "eta_core" or current_parameter == "k_shell":
@@ -1231,7 +1230,7 @@ def make_parameters_correlation_plots(input_path,
             ax.set_yscale("log")
         ax.set_xlabel(interior_parameters_labels[indices[0]], fontsize=fontsize)
         ax.set_ylabel(interior_parameters_labels[indices[1]], fontsize=fontsize)
-
+        ax.set_title(f"Nb. samples: {filtered_parameters.shape[0]}", fontsize=fontsize)
         fig.tight_layout()
         fig.savefig(os.path.join(plots_path, f"correlation_{interior_parameters_keys[indices[0]]}_{interior_parameters_keys[indices[1]]}.pdf"))
         plt.close(fig)
@@ -1361,6 +1360,123 @@ def perform_preliminary_correlation_analysis(input_path,
     ax.set_ylabel("Interior parameters", fontsize=fontsize)
     plt.savefig(os.path.join(plots_path, f"interior_parameters_correlation_matrix_{metric}.pdf"))
     plt.close()
+
+
+def plot_2d_parameters_scatter_plots_with_observable(input_path,
+                                                     parameters_to_plot,
+                                                     filter_libration_amplitude_flag,
+                                                     filter_tidal_heating_range_flag,
+                                                     nominal_libration_amplitude,
+                                                     tidal_heating_range,
+                                                     fontsize=12):
+
+    plots_path = os.path.join(input_path, "plots")
+    os.makedirs(plots_path, exist_ok=True)
+
+    layers = ["core", "ocean", "shell"]
+    obs_labels = [r"$W_s$ [deg]", r"$Re(k_2)$ [-]", r"$Re(h_2)$ [-]"]
+    obs_keys = ["libration", "k2", "h2"]
+
+    interior_parameters_labels = [r"$R_{c}$  [km]", r"$\rho_{c}$  [kg m$^{-3}$]", r"$\mu_{c}$  [Pa]",
+                                  r"$\eta_{c}$  [Pa s]", r"$K_{c}$  [Pa]",
+                                  r"$d_{o}$  [km]", r"$\rho_{o}$  [kg m$^{-3}$]", r"$\mu_{o}$  [Pa]",
+                                  r"$\eta_{o}$  [Pa s]", r"$K_{o}$  [Pa]",
+                                  r"$d_{s}$  [km]", r"$\rho_{s}$  [kg m$^{-3}$]", r"$\mu_{s}$  [Pa]",
+                                  r"$\eta_{s}$  [Pa s]", r"$K_{s}$  [Pa]"]
+    interior_parameters_keys = ["d_core", "rho_core", "mu_core", "eta_core", "K_core",
+                                "d_ocean", "rho_ocean", "mu_ocean", "eta_ocean", "K_ocean",
+                                "d_shell", "rho_shell", "mu_shell", "eta_shell", "K_shell"]
+
+    # Load results
+    observations = np.loadtxt(os.path.join(input_path, "observations.dat"), delimiter=",")
+    interior_models = np.loadtxt(os.path.join(input_path, "interior_models.dat"), delimiter=",")
+
+    # Convert libration amplitude to deg
+    observations[:, 0] = np.rad2deg(observations[:, 0])
+
+    # Filter parameter and observations based on the feasibility of the interior model
+    try:
+        filtered_parameters_feasibility = np.loadtxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"))
+        filtered_observations_feasibility = np.loadtxt(
+            os.path.join(input_path, "filtered_observations_feasibility.dat"))
+    except:
+        filtered_parameters_feasibility, filtered_observations_feasibility, nb_feasible_models = Util.filter_parameters(
+            interior_models, observations)
+        np.savetxt(os.path.join(input_path, "filtered_parameters_feasibility.dat"), filtered_parameters_feasibility)
+        np.savetxt(os.path.join(input_path, "filtered_observations_feasibility.dat"), filtered_observations_feasibility)
+        np.savetxt(os.path.join(input_path, "nb_feasible_models.dat"), [nb_feasible_models])
+
+    # Apply absolute value to libration amplitude
+    filtered_observations_feasibility[:, 0] = np.abs(filtered_observations_feasibility[:, 0])
+
+    # Filter parameters and observations based on libration amplitude and tidal heating observations
+    if filter_libration_amplitude_flag:
+        try:
+            filtered_parameters_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_parameters_libration_measurements.dat"))
+            filtered_observations_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_observations_libration_measurements.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_libration_models = Util.filter_libration_amplitude(
+                filtered_parameters_feasibility, filtered_observations_feasibility, nominal_libration_amplitude)
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_libration_measurements.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_libration_measurements.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_libration_models.dat"), [nb_feasible_libration_models])
+
+    if filter_tidal_heating_range_flag:
+        try:
+            filtered_parameters_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_parameters_tidal_heating.dat"))
+            filtered_observations_feasibility = np.loadtxt(
+                os.path.join(input_path, "filtered_observations_tidal_heating.dat"))
+        except:
+            filtered_parameters, filtered_observations, nb_feasible_tidal_heating_models = Util.filter_tidal_heating(
+                filtered_parameters_feasibility, filtered_observations_feasibility, tidal_heating_range
+            )
+            filtered_parameters_feasibility = filtered_parameters
+            filtered_observations_feasibility = filtered_observations
+            np.savetxt(os.path.join(input_path, "filtered_parameters_tidal_heating.dat"),
+                       filtered_parameters_feasibility)
+            np.savetxt(os.path.join(input_path, "filtered_observations_tidal_heating.dat"),
+                       filtered_observations_feasibility)
+            np.savetxt(os.path.join(input_path, "nb_feasible_tidal_heating_models.dat"),
+                       [nb_feasible_tidal_heating_models])
+
+    # Compute ocean and shell thickness
+    filtered_parameters_feasibility[:, 5] = filtered_parameters_feasibility[:, 5] - filtered_parameters_feasibility[
+        :, 0]
+    filtered_parameters_feasibility[:, 10] = filtered_parameters_feasibility[:, 10] - filtered_parameters_feasibility[
+        :, 5] - filtered_parameters_feasibility[:, 0]
+
+    for i in range(len(parameters_to_plot)):
+        j_0 = parameters_to_plot[i][0]
+        j_1 = parameters_to_plot[i][1]
+        j_obs = parameters_to_plot[i][2]
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        sc = ax.scatter(filtered_parameters_feasibility[:, j_0], filtered_observations_feasibility[:, j_obs],
+                   c=filtered_parameters_feasibility[:, j_1], marker="o", cmap="magma")
+        c = fig.colorbar(sc, ax=ax, label=interior_parameters_labels[j_1])
+
+        obs_mean = np.mean(filtered_observations_feasibility[:, j_obs])
+        ax.hlines(y=obs_mean, xmin=min(filtered_parameters_feasibility[:, j_0]),
+                  xmax=max(filtered_parameters_feasibility[:, j_0]), color="red", linewidth=2, linestyle="--", label="Mean")
+
+
+        ax.set_xlabel(interior_parameters_labels[j_0], fontsize=fontsize)
+        ax.set_ylabel(obs_labels[j_obs], fontsize=fontsize)
+        ax.tick_params(labelsize=fontsize)
+        ax.grid(True)
+        fig.tight_layout()
+        ax.legend(fontsize=fontsize)
+        fig.savefig(os.path.join(plots_path,
+                                 f"scatter_{interior_parameters_keys[j_0]}_{interior_parameters_keys[j_1]}_{obs_keys[j_obs]}.png"))
+        plt.close(fig)
 
 
 def main():
@@ -1590,7 +1706,7 @@ def main():
         p.join()
         p.close()
 
-    make_parameters_correlation_plots_flag = True
+    make_parameters_correlation_plots_flag = False
     if make_parameters_correlation_plots_flag:
         input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
         time_stamp = "2025.09.17.12.10.02" # "2025.09.08.09.23.16"
@@ -1698,6 +1814,27 @@ def main():
                                                  filter_tidal_heating_flag,
                                                  nominal_libration_amplitude,
                                                  tidal_heating_range)
+
+    plot_2d_parameters_scatter_plots_with_observable_flag = False
+    if plot_2d_parameters_scatter_plots_with_observable_flag:
+        input_path = "./output/interior_parameters_analysis/monte_carlo_analysis"
+        time_stamp = "2025.09.17.12.10.02"
+        input_path = os.path.join(input_path, time_stamp)
+        filter_libration_amplitude_flag = True
+        filter_tidal_heating_flag = False
+        parameters_to_study = [
+            [10, 12, 2],
+            [11, 12, 0],
+            [11, 12, 1],
+            [11, 10, 0]
+        ]
+        plot_2d_parameters_scatter_plots_with_observable(input_path,
+                                                     parameters_to_study,
+                                                     filter_libration_amplitude_flag,
+                                                     filter_tidal_heating_flag,
+                                                     nominal_libration_amplitude,
+                                                     tidal_heating_range
+                                                     )
 
 
 
