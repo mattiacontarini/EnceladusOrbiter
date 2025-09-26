@@ -76,7 +76,7 @@ Numerics_Enceladus.perturbation_order = 2;
 
 interior_parameters_to_vary = fieldnames(Interior_Model_Enceladus_Delta);
 nb_interior_parameters_to_vary = length(interior_parameters_to_vary);
-nb_runs_per_interior_parameter = 100;
+nb_runs_per_interior_parameter = 500;
 
 % Setup output structure
 Interior_Model_Enceladus_Analysis_Output(1).R0.k = [];
@@ -159,7 +159,7 @@ Interior_Model_Enceladus_Analysis_Output(4).eta0.libration = [];
 Interior_Model_Enceladus_Analysis_Output(4).eta0.interior_parameter = [];
 
 % Run analysis
-for i = 2:Numerics_Enceladus.Nlayers
+parfor i = 2:Numerics_Enceladus.Nlayers
 
     for j = 1:nb_interior_parameters_to_vary
 
@@ -224,7 +224,7 @@ for i = 2:Numerics_Enceladus.Nlayers
             else
                 min = min_values(i).Ks0;
                 max = max_values(i).Ks0;
-                points = linspace(min, max, nb_runs_per_interior_parameter);
+                points = logspace(log10(min), log10(max), nb_runs_per_interior_parameter);
             end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).Ks0 = points(l);
@@ -254,7 +254,8 @@ for i = 2:Numerics_Enceladus.Nlayers
             else
                 min = min_values(i).mu0;
                 max = max_values(i).mu0;
-                points = linspace(min, max, nb_runs_per_interior_parameter);
+                points = logspace(log10(min), log10(max), nb_runs_per_interior_parameter);
+
             end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).mu0 = points(l);
@@ -284,7 +285,8 @@ for i = 2:Numerics_Enceladus.Nlayers
             else
                 min = min_values(i).eta0;
                 max = max_values(i).eta0;
-                points = linspace(min, max, nb_runs_per_interior_parameter);
+                points = logspace(log10(min), log10(max), nb_runs_per_interior_parameter);
+
             end
             for l=1:length(points)
                 Interior_Model_Enceladus(i).eta0 = points(l);
