@@ -40,24 +40,29 @@ def filter_parameters_from_observations(parameters, observations, obs_std, obs_i
     return filtered_parameters, filtered_observations, nb_simulations-counter
 
 
+def base_filter_parameters(parameters, observations, obs_std, obs_index):
+    nb_simulations = parameters.shape[0]
+
+
 def get_parameter_grid_vec(parameter_index,
                            observable,
                            parameters_grid_step,
                            parameters_intervals,
                            observable_grid_step,
-                           layer,
-                           obs_label):
+                           layer):
 
     parameters_labels = list(parameters_grid_step[layer].keys())
 
     label = parameters_labels[parameter_index]
 
-    if (label == "mu" or label == "eta" or label == "K"):
+    if label == "eta" or label == "K":
         parameter_grid_vec = np.logspace(np.log10(parameters_intervals[layer][label][0]),
                                          np.log10(parameters_intervals[layer][label][1]),
                                          parameters_grid_step[layer][parameters_labels[parameter_index]])
-
-
+    elif label == "mu" and layer != "shell":
+        parameter_grid_vec = np.logspace(np.log10(parameters_intervals[layer][label][0]),
+                                         np.log10(parameters_intervals[layer][label][1]),
+                                         parameters_grid_step[layer][parameters_labels[parameter_index]])
     else:
         nb_parameters_grid_steps = int(
             ceiling((parameters_intervals[layer][label][1] - parameters_intervals[layer][label][0]) /
