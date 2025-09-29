@@ -54,7 +54,7 @@ def study_delta_v_correction(input_path,
     initial_velocity_correction_list = np.loadtxt(input_path + "/multi_arc_initial_velocity_correction.dat")
     nb_arcs = len(initial_velocity_correction_list)
 
-    fig1, ax1 = plt.subplots(1, 1)
+    fig1, ax1 = plt.subplots(1, 1, figsize=(6, 4))
     ax1.plot(np.arange(1, nb_arcs + 1, 1), initial_velocity_correction_list, color="black", alpha=0.5)
     ax1.set_xlabel("Arc index  [-]", fontsize=fontsize)
     ax1.set_ylabel(r"$||\Delta v_{i} (t_{0,i})  ||$  [m s$^{-1}$]", fontsize=fontsize)
@@ -62,14 +62,14 @@ def study_delta_v_correction(input_path,
     ax1.set_ylim(bottom=1e-5, top=1e-2)
     ax1.tick_params(axis='both', which='major', labelsize=fontsize)
     ax1.grid(True)
-    ax1.set_title(f"Velocity correction - {orbit_solution}")
+    # ax1.set_title(f"Velocity correction - {orbit_solution}")
 
     # Plot position difference history after correction
-    fig2, ax2 = plt.subplots(1, 1)
+    fig2, ax2 = plt.subplots(1, 1, figsize=(6, 4))
     for i in range(nb_arcs):
         color = (np.random.random(), np.random.random(), np.random.random())
 
-        ax1.scatter(i+1, initial_velocity_correction_list[i], marker='o', color=color)
+        ax1.scatter(i+1, initial_velocity_correction_list[i], marker='o', color=color, s=45)
 
         state_difference_history_current_arc = np.loadtxt(input_path + f"/state_difference_history_arc_{i}.dat")
         ax2.plot(state_difference_history_current_arc[1:, 0] / constants.JULIAN_DAY,
@@ -102,7 +102,8 @@ def main():
         study_propagation_error(input_path,
                                 output_path,
                                 28,
-                                orbit_solution)
+                                orbit_solution,
+                                fontsize=14)
 
     flag_study_delta_v_correction = True
     if flag_study_delta_v_correction:
@@ -111,7 +112,7 @@ def main():
         output_path = input_path
         study_delta_v_correction(input_path,
                                  output_path,
-                                 orbit_solution)
+                                 orbit_solution, fontsize=17)
 
 
 if __name__ == "__main__":
