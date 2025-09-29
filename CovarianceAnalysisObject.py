@@ -205,7 +205,7 @@ class CovarianceAnalysis:
             CovAnalysisConfig.global_frame_orientation)
 
         # Set rotation model settings for Enceladus
-        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
+        body_settings.get("Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
             base_frame=CovAnalysisConfig.global_frame_orientation,
             target_frame="IAU_Enceladus"
         )

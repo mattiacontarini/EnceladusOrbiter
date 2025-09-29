@@ -362,9 +362,9 @@ def main():
     # Set output directory
     output_directory = "./output/tidal_forcing_analysis"
 
-    perform_tidal_forcing_analysis_flag = False
+    perform_tidal_forcing_analysis_flag = True
     if perform_tidal_forcing_analysis_flag:
-        output_directory_analysis = os.path.join(output_directory, "2025.06.03.16.31.28/tidal_forcing_computation")
+        output_directory_analysis = os.path.join(output_directory, "2025.09.29.15.49.55/tidal_forcing_computation")
         perform_tidal_forcing_analysis_plotting(output_directory_analysis,
                                                 [2],
                                                 14)
@@ -381,7 +381,7 @@ def main():
         output_directory_partials = os.path.join(output_directory, "2025.06.20.16.53.11/h2_partials")
         perform_h2_partials_analysis_plotting(output_directory_partials, 14)
 
-    plot_h2_partials_flag = True
+    plot_h2_partials_flag = False
     if plot_h2_partials_flag:
         input_directory = "./output/covariance_analysis/single_case_analysis/2025.07.15.17.07.02"
         plot_h2_partials(input_directory)

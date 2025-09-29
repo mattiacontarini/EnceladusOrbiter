@@ -74,7 +74,7 @@ def get_saturn_colatitude_and_longitude_history(simulation_start_epoch,
 
     # Set rotation model settings for Enceladus
     body_settings.get(
-        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park(
+        "Enceladus").rotation_model_settings = EnvUtil.get_rotation_model_settings_enceladus_park_simplified(
         base_frame=CovAnalysisConfig.global_frame_orientation,
         target_frame="IAU_Enceladus"
     )
@@ -473,7 +473,7 @@ def main():
 
     output_directory = os.path.join(output_directory, time_stamp)
 
-    perform_tidal_forcing_analysis_flag = False
+    perform_tidal_forcing_analysis_flag = True
     if perform_tidal_forcing_analysis_flag:
         output_directory_analysis = os.path.join(output_directory, "tidal_forcing_computation")
         perform_tidal_forcing_analysis(arc_start, nb_orbits, output_directory_analysis)
@@ -483,7 +483,7 @@ def main():
         output_directory_correction = os.path.join(output_directory, "tidal_forcing_correction")
         verify_tidal_correction(arc_start, nb_orbits, output_directory_correction)
 
-    perform_h2_partials_love_number_flag = True
+    perform_h2_partials_love_number_flag = False
     if perform_h2_partials_love_number_flag:
         output_directory_partials = os.path.join(output_directory, "h2_partials")
         perform_h2_partials_love_number(arc_start, nb_orbits, output_directory_partials)
