@@ -69,7 +69,7 @@ def study_delta_v_correction(input_path,
     for i in range(nb_arcs):
         color = (np.random.random(), np.random.random(), np.random.random())
 
-        ax1.scatter(i+1, initial_velocity_correction_list[i], marker='o', color=color, s=45)
+        ax1.scatter(i+1, initial_velocity_correction_list[i], marker='o', color=color, s=60)
 
         state_difference_history_current_arc = np.loadtxt(input_path + f"/state_difference_history_arc_{i}.dat")
         ax2.plot(state_difference_history_current_arc[1:, 0] / constants.JULIAN_DAY,
