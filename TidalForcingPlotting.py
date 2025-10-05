@@ -285,52 +285,82 @@ def perform_h2_partials_analysis_plotting(output_directory, fontsize=12):
     # Load drL_dh2 partials
     counter = 0
     fig, axes = plt.subplots(nrows=5, ncols=2, figsize=(8, 11), constrained_layout=True)
+    fig2, axes2 = plt.subplots(nrows=5, ncols=2, figsize=(8, 11), constrained_layout=True)
     for lander_name in CovAnalysisConfig.lander_names:
         drL_dh2_corrected = np.loadtxt(os.path.join(output_directory, f"drL_dh2_corrected_history_{lander_name}_lander.dat"))
+        drL_dh2_uncorrected = np.loadtxt(os.path.join(output_directory, f"drL_dh2_history_{lander_name}_lander.dat"))
 
-        x_average = np.mean(drL_dh2_corrected[:, 1])
-        y_average = np.mean(drL_dh2_corrected[:, 2])
-        z_average = np.mean(drL_dh2_corrected[:, 3])
-
-        print(lander_name, x_average, y_average, z_average)
+        x_average = np.mean(drL_dh2_uncorrected[:, 1])
+        y_average = np.mean(drL_dh2_uncorrected[:, 2])
+        z_average = np.mean(drL_dh2_uncorrected[:, 3])
 
         if lander_name == "L1":
             ax = axes[0, 0]
+            ax2 = axes2[0, 0]
         elif lander_name == "L2":
             ax = axes[0, 1]
+            ax2 = axes2[0, 1]
         elif lander_name == "L3":
             ax = axes[1, 0]
+            ax2 = axes2[1, 0]
         elif lander_name == "L4":
             ax = axes[1, 1]
+            ax2 = axes2[1, 1]
         elif lander_name == "L5":
             ax = axes[2, 0]
+            ax2 = axes2[2, 0]
         elif lander_name == "L6":
             ax = axes[2, 1]
+            ax2 = axes2[2, 1]
         elif lander_name == "L7":
             ax = axes[3, 0]
+            ax2 = axes2[3, 0]
         elif lander_name == "L8":
             ax = axes[3, 1]
+            ax2 = axes2[3, 1]
         elif lander_name == "L9":
             ax = axes[4, 0]
+            ax2 = axes2[4, 0]
 
         #fig, ax = plt.subplots()
         ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 1], color="blue")
         ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 2], linestyle="--", color="red")
         ax.plot(drL_dh2_corrected[:, 0] / constants.JULIAN_DAY, drL_dh2_corrected[:, 3], linestyle="-.", color="green")
 
+        ax2.plot(drL_dh2_uncorrected[:, 0] / constants.JULIAN_DAY, drL_dh2_uncorrected[:, 1], color="blue")
+        ax2.plot(drL_dh2_uncorrected[:, 0] / constants.JULIAN_DAY, drL_dh2_uncorrected[:, 2], linestyle="--", color="red")
+        ax2.plot(drL_dh2_uncorrected[:, 0] / constants.JULIAN_DAY, drL_dh2_uncorrected[:, 3], linestyle="-.", color="green")
+        if lander_name == "L6":
+            ax2.set_yscale("log")
+            ax2.set_ylim(bottom=1e1, top=3e2)
+        elif lander_name == "L7":
+            ax2.set_yscale("linear")
+        else:
+            ax2.set_yscale("symlog")
+
         ax.set_title(f"Lander {lander_name}", fontsize=fontsize)
+        ax2.set_title(f"Lander {lander_name}", fontsize=fontsize)
         if counter % 2 == 0:
             ax.set_ylabel(r"$\Delta \mathbf{r}$  [m]", fontsize=fontsize)
+            ax2.set_ylabel(r"$\Delta \mathbf{r}$  [m]", fontsize=fontsize)
         ax.grid(True)
+        ax2.grid(True)
         ax.tick_params(labelsize=fontsize)
+        ax2.tick_params(labelsize=fontsize-3)
         counter += 1
 
     axes[4, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     axes[3, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    axes2[4, 0].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
+    axes2[3, 1].set_xlabel(r"$t - t_{0}$  [days]", fontsize=fontsize)
     plt.delaxes(axes[4, 1])
+    plt.delaxes(axes2[4, 1])
     fig.legend(handles=[x_component_handle, y_component_handle, z_component_handle], fontsize=fontsize, bbox_to_anchor=(0.85, 0.15))
+    fig2.legend(handles=[x_component_handle, y_component_handle, z_component_handle], fontsize=fontsize, bbox_to_anchor=(0.85, 0.15))
     fig.savefig(os.path.join(output_directory, f"lander_position_displacement_analysis.pdf"))
+    fig2.savefig(os.path.join(output_directory, f"lander_position_displacement_analysis_uncorrected.pdf"))
     plt.close(fig)
+    plt.close(fig2)
 
 def plot_h2_partials(input_directory, fontsize=12):
     covariance_results_path = os.path.join(input_directory, "covariance_results")
@@ -362,7 +392,7 @@ def main():
     # Set output directory
     output_directory = "./output/tidal_forcing_analysis"
 
-    perform_tidal_forcing_analysis_flag = True
+    perform_tidal_forcing_analysis_flag = False
     if perform_tidal_forcing_analysis_flag:
         output_directory_analysis = os.path.join(output_directory, "2025.09.29.15.49.55/tidal_forcing_computation")
         perform_tidal_forcing_analysis_plotting(output_directory_analysis,
@@ -376,7 +406,7 @@ def main():
                                                        [(2, 0), (2, 1), (2, 2)],
                                                        14)
 
-    perform_h2_partials_analysis_plotting_flag = False
+    perform_h2_partials_analysis_plotting_flag = True
     if perform_h2_partials_analysis_plotting_flag:
         output_directory_partials = os.path.join(output_directory, "2025.06.20.16.53.11/h2_partials")
         perform_h2_partials_analysis_plotting(output_directory_partials, 14)
