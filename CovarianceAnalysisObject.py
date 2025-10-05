@@ -989,7 +989,7 @@ class CovarianceAnalysis:
             Enceladus_radius = spice.get_average_radius("Enceladus")
 
             sorted_observation_epochs = CovUtil.retrieve_sorted_observation_epochs(simulated_observations)
-            partials_extended, drL_dh2_dict, dh_dh2_dict, dh_drL_dict = CovUtil.extend_design_matrix_to_h2_love_number(
+            partials_extended, drL_dh2_dict, dh_dh2_dict, dh_drL_dict, drL_dh2_uncorrected_dict = CovUtil.extend_design_matrix_to_h2_love_number(
                 partials,
                 sorted_observation_epochs,
                 self.lander_to_include,
@@ -1276,16 +1276,18 @@ class CovarianceAnalysis:
                                             "formal_errors.pdf")
 
             # Plot formal error of SH gravity coefficients and a priori constraint
-            fig = plt.figure()
+            fig = plt.figure(figsize=[6, 5])
             ax = fig.add_subplot()
             ax.plot(degrees, formal_error_cosine_coef_per_deg, label="RMS of formal error", color="blue")
             ax.plot(degrees, a_priori_constraints_cosine_coef_per_deg, label="A priori constraint", color="orange")
-            ax.set_xlabel("Degree  [-]")
-            ax.set_ylabel(r"$\sigma$  [-]")
+            ax.axvline(x=max_estimatable_degree_gravity_field, color="red", linestyle="dashed")
+            ax.set_xlabel("Degree  [-]", fontsize=12)
+            ax.set_ylabel(r"$\sigma$  [-]", fontsize=12)
             ax.set_yscale("log")
             ax.grid(True)
-            ax.set_title("RMS of formal error of SH gravity cosine coefficients per degree")
             ax.legend(loc="lower right")
+            ax.tick_params(labelsize=12)
+            fig.tight_layout()
             file_output_path = os.path.join(plots_output_path, "rms_formal_error_cosine_coefficients.pdf")
             plt.savefig(file_output_path)
             plt.close(fig)
@@ -1405,6 +1407,7 @@ class CovarianceAnalysis:
                 save2txt(drL_dh2_dict, "drL_dh2_partials.dat", covariance_results_output_path)
                 save2txt(dh_dh2_dict, "dh_dh2_partials.dat", covariance_results_output_path)
                 save2txt(dh_drL_dict, "dh_drL_partials.dat", covariance_results_output_path)
+                save2txt(drL_dh2_uncorrected_dict, "drL_dh2_uncorrected_partials.dat", covariance_results_output_path)
 
             # Save formal error of libration amplitude
             formal_error_libration_amplitude_filename = os.path.join(covariance_results_output_path,

@@ -380,7 +380,7 @@ def single_case_analysis(time_stamp,
     UDP.save_simulation_results_flag = save_simulation_results_flag
     UDP.save_covariance_results_flag = save_covariance_results_flag
     UDP.save_obs_times_of_vehicle_flag = save_obs_times_of_vehicle_flag
-    UDP.estimate_h2_love_number_flag = True
+    UDP.estimate_h2_love_number_flag = False
 
     # Perform covariance analysis
     UDP.save_problem_configuration(output_path)

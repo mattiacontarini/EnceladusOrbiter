@@ -1368,6 +1368,7 @@ def plot_h2_partials_analysis(input_path, fontsize=12):
     ax2.legend(fontsize=fontsize)
     ax2.grid(True)
     fig.savefig(os.path.join(input_path, "h2_partials.pdf"))
+    plt.close(fig)
 
 
 def plot_nominal_cases_analysis(input_path, fontsize=12):
