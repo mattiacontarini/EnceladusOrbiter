@@ -51,6 +51,7 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
     drL_dh2_store = dict()
     dh_dh2_store = dict()
     dh_drL_store = dict()
+    drL_dh2_uncorrected_store = dict()
     for j in range(len(lander_to_include)):
 
         station_name = lander_to_include[j]
@@ -76,6 +77,7 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
 
         drL_dh2_store[station_name] = dict()
         dh_drL_store[j] = dict()
+        drL_dh2_uncorrected_store[station_name] = dict()
 
         if not continue_flag:
 
@@ -92,7 +94,7 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
                                                                                             body_radius,
                                                                                             1.0,
                                                                                             0.0)
-
+                drL_dh2_uncorrected_store[station_name][epoch] = drL_dh2_i
                 drL_dh2_i = drL_dh2_i - drL_dh2_average
 
                 dh_dh2[i] += np.dot(dh_drL[i, :], drL_dh2_i)
@@ -105,7 +107,7 @@ def extend_design_matrix_to_h2_love_number(design_matrix,
         dh_dh2_store[epoch] = dh_dh2[i]
     
     design_matrix_extended[:, nb_parameters_extended - 1] = dh_dh2
-    return design_matrix_extended, drL_dh2_store, dh_dh2_store, dh_drL_store
+    return design_matrix_extended, drL_dh2_store, dh_dh2_store, dh_drL_store, drL_dh2_uncorrected_store
 
 
 def retrieve_sorted_observation_epochs(simulated_observations,):
