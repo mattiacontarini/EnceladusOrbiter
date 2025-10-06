@@ -101,6 +101,7 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
             if interior_parameter_index % 2 == 0:
                 ax.set_ylabel("Love number  [-]", fontsize=fontsize)
 
+    axes[1, 0].set_xlim(right=1e11)
     axes[0, 1].set_ylim(bottom=1e-2)
     axes[1, 0].set_ylim(bottom=1e-3)
     axes[1, 1].set_ylim(bottom=1e-2)
@@ -110,7 +111,7 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
                bbox_to_anchor=(0.9, 0.2),
                ncols=2)
 
-    axes[0, 0].set_xlabel(r"$d$  [km]", fontsize=fontsize)
+    axes[0, 0].set_xlabel(r"$R$  [km]", fontsize=fontsize)
     axes[0, 1].set_xlabel(r"$\rho$  [kg m$^{-3}$]", fontsize=fontsize)
     axes[1, 0].set_xlabel(r"$\mu$  [Pa]", fontsize=fontsize)
     axes[1, 1].set_xlabel(r"$\eta$  [Pa s]", fontsize=fontsize)
@@ -173,8 +174,8 @@ def plot_one_at_a_time_interior_parameters_analysis(input_path, fontsize=12):
         ax.tick_params(labelsize=fontsize)
         ax.grid(True)
         # ax.set_yscale("log")
-
-    axes[0, 0].set_xlabel(r"$d$  [km]", fontsize=fontsize)
+    axes[1, 0].set_xlim(right=1e11)
+    axes[0, 0].set_xlabel(r"$R$  [km]", fontsize=fontsize)
     axes[0, 1].set_xlabel(r"$\rho$  [kg m$^{-3}$]", fontsize=fontsize)
     axes[1, 0].set_xlabel(r"$\mu$  [Pa]", fontsize=fontsize)
     axes[1, 1].set_xlabel(r"$\eta$  [Pa s]", fontsize=fontsize)
@@ -1484,7 +1485,7 @@ def main():
     nominal_libration_amplitude = [0.120, 0.021]  # [deg] - Thomas et al. (2016)
     tidal_heating_range = [15, 40]  # [GW] - Bagheri et al. (2025), page 17
 
-    plot_one_at_a_time_interior_parameters_analysis_flag = False
+    plot_one_at_a_time_interior_parameters_analysis_flag = True
     if plot_one_at_a_time_interior_parameters_analysis_flag:
         input_path = "./output/interior_parameters_analysis/preliminary_sensitivity_analysis"
         plot_one_at_a_time_interior_parameters_analysis(input_path)
