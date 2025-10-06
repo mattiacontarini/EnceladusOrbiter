@@ -20,44 +20,36 @@ Forcing_Enceladus(1).m=0;
 Forcing_Enceladus(1).F=1;
 Forcing_Enceladus(1).eccen = 0.0047;
 
-%% Variation delta
-
+% Setup variables to tune through MC analysis
+min_values(2).R0 = 120;
+min_values(2).rho0 = 2000;
 min_values(2).Ks0 = 1.0e9;
 min_values(2).mu0 = 1.0e9;
-min_values(2).eta0 = 1.0e16;
+min_values(2).eta0 = 1.0e15;
+
+min_values(3).R0 = 201;
+min_values(3).rho0 = 1000;
+
+min_values(4).R0 = 230;
+min_values(4).rho0 = 800;
 min_values(4).Ks0 = 1.0e9;
 min_values(4).mu0 = 1.0e9;
 min_values(4).eta0 = 1.0e14;
 
+max_values(2).R0 = 210;
+max_values(2).rho0 = 3000;
 max_values(2).Ks0 = 1.0e11;
-max_values(2).mu0 = 1.0e11;
+max_values(2).mu0 = 8.0e10;
 max_values(2).eta0 = 1.0e20;
+
+max_values(3).R0 = 240;
+max_values(3).rho0 = 1200;
+
+max_values(4).R0 = 260;
+max_values(4).rho0 = 1000;
 max_values(4).Ks0 = 1.0e14;
 max_values(4).mu0 = 1.0e10;
 max_values(4).eta0 = 1.0e20;
-
-% Setup variables to tune through MC analysis
-
-Interior_Model_Enceladus_Delta(1).R0 = 0;
-Interior_Model_Enceladus_Delta(1).rho0 = 0;
-
-Interior_Model_Enceladus_Delta(2).R0 = 30;
-Interior_Model_Enceladus_Delta(2).rho0 = 500;
-Interior_Model_Enceladus_Delta(2).Ks0 = 3E9;
-Interior_Model_Enceladus_Delta(2).mu0 = 0.5E9;
-Interior_Model_Enceladus_Delta(2).eta0 = 0.5E20;
-
-Interior_Model_Enceladus_Delta(3).R0 = 10;
-Interior_Model_Enceladus_Delta(3).rho0 = 200;
-%Interior_Model_Enceladus_Delta(3).Ks0 = 1E9;
-%Interior_Model_Enceladus_Delta(3).mu0 = 0.1;
-%Interior_Model_Enceladus_Delta(3).eta0 = 1E-3; 
-
-Interior_Model_Enceladus_Delta(4).R0 = 10;
-Interior_Model_Enceladus_Delta(4).rho0 = 50;
-Interior_Model_Enceladus_Delta(4).Ks0 = 10E9;
-Interior_Model_Enceladus_Delta(4).mu0 = 1E9;
-Interior_Model_Enceladus_Delta(4).eta0 = 0.5E18;
 
 %% Analysis
 
@@ -166,8 +158,8 @@ parfor i = 2:Numerics_Enceladus.Nlayers
         Interior_Model_Enceladus = set_interior_model_enceladus(); 
         
         if j == 1
-            min = Interior_Model_Enceladus(i).R0 - Interior_Model_Enceladus_Delta(i).R0;
-            max = Interior_Model_Enceladus(i).R0 + Interior_Model_Enceladus_Delta(i).R0;
+            min = min_values(i).R0;
+            max = max_values(i).R0;
             points = linspace(min, max, nb_runs_per_interior_parameter);
             for l=1:length(points)
                 Interior_Model_Enceladus(i).R0 = points(l);
@@ -193,8 +185,8 @@ parfor i = 2:Numerics_Enceladus.Nlayers
                     Interior_Model_Enceladus_Analysis_Output(i).R0.libration, libration.amplitude_rad(1)];
             end
         elseif j == 2
-            min = Interior_Model_Enceladus(i).rho0 - Interior_Model_Enceladus_Delta(i).rho0;
-            max = Interior_Model_Enceladus(i).rho0 + Interior_Model_Enceladus_Delta(i).rho0;
+            min = min_values(i).rho0;
+            max = max_values(i).rho0;
             points = linspace(min, max, nb_runs_per_interior_parameter);
             for l=1:length(points)
                 Interior_Model_Enceladus(i).rho0 = points(l);
